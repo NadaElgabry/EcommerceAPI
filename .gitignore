@@ -122,3 +122,4 @@ $RECYCLE.BIN/
 .env
 .env.*
 *.env.local
+/EcommerceAPI/appsettings.json
