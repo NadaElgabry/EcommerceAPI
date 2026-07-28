@@ -4,7 +4,8 @@ using System.Text;
 
 namespace EcommerceAPI.Application.Interfaces
 {
-    internal interface IRefreshTokenRepository
+    public interface IUnitOfWork
     {
+        public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }

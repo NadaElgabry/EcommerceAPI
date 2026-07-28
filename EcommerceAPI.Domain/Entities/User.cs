@@ -18,14 +18,14 @@ namespace EcommerceAPI.Domain.Entities
         public string HashedPassword { get; set; } = string.Empty;
 
         public int RoleId { get; set; }
-        public Role Role { get; set; }
+        public Role Role { get; set; } = null!;
 
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 
-        public List<UserAddress> Addresses { get; set; }
-        public List<RefreshToken> RefreshTokens { get; set; }
+        public List<UserAddress> Addresses { get; set; } = new List<UserAddress>();
+        public List<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 
     }
 }
