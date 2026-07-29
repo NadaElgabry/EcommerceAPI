@@ -21,8 +21,4 @@
     <ProjectReference Include="..\EcommerceAPI.Infrastructure\EcommerceAPI.Infrastructure.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
 </Project>
