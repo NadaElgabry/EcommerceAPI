@@ -5,6 +5,7 @@ using EcommerceAPI.Application.UseCases.Auth;
 using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Infrastructure.Contexts;
 using EcommerceAPI.Infrastructure.Persistence;
+using EcommerceAPI.Infrastructure.Persistence.Repositories;
 using EcommerceAPI.Infrastructure.Services.Auth;
 using EcommerceAPI.Middlewares;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -31,8 +32,7 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddScoped(typeof(IRepository<RefreshToken>), typeof(EcommerceAPI.Infrastructure.Persistence.Repositories.Repository<RefreshToken>));
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>)); builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<RefreshUseCase>();
 
