@@ -7,7 +7,7 @@ namespace EcommerceAPI.Domain.Entities
     public class RefreshToken
     {
         public int Id { get; set; }
-        public Guid PublicId { get; set; } = Guid.NewGuid();
+        public Guid Guid { get; set; } = Guid.NewGuid();
 
         public string TokenHash { get; set; } = string.Empty;
 
@@ -18,7 +18,7 @@ namespace EcommerceAPI.Domain.Entities
         public DateTime ExpiresAt { get; set; }
         public DateTime? RevokedAt { get; set; }
 
-        public Guid? ReplacedByTokenPublicId { get; set; }
+        public Guid? ReplacedByTokenGuid { get; set; }
 
         public string? DeviceInfo { get; set; }
         public string? IpAddress { get; set; }

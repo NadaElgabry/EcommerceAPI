@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Security.Principal;
 using System.Text;
 
@@ -9,7 +10,7 @@ namespace EcommerceAPI.Domain.Entities
     public class User
     {
         public int Id { get; set; }
-        public Guid PublicId { get; set; } = Guid.NewGuid();
+        public Guid Guid { get; set; } = Guid.NewGuid();
 
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
