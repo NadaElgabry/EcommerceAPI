@@ -16,13 +16,8 @@ namespace EcommerceAPI.Domain.Entities
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime ExpiresAt { get; set; }
-        public DateTime? RevokedAt { get; set; }
-
-        public Guid? ReplacedByTokenGuid { get; set; }
-
         public string? DeviceInfo { get; set; }
         public string? IpAddress { get; set; }
-
-        public bool IsActive => RevokedAt is null && DateTime.UtcNow < ExpiresAt;
+        public bool IsActive => DateTime.UtcNow < ExpiresAt;
     }
 }

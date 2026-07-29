@@ -1,4 +1,10 @@
+using EcommerceAPI.Application.Interfaces;
+using EcommerceAPI.Application.Interfaces.Auth;
+using EcommerceAPI.Application.Interfaces.Repositories;
+using EcommerceAPI.Application.UseCases.Auth;
+using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Infrastructure.Contexts;
+using EcommerceAPI.Infrastructure.Persistence;
 using EcommerceAPI.Infrastructure.Services.Auth;
 using EcommerceAPI.Middlewares;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -25,6 +31,11 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddScoped(typeof(IRepository<RefreshToken>), typeof(EcommerceAPI.Infrastructure.Persistence.Repositories.Repository<RefreshToken>));
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<RefreshUseCase>();
+
 builder.Services.AddProblemDetails();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -65,8 +76,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 
 }
-
-app.UseHttpsRedirection();
 
 app.UseAuthentication();
 

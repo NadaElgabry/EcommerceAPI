@@ -1,4 +1,5 @@
 ﻿using EcommerceAPI.Application.DTOs.Auth;
+using EcommerceAPI.Application.UseCases.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,6 +9,13 @@ namespace EcommerceAPI.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
+        private readonly RefreshUseCase _refreshUseCase;
+
+        public AuthController(RefreshUseCase refreshUseCase)
+        {
+            _refreshUseCase = refreshUseCase;
+        }
+
 
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest request)
@@ -24,10 +32,10 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("refresh")]
-        public IActionResult Refresh([FromBody] RefreshTokenRequest request)
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
         {
-            // Implementation for refresh token logic
-            return Ok();
+            var response = await _refreshUseCase.ExecuteAsync(request);
+            return Ok(response);
         }
 
         [HttpPost("logout")]

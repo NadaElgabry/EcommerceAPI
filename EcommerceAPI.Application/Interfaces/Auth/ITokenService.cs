@@ -11,5 +11,6 @@ namespace EcommerceAPI.Application.Interfaces.Auth
     {
         public AccessTokenResult GenerateAccessToken(User user);
         public (string RawToken, RefreshToken Entity) GenerateRefreshToken();
+        public string HashRefreshToken(string refreshToken);
     }
 }

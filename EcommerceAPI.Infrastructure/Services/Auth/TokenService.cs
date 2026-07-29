@@ -60,7 +60,7 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
             return (rawToken, entity);
         }
 
-        private string HashRefreshToken(string rawToken)
+        public string HashRefreshToken(string rawToken)
         {
             var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
             return Convert.ToBase64String(bytes);
