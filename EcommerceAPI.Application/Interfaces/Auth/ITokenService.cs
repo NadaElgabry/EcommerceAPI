@@ -9,8 +9,7 @@ namespace EcommerceAPI.Application.Interfaces.Auth
 
     public interface ITokenService
     {
-        AccessTokenResult GenerateAccessToken(User user);
-        string GenerateRefreshToken();
-        string HashRefreshToken(string rawToken);
+        public AccessTokenResult GenerateAccessToken(User user);
+        public (string RawToken, RefreshToken Entity) GenerateRefreshToken();
     }
 }
