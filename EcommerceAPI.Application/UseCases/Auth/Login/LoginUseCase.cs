@@ -27,7 +27,9 @@ namespace EcommerceAPI.Application.UseCases.Auth.Login
             _unitOfWork = unitOfWork;
             _roleRepository = roleRepository;
         }
-        public async Task<AuthResponse> Handle(LoginRequest request,string ipAdress, string deviceInfo)
+
+        /// <inheritdoc />
+        public async Task<AuthResponse> Login(LoginRequest request,string ipAdress, string deviceInfo)
         {
             var user = await _userRepository.GetByAsync(u => u.Email == request.Email.ToLower()) 
                 ?? throw new UnauthorizedException("Invalid credentials");
@@ -37,7 +39,7 @@ namespace EcommerceAPI.Application.UseCases.Auth.Login
                 throw new NotFoundException("Role not found");
             var accesstoken = _tokenService.GenerateAccessToken(user);
             var existingRefreshToken = await _refreshTokenRepository
-                .GetByAsync(rt => rt.UserId == user.Id && rt.IpAddress == ipAdress);
+                .GetByAsync(rt => rt.UserId == user.Id && rt.IpAddress == ipAdress && rt.DeviceInfo == deviceInfo);
             if(null != existingRefreshToken)
             {
                 _refreshTokenRepository.Delete(existingRefreshToken);
