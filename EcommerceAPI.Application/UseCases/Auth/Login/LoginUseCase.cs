@@ -29,25 +29,26 @@ namespace EcommerceAPI.Application.UseCases.Auth.Login
         }
 
         /// <inheritdoc />
-        public async Task<AuthResponse> Login(LoginRequest request,string ipAdress, string deviceInfo)
+        public async Task<AuthResponse> Login
+            (LoginRequest request,string ipAdress, string deviceInfo, CancellationToken cancellationToken)
         {
-            var user = await _userRepository.GetByAsync(u => u.Email == request.Email.ToLower()) 
+            var user = await _userRepository.GetByAsync(u => u.Email == request.Email.ToLower(), cancellationToken) 
                 ?? throw new UnauthorizedException("Invalid credentials");
             if (!_passwordHasher.Verify(request.Password, user.HashedPassword))
                 throw new UnauthorizedException("Invalid credentials");
-            user.Role = await _roleRepository.GetByAsync(r => r.Id == user.RoleId)??
+            user.Role = await _roleRepository.GetByAsync(r => r.Id == user.RoleId, cancellationToken)??
                 throw new NotFoundException("Role not found");
             var accesstoken = _tokenService.GenerateAccessToken(user);
             var existingRefreshToken = await _refreshTokenRepository
-                .GetByAsync(rt => rt.UserId == user.Id && rt.IpAddress == ipAdress && rt.DeviceInfo == deviceInfo);
+                .GetByAsync(rt => rt.UserId == user.Id && rt.IpAddress == ipAdress && rt.DeviceInfo == deviceInfo, cancellationToken);
             if(null != existingRefreshToken)
             {
                 _refreshTokenRepository.Delete(existingRefreshToken);
             }
             var refreshToken = _tokenService.GenerateRefreshToken(user, ipAdress, deviceInfo);
 
-            await _refreshTokenRepository.AddAsync(refreshToken.Entity);
-            await _unitOfWork.SaveChangesAsync();
+            await _refreshTokenRepository.AddAsync(refreshToken.Entity, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return new AuthResponse
             {

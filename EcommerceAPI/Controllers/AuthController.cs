@@ -17,11 +17,11 @@ namespace EcommerceAPI.Controllers
         } 
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
         {
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             var deviceInfo = Request.Headers["User-Agent"].ToString();
-            var result = await _loginUseCase.Handle(request, ipAddress, deviceInfo);
+            var result = await _loginUseCase.Login(request, ipAddress, deviceInfo, cancellationToken);
             return Ok(result);
         }
 
