@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using EcommerceAPI.Application.DTOs.Auth;
 using EcommerceAPI.Application.UseCases.Auth.Login;
@@ -74,11 +75,11 @@ namespace EcommerceAPI.Tests.Controllers
             };
 
             _loginUseCaseMock
-                .Setup(l => l.Handle(request, "203.0.113.10", "Mozilla/5.0 TestAgent"))
+                .Setup(l => l.Login(request, "203.0.113.10", "Mozilla/5.0 TestAgent", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResponse);
 
             // Act
-            var actionResult = await _sut.Login(request);
+            var actionResult = await _sut.Login(request, CancellationToken.None);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(actionResult);
@@ -99,7 +100,7 @@ namespace EcommerceAPI.Tests.Controllers
             };
 
             _loginUseCaseMock
-                .Setup(l => l.Handle(request, "unknown", "TestAgent/1.0"))
+                .Setup(l => l.Login(request, "unknown", "TestAgent/1.0", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new AuthResponse
                 {
                     AccessToken = "access-token",
@@ -109,12 +110,12 @@ namespace EcommerceAPI.Tests.Controllers
                 });
 
             // Act
-            var actionResult = await _sut.Login(request);
+            var actionResult = await _sut.Login(request, CancellationToken.None);
 
             // Assert
             Assert.IsType<OkObjectResult>(actionResult);
             _loginUseCaseMock.Verify(
-                l => l.Handle(request, "unknown", "TestAgent/1.0"),
+                l => l.Login(request, "unknown", "TestAgent/1.0", It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
@@ -131,7 +132,7 @@ namespace EcommerceAPI.Tests.Controllers
             };
 
             _loginUseCaseMock
-                .Setup(l => l.Handle(request, "198.51.100.7", userAgent))
+                .Setup(l => l.Login(request, "198.51.100.7", userAgent, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new AuthResponse
                 {
                     AccessToken = "access-token",
@@ -141,11 +142,11 @@ namespace EcommerceAPI.Tests.Controllers
                 });
 
             // Act
-            await _sut.Login(request);
+            await _sut.Login(request, CancellationToken.None);
 
             // Assert
             _loginUseCaseMock.Verify(
-                l => l.Handle(request, "198.51.100.7", userAgent),
+                l => l.Login(request, "198.51.100.7", userAgent, It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
@@ -163,11 +164,11 @@ namespace EcommerceAPI.Tests.Controllers
             };
 
             _loginUseCaseMock
-                .Setup(l => l.Handle(request, "127.0.0.1", "TestAgent"))
+                .Setup(l => l.Login(request, "127.0.0.1", "TestAgent", It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("simulated failure"));
 
             // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.Login(request));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.Login(request, CancellationToken.None));
         }
     }
 }

@@ -111,7 +111,7 @@ namespace EcommerceAPI.Tests.UseCases.Auth
                 .Returns(generatedRefreshToken);
 
             // Act
-            var result = await _sut.Handle(request, ip, deviceInfo);
+            var result = await _sut.Login(request, ip, deviceInfo, CancellationToken.None);
 
             // Assert
             Assert.NotNull(result);
@@ -142,7 +142,7 @@ namespace EcommerceAPI.Tests.UseCases.Auth
 
             // Act & Assert
             await Assert.ThrowsAsync<UnauthorizedException>(
-                () => _sut.Handle(request, "127.0.0.1", "test-agent"));
+                () => _sut.Login(request, "127.0.0.1", "test-agent", CancellationToken.None));
 
             _passwordHasherMock.Verify(p => p.Verify(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
@@ -164,7 +164,7 @@ namespace EcommerceAPI.Tests.UseCases.Auth
 
             // Act & Assert
             await Assert.ThrowsAsync<UnauthorizedException>(
-                () => _sut.Handle(request, "127.0.0.1", "test-agent"));
+                () => _sut.Login(request, "127.0.0.1", "test-agent", CancellationToken.None));
 
             _tokenServiceMock.Verify(
                 t => t.GenerateAccessToken(It.IsAny<User>()),
@@ -192,7 +192,7 @@ namespace EcommerceAPI.Tests.UseCases.Auth
 
             // Act & Assert
             await Assert.ThrowsAsync<NotFoundException>(
-                () => _sut.Handle(request, "127.0.0.1", "test-agent"));
+                () => _sut.Login(request, "127.0.0.1", "test-agent", CancellationToken.None));
         }
 
         [Fact]
@@ -233,7 +233,7 @@ namespace EcommerceAPI.Tests.UseCases.Auth
                 .Returns((RawToken: "raw", Entity: new RefreshToken { UserId = user.Id, IpAddress = ip }));
 
             // Act
-            await _sut.Handle(request, ip, deviceInfo);
+            await _sut.Login(request, ip, deviceInfo, CancellationToken.None);
 
             // Assert
             _refreshTokenRepositoryMock.Verify(r => r.Delete(existingToken), Times.Once);
@@ -254,7 +254,7 @@ namespace EcommerceAPI.Tests.UseCases.Auth
                 .ReturnsAsync((User?)null);
 
             await Assert.ThrowsAsync<UnauthorizedException>(
-                () => _sut.Handle(request, "127.0.0.1", "test-agent"));
+                () => _sut.Login(request, "127.0.0.1", "test-agent", CancellationToken.None));
 
             _userRepositoryMock.Verify(
                 r => r.GetByAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()),
