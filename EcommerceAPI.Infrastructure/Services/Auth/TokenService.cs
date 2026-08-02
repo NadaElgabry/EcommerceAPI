@@ -21,7 +21,7 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
         {
             _jwtSettings = jwtSettings.Value;
         }
-
+        /// <inheritdoc />
         public AccessTokenResult GenerateAccessToken(User user)
         {
             var claims = new List<Claim>
@@ -44,7 +44,7 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
 
             return new AccessTokenResult(new JwtSecurityTokenHandler().WriteToken(token), DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes));
         }
-
+        /// <inheritdoc />
         public (string RawToken, RefreshToken Entity) GenerateRefreshToken(User user, string ipAddress, string deviceInfo)
         {
             var randomBytes = new byte[64];
@@ -63,7 +63,11 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
 
             return (rawToken, entity);
         }
-
+        /// <summary>
+        /// Hashes the raw refresh token using SHA256 and returns the Base64 encoded string.
+        /// </summary>
+        /// <param name="rawToken">The raw refresh token to hash.</param>
+        /// <returns>The Base64 encoded hash of the refresh token.</returns>
         public string HashRefreshToken(string rawToken)
         {
             var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
