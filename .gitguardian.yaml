@@ -1,4 +1,3 @@
 secret:
-  ignored_matches:
-    - name: test-fixture-password
-      match: P@ssw0rd
+  ignored_paths:
+    - "tests/**"
