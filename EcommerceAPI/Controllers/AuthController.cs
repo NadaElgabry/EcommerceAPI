@@ -1,6 +1,8 @@
 ﻿using EcommerceAPI.Application.DTOs.Auth;
+using EcommerceAPI.Application.UseCases.Auth.Login;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace EcommerceAPI.Controllers
 {
@@ -8,14 +10,22 @@ namespace EcommerceAPI.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
+        private readonly ILoginUseCase _loginUseCase;
+        public AuthController(ILoginUseCase loginUseCase)
+        {
+            _loginUseCase = loginUseCase;
+        } 
 
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
         {
-            // Implementation for login logic
-            return Ok();
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var deviceInfo = Request.Headers["User-Agent"].ToString();
+            var result = await _loginUseCase.Login(request, ipAddress, deviceInfo, cancellationToken);
+            return Ok(result);
         }
 
+        /*
         [HttpPost("register")]
         public IActionResult Register([FromBody] RegisterRequest request)
         {
@@ -36,6 +46,6 @@ namespace EcommerceAPI.Controllers
             // Implementation for logout logic
             return Ok();
         }
-
+        */
     }
 }
