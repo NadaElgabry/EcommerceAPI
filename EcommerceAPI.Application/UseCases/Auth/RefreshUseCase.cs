@@ -40,9 +40,7 @@ namespace EcommerceAPI.Application.UseCases.Auth
 
             var accessTokenResult = _tokenService.GenerateAccessToken(storedToken.User);
 
-            var (rawToken, newRefreshToken) = _tokenService.GenerateRefreshToken();
-
-            newRefreshToken.UserId = storedToken.UserId;
+            var (rawToken, newRefreshToken) = _tokenService.GenerateRefreshToken(storedToken.User, storedToken.IpAddress, storedToken.DeviceInfo);
 
             _refreshTokenRepository.Delete(storedToken);
 

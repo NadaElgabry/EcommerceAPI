@@ -32,9 +32,11 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>)); builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<RefreshUseCase>();
+builder.Services.AddScoped<LogoutUseCase>();
 
 builder.Services.AddProblemDetails();
 

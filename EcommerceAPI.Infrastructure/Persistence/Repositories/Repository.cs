@@ -33,7 +33,7 @@ namespace EcommerceAPI.Infrastructure.Persistence.Repositories
 
         public async Task<T?> GetByAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            return await GetByAsync(predicate, cancellationToken);
+            return await _dbSet.FirstOrDefaultAsync(predicate, cancellationToken);
         }
 
         public async Task<T?> GetByAsync(Expression<Func<T, bool>> predicate, Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null, CancellationToken cancellationToken = default)

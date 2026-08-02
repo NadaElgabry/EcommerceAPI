@@ -10,10 +10,12 @@ namespace EcommerceAPI.Controllers
     public class AuthController : ControllerBase
     {
         private readonly RefreshUseCase _refreshUseCase;
+        private readonly LogoutUseCase _logoutUseCase;
 
-        public AuthController(RefreshUseCase refreshUseCase)
+        public AuthController(RefreshUseCase refreshUseCase, LogoutUseCase logoutUseCase)
         {
             _refreshUseCase = refreshUseCase;
+            _logoutUseCase = logoutUseCase;
         }
 
 
@@ -39,10 +41,10 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("logout")]
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
         {
-            // Implementation for logout logic
-            return Ok();
+            await _logoutUseCase.ExecuteAsync(request);
+            return NoContent();
         }
 
     }

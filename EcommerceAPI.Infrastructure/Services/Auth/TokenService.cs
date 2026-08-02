@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -44,7 +45,7 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
             return new AccessTokenResult(new JwtSecurityTokenHandler().WriteToken(token), DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes));
         }
 
-        public (string RawToken, RefreshToken Entity) GenerateRefreshToken()
+        public (string RawToken, RefreshToken Entity) GenerateRefreshToken(User user, string ipAddress, string deviceInfo)
         {
             var randomBytes = new byte[64];
             using var rng = RandomNumberGenerator.Create();
@@ -54,7 +55,10 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
             var entity = new RefreshToken
             {
                 TokenHash = HashRefreshToken(rawToken),
-                ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays)
+                ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays),
+                IpAddress = ipAddress,
+                DeviceInfo = deviceInfo,
+                UserId = user.Id
             };
 
             return (rawToken, entity);
