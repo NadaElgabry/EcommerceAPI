@@ -1,8 +1,9 @@
 using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Repositories;
-using EcommerceAPI.Application.UseCases.Auth;
 using EcommerceAPI.Application.UseCases.Auth.Login;
+using EcommerceAPI.Application.UseCases.Auth.Logout;
+using EcommerceAPI.Application.UseCases.Auth.Refresh;
 using EcommerceAPI.Infrastructure.Contexts;
 using EcommerceAPI.Infrastructure.Persistence;
 using EcommerceAPI.Infrastructure.Persistence.Repositories;
@@ -14,8 +15,6 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Events;
 using System.Text;
-using EcommerceAPI.Infrastructure.Persistence;
-using EcommerceAPI.Infrastructure.Persistence.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,8 +38,8 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
-builder.Services.AddScoped<RefreshUseCase>();
-builder.Services.AddScoped<LogoutUseCase>();
+builder.Services.AddScoped<IRefreshUseCase, RefreshUseCase>();
+builder.Services.AddScoped<ILogoutUseCase, LogoutUseCase>();
 builder.Services.AddProblemDetails();
 
 

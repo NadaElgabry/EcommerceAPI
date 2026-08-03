@@ -1,7 +1,4 @@
 ﻿using EcommerceAPI.Application.Interfaces.Auth;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace EcommerceAPI.Infrastructure.Services.Auth
 {

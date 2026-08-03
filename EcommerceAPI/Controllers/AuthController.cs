@@ -1,9 +1,8 @@
 ﻿using EcommerceAPI.Application.DTOs.Auth;
-using EcommerceAPI.Application.UseCases.Auth;
 using EcommerceAPI.Application.UseCases.Auth.Login;
-using Microsoft.AspNetCore.Http;
+using EcommerceAPI.Application.UseCases.Auth.Logout;
+using EcommerceAPI.Application.UseCases.Auth.Refresh;
 using Microsoft.AspNetCore.Mvc;
-using System.Net;
 
 namespace EcommerceAPI.Controllers
 {
@@ -11,11 +10,11 @@ namespace EcommerceAPI.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly RefreshUseCase _refreshUseCase;
-        private readonly LogoutUseCase _logoutUseCase;
+        private readonly IRefreshUseCase _refreshUseCase;
+        private readonly ILogoutUseCase _logoutUseCase;
         private readonly ILoginUseCase _loginUseCase;
         
-        public AuthController(RefreshUseCase refreshUseCase, LogoutUseCase logoutUseCase)
+        public AuthController(IRefreshUseCase refreshUseCase, ILogoutUseCase logoutUseCase , ILoginUseCase loginUseCase)
         {
             _refreshUseCase = refreshUseCase;
             _logoutUseCase = logoutUseCase;
@@ -40,16 +39,18 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("refresh")]
-        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
         {
-            var response = await _refreshUseCase.ExecuteAsync(request);
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var deviceInfo = Request.Headers["User-Agent"].ToString();
+            var response = await _refreshUseCase.ExecuteAsync(request, ipAddress, deviceInfo, cancellationToken);
             return Ok(response);
         }
 
         [HttpPost("logout")]
-        public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
+        public async Task<IActionResult> Logout([FromBody] LogoutRequest request, CancellationToken cancellationToken)
         {
-            await _logoutUseCase.ExecuteAsync(request);
+            await _logoutUseCase.ExecuteAsync(request, cancellationToken);
             return NoContent();
         }
     }

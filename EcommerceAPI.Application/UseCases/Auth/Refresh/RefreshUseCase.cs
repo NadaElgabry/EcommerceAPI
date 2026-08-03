@@ -5,13 +5,10 @@ using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace EcommerceAPI.Application.UseCases.Auth
+namespace EcommerceAPI.Application.UseCases.Auth.Refresh
 {
-    public class RefreshUseCase
+    public class RefreshUseCase : IRefreshUseCase
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITokenService _tokenService;
@@ -24,7 +21,7 @@ namespace EcommerceAPI.Application.UseCases.Auth
             _refreshTokenRepository = refreshTokenRepository;
 
         }
-        public async Task<AuthResponse> ExecuteAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default)
+        public async Task<AuthResponse> ExecuteAsync(RefreshTokenRequest request, string ipAddress, string deviceInfo, CancellationToken cancellationToken = default)
         {
             var hashedToken = _tokenService.HashRefreshToken(request.RefreshToken);
 
@@ -40,12 +37,14 @@ namespace EcommerceAPI.Application.UseCases.Auth
 
             var accessTokenResult = _tokenService.GenerateAccessToken(storedToken.User);
 
-            var (rawToken, newRefreshToken) = _tokenService.GenerateRefreshToken(storedToken.User, storedToken.IpAddress, storedToken.DeviceInfo);
+            var (rawToken, newRefreshToken) = _tokenService.GenerateRefreshToken(storedToken.User, ipAddress, deviceInfo);
 
-            _refreshTokenRepository.Delete(storedToken);
-
-            await _refreshTokenRepository.AddAsync(newRefreshToken, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                _refreshTokenRepository.Delete(storedToken);
+                await _refreshTokenRepository.AddAsync(newRefreshToken, cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }, cancellationToken);
 
 
             return new AuthResponse

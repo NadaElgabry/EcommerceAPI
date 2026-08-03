@@ -3,15 +3,14 @@ using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.Extensions.Logging;
 
-namespace EcommerceAPI.Application.UseCases.Auth
+namespace EcommerceAPI.Application.UseCases.Auth.Logout
 {
-    public class LogoutUseCase
+    public class LogoutUseCase : ILogoutUseCase
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<LogoutUseCase> _logger;
         private readonly ITokenService _tokenService;
         private readonly IRepository<RefreshToken> _refreshTokenRepository;
 
@@ -36,12 +35,20 @@ namespace EcommerceAPI.Application.UseCases.Auth
 
             if (storedToken == null)
             {
+
                 // Logout is idempotent by design
+                _logger.LogInformation(
+                "Logout requested for a refresh token that no longer exists (already logged out, expired, or invalid). TokenHashPrefix: {TokenHashPrefix}",
+                hashedToken[..Math.Min(8, hashedToken.Length)]);
                 return;
             }
 
-            _refreshTokenRepository.Delete(storedToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                _refreshTokenRepository.Delete(storedToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }, cancellationToken);
+
         }
     } 
 }

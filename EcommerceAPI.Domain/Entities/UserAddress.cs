@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace EcommerceAPI.Domain.Entities
+﻿namespace EcommerceAPI.Domain.Entities
 {
     public class UserAddress
     {
