@@ -1,8 +1,3 @@
-using EcommerceAPI.Application.Interfaces;
-using EcommerceAPI.Application.Interfaces.Auth;
-using EcommerceAPI.Application.Interfaces.Repositories;
-using EcommerceAPI.Application.UseCases.Auth.Login;
-using System.Text;
 using EcommerceAPI.Application.DTOs.Auth;
 using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
@@ -10,10 +5,11 @@ using EcommerceAPI.Application.Interfaces.Iservices;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Services.User;
 using EcommerceAPI.Application.UseCases.Auth;
+using EcommerceAPI.Application.UseCases.Auth.Login;
 using EcommerceAPI.Application.UseCases.Auth.Validators;
 using EcommerceAPI.Infrastructure.Contexts;
-using EcommerceAPI.Infrastructure.Presistence;
-using EcommerceAPI.Infrastructure.Presistence.Repositories;
+using EcommerceAPI.Infrastructure.Persistence;
+using EcommerceAPI.Infrastructure.Persistence.Repositories;
 using EcommerceAPI.Infrastructure.Services.Auth;
 using EcommerceAPI.Middlewares;
 using FluentValidation;
@@ -23,8 +19,7 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Events;
 using System.Text;
-using EcommerceAPI.Infrastructure.Persistence;
-using EcommerceAPI.Infrastructure.Persistence.Repositories;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,7 +47,7 @@ builder.Services.AddScoped<IValidator<RegisterRequest>, RegisterRequestValidator
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
-
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Dev", policy =>

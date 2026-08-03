@@ -22,6 +22,7 @@ namespace EcommerceAPI.Application.UseCases.Auth
 
         public async Task<AuthResponse> ExecuteAsync(
             RegisterRequest request,
+            string ipAddress,string deviceInfo,
             CancellationToken cancellationToken = default)
         {
             var validationResult =
@@ -46,7 +47,7 @@ namespace EcommerceAPI.Application.UseCases.Auth
             }
 
             return await _userService.CreateUserAsync(
-                request,
+                request,ipAddress,deviceInfo,
                 cancellationToken
             );
         }

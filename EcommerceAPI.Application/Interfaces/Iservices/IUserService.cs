@@ -5,7 +5,7 @@ namespace EcommerceAPI.Application.Interfaces.Iservices
     public interface IUserService
     {
         Task<AuthResponse> CreateUserAsync(
-            RegisterRequest request,
+            RegisterRequest request, string ipAddress, string deviceInfo,
             CancellationToken cancellationToken = default
         );
     }

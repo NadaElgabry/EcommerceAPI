@@ -4,24 +4,24 @@ using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Iservices;
 using EcommerceAPI.Application.Interfaces.Repositories;
+using EcommerceAPI.Domain.Entities;
 using UserEntity = EcommerceAPI.Domain.Entities.User;
 
 namespace EcommerceAPI.Application.Services.User
 {
     public class UserService : IUserService
     {
-        private readonly IUserRepository _userRepository;
-        private readonly IRoleRepository _roleRepository;
-        private readonly IRefreshTokenRepository
-            _refreshTokenRepository;
+        private readonly IRepository<UserEntity> _userRepository;
+        private readonly IRepository<Role> _roleRepository;
+        private readonly IRepository<RefreshToken> _refreshTokenRepository;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ITokenService _tokenService;
         private readonly IUnitOfWork _unitOfWork;
 
         public UserService(
-            IUserRepository userRepository,
-            IRoleRepository roleRepository,
-            IRefreshTokenRepository refreshTokenRepository,
+            IRepository<UserEntity> userRepository,
+            IRepository<Role> roleRepository,
+            IRepository<RefreshToken> refreshTokenRepository,
             IPasswordHasher passwordHasher,
             ITokenService tokenService,
             IUnitOfWork unitOfWork)
@@ -36,7 +36,7 @@ namespace EcommerceAPI.Application.Services.User
         }
 
         public async Task<AuthResponse> CreateUserAsync(
-            RegisterRequest request,
+            RegisterRequest request, string ipAddress, string deviceInfo,
             CancellationToken cancellationToken = default)
         {
             string normalizedEmail =
@@ -100,7 +100,7 @@ namespace EcommerceAPI.Application.Services.User
             };
 
             var refreshTokenResult =
-                _tokenService.GenerateRefreshToken();
+                _tokenService.GenerateRefreshToken(user,ipAddress,deviceInfo);
 
             refreshTokenResult.Entity.User = user;
 

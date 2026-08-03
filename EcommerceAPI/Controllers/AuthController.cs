@@ -38,9 +38,11 @@ namespace EcommerceAPI.Controllers
             [FromBody] RegisterRequest request,
             CancellationToken cancellationToken)
         {
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var deviceInfo = Request.Headers["User-Agent"].ToString();
             AuthResponse response =
                 await _registerUseCase.ExecuteAsync(
-                    request,
+                    request,ipAddress,deviceInfo,
                     cancellationToken
                 );
 
