@@ -1,5 +1,5 @@
 ﻿using EcommerceAPI.Application.DTOs.Auth;
-using Microsoft.AspNetCore.Http;
+using EcommerceAPI.Application.UseCases.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EcommerceAPI.Controllers
@@ -8,34 +8,44 @@ namespace EcommerceAPI.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
+        private readonly RegisterUseCase _registerUseCase;
+
+        public AuthController(RegisterUseCase registerUseCase)
+        {
+            _registerUseCase = registerUseCase;
+        }
 
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest request)
         {
-            // Implementation for login logic
             return Ok();
         }
 
         [HttpPost("register")]
-        public IActionResult Register([FromBody] RegisterRequest request)
+        public async Task<ActionResult<AuthResponse>> Register(
+            [FromBody] RegisterRequest request,
+            CancellationToken cancellationToken)
         {
-            // Implementation for register logic
-            return Ok();
+            AuthResponse response =
+                await _registerUseCase.ExecuteAsync(
+                    request,
+                    cancellationToken
+                );
+
+            return Ok(response);
         }
 
         [HttpPost("refresh")]
-        public IActionResult Refresh([FromBody] RefreshTokenRequest request)
+        public IActionResult Refresh(
+            [FromBody] RefreshTokenRequest request)
         {
-            // Implementation for refresh token logic
             return Ok();
         }
 
         [HttpPost("logout")]
         public IActionResult Logout()
         {
-            // Implementation for logout logic
             return Ok();
         }
-
     }
 }

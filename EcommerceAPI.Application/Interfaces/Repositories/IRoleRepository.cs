@@ -2,7 +2,7 @@
 
 namespace EcommerceAPI.Application.Interfaces.Repositories
 {
-    public interface IUserRepository : IRepository<User>
+    public interface IRoleRepository : IRepository<Role>
     {
     }
 }

@@ -4,12 +4,10 @@ using EcommerceAPI.Infrastructure.Contexts;
 
 namespace EcommerceAPI.Infrastructure.Presistence.Repositories
 {
-    public class RefreshTokenRepository
-        : Repository<RefreshToken>,
-          IRefreshTokenRepository
+    public class RoleRepository
+        : Repository<Role>, IRoleRepository
     {
-        public RefreshTokenRepository(
-            AppDbContext context)
+        public RoleRepository(AppDbContext context)
             : base(context)
         {
         }
