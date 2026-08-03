@@ -1,7 +1,10 @@
 ﻿using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Infrastructure.Contexts;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
-namespace EcommerceAPI.Infrastructure.Presistence
+namespace EcommerceAPI.Infrastructure.Persistence
 {
     public class UnitOfWork : IUnitOfWork
     {
@@ -11,13 +14,9 @@ namespace EcommerceAPI.Infrastructure.Presistence
         {
             _context = context;
         }
-
-        public async Task<int> SaveChangesAsync(
-            CancellationToken cancellationToken = default)
+        public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            return await _context.SaveChangesAsync(
-                cancellationToken
-            );
+            return await _context.SaveChangesAsync(cancellationToken);
         }
     }
 }

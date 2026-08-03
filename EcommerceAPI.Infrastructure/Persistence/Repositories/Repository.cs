@@ -2,59 +2,47 @@
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
+using System.Text;
 
-namespace EcommerceAPI.Infrastructure.Presistence.Repositories
+namespace EcommerceAPI.Infrastructure.Persistence.Repositories
 {
-    public class Repository<T> : IRepository<T>
-        where T : class
+    public class Repository<T> : IRepository<T> where T : class
     {
-        protected readonly AppDbContext _context;
-        protected readonly DbSet<T> _dbSet;
-
+        private readonly AppDbContext _context;
+        private readonly DbSet<T> _dbSet;
         public Repository(AppDbContext context)
         {
             _context = context;
             _dbSet = context.Set<T>();
         }
-
-        public async Task<T?> GetByIdAsync(
-            int id,
-            CancellationToken cancellationToken = default)
+        /// <inheritdoc />
+        public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
         {
-            return await _dbSet.FindAsync(
-                new object[] { id },
-                cancellationToken
-            );
+            await _dbSet.AddAsync(entity, cancellationToken);
         }
-
-        public async Task AddAsync(
-            T entity,
-            CancellationToken cancellationToken = default)
+        
+        /// <inheritdoc />
+        public async Task<bool> ExistByAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            await _dbSet.AddAsync(
-                entity,
-                cancellationToken
-            );
+            return await _dbSet.AnyAsync(predicate, cancellationToken);
         }
-
-        public async Task<T?> GetByAsync(
-            Expression<Func<T, bool>> predicate,
-            CancellationToken cancellationToken = default)
+        /// <inheritdoc />
+        public async Task<T?> GetByAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            return await _dbSet.FirstOrDefaultAsync(
-                predicate,
-                cancellationToken
-            );
+            return await _dbSet.FirstOrDefaultAsync(predicate, cancellationToken);
         }
-
-        public async Task<bool> ExistByAsync(
-            Expression<Func<T, bool>> predicate,
-            CancellationToken cancellationToken = default)
+        /// <inheritdoc />
+        public void Update(T entity)
         {
-            return await _dbSet.AnyAsync(
-                predicate,
-                cancellationToken
-            );
+            _dbSet.Update(entity);
+        }
+        /// <inheritdoc />
+        public void Delete(T entity)
+        {
+            _dbSet.Remove(entity);
         }
     }
 }

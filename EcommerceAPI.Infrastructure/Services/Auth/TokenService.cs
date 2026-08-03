@@ -20,7 +20,7 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
         {
             _jwtSettings = jwtSettings.Value;
         }
-
+        /// <inheritdoc />
         public AccessTokenResult GenerateAccessToken(User user)
         {
             var claims = new List<Claim>
@@ -43,8 +43,8 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
 
             return new AccessTokenResult(new JwtSecurityTokenHandler().WriteToken(token), DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes));
         }
-
-        public (string RawToken, RefreshToken Entity) GenerateRefreshToken()
+        /// <inheritdoc />
+        public (string RawToken, RefreshToken Entity) GenerateRefreshToken(User user, string ipAdress, string deviceInfo)
         {
             var randomBytes = new byte[64];
             using var rng = RandomNumberGenerator.Create();
@@ -54,12 +54,19 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
             var entity = new RefreshToken
             {
                 TokenHash = HashRefreshToken(rawToken),
-                ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays)
+                ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays),
+                IpAddress = ipAdress,
+                DeviceInfo = deviceInfo,
+                UserId = user.Id
             };
 
             return (rawToken, entity);
         }
-
+        /// <summary>
+        /// Hashes the raw refresh token using SHA256 and returns the Base64 encoded string.
+        /// </summary>
+        /// <param name="rawToken">The raw refresh token to hash.</param>
+        /// <returns>The Base64 encoded hash of the refresh token.</returns>
         private string HashRefreshToken(string rawToken)
         {
             var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
