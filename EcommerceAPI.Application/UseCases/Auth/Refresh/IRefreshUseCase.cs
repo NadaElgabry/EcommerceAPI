@@ -12,7 +12,7 @@ namespace EcommerceAPI.Application.UseCases.Auth.Refresh
         /// <param name="deviceInfo">The device information of the client making the request.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The response containing the new access token.</returns>
-        public Task<AuthResponse> ExecuteAsync(RefreshTokenRequest request, string ipAddress, string deviceInfo, CancellationToken cancellationToken = default);
+        public Task<AuthResponse> Refresh(RefreshTokenRequest request, string ipAddress, string deviceInfo, CancellationToken cancellationToken = default);
 
     }
 }

@@ -10,6 +10,6 @@ namespace EcommerceAPI.Application.UseCases.Auth.Logout
         /// <param name="request">The logout request.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        public Task ExecuteAsync(LogoutRequest request, CancellationToken cancellationToken = default);
+        public Task Logout(LogoutRequest request, CancellationToken cancellationToken = default);
     }
 }

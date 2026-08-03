@@ -43,14 +43,14 @@ namespace EcommerceAPI.Controllers
         {
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             var deviceInfo = Request.Headers["User-Agent"].ToString();
-            var response = await _refreshUseCase.ExecuteAsync(request, ipAddress, deviceInfo, cancellationToken);
+            var response = await _refreshUseCase.Refresh(request, ipAddress, deviceInfo, cancellationToken);
             return Ok(response);
         }
 
         [HttpPost("logout")]
         public async Task<IActionResult> Logout([FromBody] LogoutRequest request, CancellationToken cancellationToken)
         {
-            await _logoutUseCase.ExecuteAsync(request, cancellationToken);
+            await _logoutUseCase.Logout(request, cancellationToken);
             return NoContent();
         }
     }

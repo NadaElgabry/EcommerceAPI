@@ -25,7 +25,7 @@ namespace EcommerceAPI.Application.UseCases.Auth.Logout
         }
 
 
-        public async Task ExecuteAsync(LogoutRequest request, CancellationToken cancellationToken = default)
+        public async Task Logout(LogoutRequest request, CancellationToken cancellationToken = default)
         {
             var hashedToken = _tokenService.HashRefreshToken(request.RefreshToken);
 

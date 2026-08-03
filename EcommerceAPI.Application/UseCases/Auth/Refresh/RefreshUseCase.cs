@@ -21,7 +21,7 @@ namespace EcommerceAPI.Application.UseCases.Auth.Refresh
             _refreshTokenRepository = refreshTokenRepository;
 
         }
-        public async Task<AuthResponse> ExecuteAsync(RefreshTokenRequest request, string ipAddress, string deviceInfo, CancellationToken cancellationToken = default)
+        public async Task<AuthResponse> Refresh(RefreshTokenRequest request, string ipAddress, string deviceInfo, CancellationToken cancellationToken = default)
         {
             var hashedToken = _tokenService.HashRefreshToken(request.RefreshToken);
 
