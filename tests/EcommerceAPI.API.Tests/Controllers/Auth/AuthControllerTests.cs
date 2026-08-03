@@ -4,6 +4,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using EcommerceAPI.Application.DTOs.Auth;
 using EcommerceAPI.Application.UseCases.Auth.Login;
+using EcommerceAPI.Application.UseCases.Auth.Logout;
+using EcommerceAPI.Application.UseCases.Auth.Refresh;
 using EcommerceAPI.Controllers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -12,35 +14,16 @@ using Xunit;
 
 namespace EcommerceAPI.Tests.Controllers
 {
-    /// <summary>
-    /// Unit tests for AuthController.Login.
-    ///
-    /// IMPORTANT PRE-REQUISITE:
-    /// AuthController currently depends on the CONCRETE class LoginUseCase.
-    /// Moq cannot intercept calls on a concrete class unless its methods are
-    /// virtual. These tests assume you've introduced ILoginUseCase (see the
-    /// suggested ILoginUseCase.cs file) and changed:
-    ///
-    ///   private readonly LoginUseCase _loginUseCase;
-    ///   public AuthController(LoginUseCase loginUseCase)
-    ///
-    /// to:
-    ///
-    ///   private readonly ILoginUseCase _loginUseCase;
-    ///   public AuthController(ILoginUseCase loginUseCase)
-    ///
-    /// If you'd rather not introduce the interface, an alternative is to spin
-    /// up a full in-memory TestServer / WebApplicationFactory integration test
-    /// instead of a pure unit test — happy to provide that variant too.
-    /// </summary>
     public class AuthControllerTests
     {
         private readonly Mock<ILoginUseCase> _loginUseCaseMock = new();
+        private readonly Mock<IRefreshUseCase> _refreshUseCaseMock = new();
+        private readonly Mock<ILogoutUseCase> _logoutUseCaseMock = new();
         private readonly AuthController _sut;
 
         public AuthControllerTests()
         {
-            _sut = new AuthController(_loginUseCaseMock.Object);
+            _sut = new AuthController(_refreshUseCaseMock.Object, _logoutUseCaseMock.Object, _loginUseCaseMock.Object);
         }
 
         private static DefaultHttpContext BuildHttpContext(string? remoteIp, string userAgent)
