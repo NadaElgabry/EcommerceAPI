@@ -1,8 +1,12 @@
 ﻿using EcommerceAPI.Application.DTOs.Auth;
 using EcommerceAPI.Application.UseCases.Auth.Login;
+using Microsoft.AspNetCore.Http;
+using EcommerceAPI.Application.UseCases.Auth;
 using EcommerceAPI.Application.UseCases.Auth.Logout;
 using EcommerceAPI.Application.UseCases.Auth.Refresh;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
+using EcommerceAPI.Application.Interfaces.Iservices;
 
 namespace EcommerceAPI.Controllers
 {
@@ -13,13 +17,15 @@ namespace EcommerceAPI.Controllers
         private readonly IRefreshUseCase _refreshUseCase;
         private readonly ILogoutUseCase _logoutUseCase;
         private readonly ILoginUseCase _loginUseCase;
-        
-        public AuthController(IRefreshUseCase refreshUseCase, ILogoutUseCase logoutUseCase , ILoginUseCase loginUseCase)
+        private readonly IAuthService _authService;
+
+        public AuthController(ILoginUseCase loginUseCase, IAuthService authService, IRefreshUseCase refreshUseCase, ILogoutUseCase logoutUseCase)
         {
             _refreshUseCase = refreshUseCase;
             _logoutUseCase = logoutUseCase;
             _loginUseCase = loginUseCase;
-        }
+            _authService = authService;
+        } 
 
 
         [HttpPost("login")]
@@ -30,17 +36,25 @@ namespace EcommerceAPI.Controllers
             var result = await _loginUseCase.Login(request, ipAddress, deviceInfo, cancellationToken);
             return Ok(result);
         }
-        
+
         [HttpPost("register")]
-        public IActionResult Register([FromBody] RegisterRequest request)
+        public async Task<ActionResult<AuthResponse>> Register(
+            [FromBody] RegisterRequest request,
+            CancellationToken cancellationToken)
         {
-            // Implementation for register logic
-            return Ok();
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var deviceInfo = Request.Headers["User-Agent"].ToString();
+            AuthResponse response =
+                await _authService.CreateUserAsync(
+                    request,ipAddress,deviceInfo,
+                    cancellationToken
+                );
+
+            return Ok(response);
         }
 
-        [HttpPost("refresh")]
         public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
-        {
+        { 
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             var deviceInfo = Request.Headers["User-Agent"].ToString();
             var response = await _refreshUseCase.Refresh(request, ipAddress, deviceInfo, cancellationToken);
@@ -49,9 +63,8 @@ namespace EcommerceAPI.Controllers
 
         [HttpPost("logout")]
         public async Task<IActionResult> Logout([FromBody] LogoutRequest request, CancellationToken cancellationToken)
-        {
             await _logoutUseCase.Logout(request, cancellationToken);
-            return NoContent();
-        }
+            return NoContent();        
+    }
     }
 }

@@ -2,7 +2,10 @@
 
 namespace EcommerceAPI.Application.Interfaces.Auth
 {
-    public record AccessTokenResult(string Token, DateTime ExpiresAtUtc);
+    public record AccessTokenResult(
+        string Token,
+        DateTime ExpiresAtUtc
+    );
 
     public interface ITokenService
     {

@@ -1,4 +1,5 @@
-﻿using EcommerceAPI.Application.Interfaces.Repositories;
+﻿using System.Linq.Expressions;
+using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;

@@ -3,6 +3,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using EcommerceAPI.Application.DTOs.Auth;
+using EcommerceAPI.Application.Interfaces.Iservices;
 using EcommerceAPI.Application.UseCases.Auth.Login;
 using EcommerceAPI.Application.UseCases.Auth.Logout;
 using EcommerceAPI.Application.UseCases.Auth.Refresh;
@@ -19,11 +20,12 @@ namespace EcommerceAPI.Tests.Controllers
         private readonly Mock<ILoginUseCase> _loginUseCaseMock = new();
         private readonly Mock<IRefreshUseCase> _refreshUseCaseMock = new();
         private readonly Mock<ILogoutUseCase> _logoutUseCaseMock = new();
+        private readonly Mock<IAuthService> _authServiceMock = new();
         private readonly AuthController _sut;
 
         public AuthControllerTests()
         {
-            _sut = new AuthController(_refreshUseCaseMock.Object, _logoutUseCaseMock.Object, _loginUseCaseMock.Object);
+            _sut = new AuthController(_loginUseCaseMock.Object, _authServiceMock.Object, _refreshUseCaseMock.Object, _logoutUseCaseMock.Object);
         }
 
         private static DefaultHttpContext BuildHttpContext(string? remoteIp, string userAgent)
