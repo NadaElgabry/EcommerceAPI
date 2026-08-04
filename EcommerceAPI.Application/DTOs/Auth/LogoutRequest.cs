@@ -4,8 +4,8 @@ using System.Text;
 
 namespace EcommerceAPI.Application.DTOs.Auth
 {
-    public class RefreshTokenRequest
+    public class LogoutRequest
     {
-        public string RefreshToken { get; set; } = string.Empty;
+        public required string RefreshToken { get; init; }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using Microsoft.EntityFrameworkCore.Query;
+using System.Linq.Expressions;
 
 namespace EcommerceAPI.Application.Interfaces.Repositories
 {
@@ -17,6 +18,10 @@ namespace EcommerceAPI.Application.Interfaces.Repositories
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>Entity if exists</returns>
         public Task<T?> GetByAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
+      
+        public Task<T?> GetByAsync(Expression<Func<T, bool>> predicate,
+            Func<IQueryable<T>, IIncludableQueryable<T, Object>>? include = null,
+            CancellationToken cancellationToken = default);
         /// <summary>
         /// Checks if an entity of requested type exists that matches the given predicate.
         /// </summary>
