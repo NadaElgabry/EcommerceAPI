@@ -4,7 +4,7 @@ using EcommerceAPI.Infrastructure.Contexts;
 
 namespace EcommerceAPI.Infrastructure.Presistence.Repositories
 {
-    public class UserRepository
+    public class RoleRepository
     {
     }
 }

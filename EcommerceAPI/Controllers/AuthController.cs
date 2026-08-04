@@ -1,8 +1,10 @@
 ﻿using EcommerceAPI.Application.DTOs.Auth;
 using EcommerceAPI.Application.UseCases.Auth.Login;
 using Microsoft.AspNetCore.Http;
+using EcommerceAPI.Application.UseCases.Auth;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using EcommerceAPI.Application.Interfaces.Iservices;
 
 namespace EcommerceAPI.Controllers
 {
@@ -11,9 +13,12 @@ namespace EcommerceAPI.Controllers
     public class AuthController : ControllerBase
     {
         private readonly ILoginUseCase _loginUseCase;
-        public AuthController(ILoginUseCase loginUseCase)
+        private readonly IAuthService _authService;
+
+        public AuthController(ILoginUseCase loginUseCase, IAuthService authService)
         {
             _loginUseCase = loginUseCase;
+            _authService = authService;
         } 
 
         [HttpPost("login")]
@@ -25,27 +30,33 @@ namespace EcommerceAPI.Controllers
             return Ok(result);
         }
 
-        /*
         [HttpPost("register")]
-        public IActionResult Register([FromBody] RegisterRequest request)
+        public async Task<ActionResult<AuthResponse>> Register(
+            [FromBody] RegisterRequest request,
+            CancellationToken cancellationToken)
         {
-            // Implementation for register logic
-            return Ok();
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var deviceInfo = Request.Headers["User-Agent"].ToString();
+            AuthResponse response =
+                await _authService.CreateUserAsync(
+                    request,ipAddress,deviceInfo,
+                    cancellationToken
+                );
+
+            return Ok(response);
         }
 
         [HttpPost("refresh")]
-        public IActionResult Refresh([FromBody] RefreshTokenRequest request)
+        public IActionResult Refresh(
+            [FromBody] RefreshTokenRequest request)
         {
-            // Implementation for refresh token logic
             return Ok();
         }
 
         [HttpPost("logout")]
         public IActionResult Logout()
         {
-            // Implementation for logout logic
             return Ok();
         }
-        */
     }
 }
