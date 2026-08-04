@@ -17,11 +17,13 @@ namespace EcommerceAPI.Application.UseCases.Auth.Logout
         public LogoutUseCase(
             IUnitOfWork unitOfWork,
             ITokenService tokenService,
-            IRepository<RefreshToken> refreshTokenRepository)
+            IRepository<RefreshToken> refreshTokenRepository,
+            ILogger<LogoutUseCase> logger)
         {
             _unitOfWork = unitOfWork;
             _tokenService = tokenService;
             _refreshTokenRepository = refreshTokenRepository;
+            _logger = logger;
         }
 
 
