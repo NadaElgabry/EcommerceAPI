@@ -1,12 +1,10 @@
-using EcommerceAPI.Application.DTOs.Auth;
 using EcommerceAPI.Application.Interfaces;
+using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Auth;
-using EcommerceAPI.Application.Interfaces.Iservices;
-using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Application.Mappers.Mappings;
 using EcommerceAPI.Application.Services.Auth;
-using EcommerceAPI.Application.UseCases.Auth;
+using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.UseCases.Auth.Login;
 using EcommerceAPI.Application.UseCases.Auth.Validators;
 using EcommerceAPI.Infrastructure.Contexts;
@@ -22,6 +20,8 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Events;
 using System.Text;
+using EcommerceAPI.Application.UseCases.Auth.Refresh;
+using EcommerceAPI.Application.UseCases.Auth.Logout;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,9 +47,10 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
-builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthMapper, AuthMapper>();
 builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
+builder.Services.AddScoped<IRefreshUseCase, RefreshUseCase>();
+builder.Services.AddScoped<ILogoutUseCase, LogoutUseCase>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddProblemDetails();
 

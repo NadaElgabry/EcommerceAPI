@@ -3,7 +3,6 @@ using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
-using System.Linq.Expressions;
 
 namespace EcommerceAPI.Infrastructure.Persistence.Repositories
 {

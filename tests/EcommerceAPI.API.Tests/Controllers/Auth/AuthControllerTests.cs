@@ -3,7 +3,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using EcommerceAPI.Application.DTOs.Auth;
-using EcommerceAPI.Application.Interfaces.Iservices;
+using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.UseCases.Auth.Login;
 using EcommerceAPI.Application.UseCases.Auth.Logout;
 using EcommerceAPI.Application.UseCases.Auth.Refresh;

@@ -1,12 +1,9 @@
 ﻿using EcommerceAPI.Application.DTOs.Auth;
 using EcommerceAPI.Application.UseCases.Auth.Login;
-using Microsoft.AspNetCore.Http;
-using EcommerceAPI.Application.UseCases.Auth;
 using EcommerceAPI.Application.UseCases.Auth.Logout;
 using EcommerceAPI.Application.UseCases.Auth.Refresh;
 using Microsoft.AspNetCore.Mvc;
-using System.Net;
-using EcommerceAPI.Application.Interfaces.Iservices;
+using EcommerceAPI.Application.Interfaces.IServices;
 
 namespace EcommerceAPI.Controllers
 {
@@ -53,6 +50,7 @@ namespace EcommerceAPI.Controllers
             return Ok(response);
         }
 
+        [HttpPost("refresh")]
         public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
         { 
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
@@ -62,9 +60,10 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("logout")]
-        public async Task<IActionResult> Logout([FromBody] LogoutRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> Logout([FromBody] LogoutRequest request, CancellationToken cancellationToken) 
+        { 
             await _logoutUseCase.Logout(request, cancellationToken);
             return NoContent();        
-    }
+        }
     }
 }
