@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Security.Principal;
-using System.Text;
-
-namespace EcommerceAPI.Domain.Entities
+﻿namespace EcommerceAPI.Domain.Entities
 {
     public class User
     {

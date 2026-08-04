@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace EcommerceAPI.Application.DTOs.Auth
+﻿namespace EcommerceAPI.Application.DTOs.Auth
 {
     public class AuthResponse
     {

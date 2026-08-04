@@ -2,10 +2,7 @@
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Text;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace EcommerceAPI.Infrastructure.Persistence.Repositories
 {
@@ -34,6 +31,18 @@ namespace EcommerceAPI.Infrastructure.Persistence.Repositories
         {
             return await _dbSet.FirstOrDefaultAsync(predicate, cancellationToken);
         }
+
+        public async Task<T?> GetByAsync(Expression<Func<T, bool>> predicate, Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null, CancellationToken cancellationToken = default)
+        {
+            IQueryable<T> query = _context.Set<T>();
+
+            if (include!= null)
+            {
+                query = include(query);
+            }
+            return await query.FirstOrDefaultAsync(predicate, cancellationToken);
+        }
+
         /// <inheritdoc />
         public void Update(T entity)
         {

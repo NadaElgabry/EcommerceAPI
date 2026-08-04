@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace EcommerceAPI.Infrastructure.Services.Auth
+﻿namespace EcommerceAPI.Infrastructure.Services.Auth
 {
     public class JwtSettings
     {
