@@ -4,24 +4,26 @@ using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Iservices;
 using EcommerceAPI.Application.Interfaces.Repositories;
+using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
-using UserEntity = EcommerceAPI.Domain.Entities.User;
 
-namespace EcommerceAPI.Application.Services.User
+namespace EcommerceAPI.Application.Services.Auth
 {
-    public class UserService : IUserService
+    public class AuthService : IAuthService
     {
-        private readonly IRepository<UserEntity> _userRepository;
+        private readonly IRepository<User> _userRepository;
         private readonly IRepository<Role> _roleRepository;
         private readonly IRepository<RefreshToken> _refreshTokenRepository;
+        private readonly IAuthMapper _authMapper;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ITokenService _tokenService;
         private readonly IUnitOfWork _unitOfWork;
 
-        public UserService(
-            IRepository<UserEntity> userRepository,
+        public AuthService(
+            IRepository<User> userRepository,
             IRepository<Role> roleRepository,
             IRepository<RefreshToken> refreshTokenRepository,
+            IAuthMapper authMapper,
             IPasswordHasher passwordHasher,
             ITokenService tokenService,
             IUnitOfWork unitOfWork)
@@ -30,6 +32,7 @@ namespace EcommerceAPI.Application.Services.User
             _roleRepository = roleRepository;
             _refreshTokenRepository =
                 refreshTokenRepository;
+            _authMapper = authMapper;
             _passwordHasher = passwordHasher;
             _tokenService = tokenService;
             _unitOfWork = unitOfWork;
@@ -73,34 +76,15 @@ namespace EcommerceAPI.Application.Services.User
                 );
             }
 
-            var customerRole =
-                await _roleRepository.GetByAsync(
-                    role => role.Name == "Customer",
-                    cancellationToken
-                );
 
-            if (customerRole is null)
-            {
-                throw new InvalidOperationException(
-                    "The Customer role does not exist in the database."
-                );
-            }
+            var user = _authMapper.ToUser( request );
 
-            var user = new UserEntity
-            {
-                FirstName = request.FirstName.Trim(),
-                LastName = request.LastName.Trim(),
-                Email = normalizedEmail,
-                PhoneNumber = normalizedPhoneNumber,
-                HashedPassword =
-                    _passwordHasher.Hash(request.Password),
-                RoleId = customerRole.Id,
-                Role = customerRole,
-                CreatedAt = DateTime.UtcNow
-            };
+            user.CreatedAt = DateTime.UtcNow;
+            user.HashedPassword = _passwordHasher.Hash(request.Password);
+            user.Role = await _roleRepository.GetByAsync(predicate:r=>r.Id==1, cancellationToken);
 
-            var refreshTokenResult =
-                _tokenService.GenerateRefreshToken(user,ipAddress,deviceInfo);
+
+            var refreshTokenResult = _tokenService.GenerateRefreshToken(user,ipAddress,deviceInfo);
 
             refreshTokenResult.Entity.User = user;
 

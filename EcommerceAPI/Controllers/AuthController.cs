@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using EcommerceAPI.Application.UseCases.Auth;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using EcommerceAPI.Application.Interfaces.Iservices;
 
 namespace EcommerceAPI.Controllers
 {
@@ -12,17 +13,13 @@ namespace EcommerceAPI.Controllers
     public class AuthController : ControllerBase
     {
         private readonly ILoginUseCase _loginUseCase;
-        private readonly RegisterUseCase _registerUseCase;
+        private readonly IAuthService _authService;
 
-        public AuthController(ILoginUseCase loginUseCase)
+        public AuthController(ILoginUseCase loginUseCase, IAuthService authService)
         {
             _loginUseCase = loginUseCase;
+            _authService = authService;
         } 
-
-        public AuthController(RegisterUseCase registerUseCase)
-        {
-            _registerUseCase = registerUseCase;
-        }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
@@ -41,7 +38,7 @@ namespace EcommerceAPI.Controllers
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             var deviceInfo = Request.Headers["User-Agent"].ToString();
             AuthResponse response =
-                await _registerUseCase.ExecuteAsync(
+                await _authService.CreateUserAsync(
                     request,ipAddress,deviceInfo,
                     cancellationToken
                 );

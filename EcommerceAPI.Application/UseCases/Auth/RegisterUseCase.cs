@@ -10,11 +10,11 @@ namespace EcommerceAPI.Application.UseCases.Auth
     public class RegisterUseCase
     {
         private readonly IValidator<RegisterRequest> _validator;
-        private readonly IUserService _userService;
+        private readonly IAuthService _userService;
 
         public RegisterUseCase(
             IValidator<RegisterRequest> validator,
-            IUserService userService)
+            IAuthService userService)
         {
             _validator = validator;
             _userService = userService;

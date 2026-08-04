@@ -3,7 +3,9 @@ using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Iservices;
 using EcommerceAPI.Application.Interfaces.Repositories;
-using EcommerceAPI.Application.Services.User;
+using EcommerceAPI.Application.Mappers.Interfaces;
+using EcommerceAPI.Application.Mappers.Mappings;
+using EcommerceAPI.Application.Services.Auth;
 using EcommerceAPI.Application.UseCases.Auth;
 using EcommerceAPI.Application.UseCases.Auth.Login;
 using EcommerceAPI.Application.UseCases.Auth.Validators;
@@ -13,12 +15,12 @@ using EcommerceAPI.Infrastructure.Persistence.Repositories;
 using EcommerceAPI.Infrastructure.Services.Auth;
 using EcommerceAPI.Middlewares;
 using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Events;
-using System.Text;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,16 +40,18 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<RegisterUseCase>();
-builder.Services.AddScoped<IValidator<RegisterRequest>, RegisterRequestValidator>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IAuthMapper, AuthMapper>();
 builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
-builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Dev", policy =>

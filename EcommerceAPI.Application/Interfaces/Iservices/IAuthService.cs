@@ -2,7 +2,7 @@
 
 namespace EcommerceAPI.Application.Interfaces.Iservices
 {
-    public interface IUserService
+    public interface IAuthService
     {
         Task<AuthResponse> CreateUserAsync(
             RegisterRequest request, string ipAddress, string deviceInfo,

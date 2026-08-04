@@ -11,7 +11,14 @@ namespace EcommerceAPI.Application.Mappers.Mappings
     {
         public User ToUser(RegisterRequest request)
         {
-            throw new NotImplementedException();
+            return new User
+            {
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Email = request.Email,
+                PhoneNumber = request.PhoneNumber
+            };
+
         }
     }
 }
