@@ -1,7 +1,7 @@
 ﻿using EcommerceAPI.Application.DTOs.Auth;
 using FluentValidation;
 
-namespace EcommerceAPI.Application.UseCases.Auth.Validators
+namespace EcommerceAPI.Application.Validators
 {
     public class RegisterRequestValidator
         : AbstractValidator<RegisterRequest>
