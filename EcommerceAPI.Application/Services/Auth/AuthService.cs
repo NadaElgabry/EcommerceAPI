@@ -94,19 +94,22 @@ namespace EcommerceAPI.Application.Services.Auth
 
             refreshTokenResult.Entity.User = user;
 
-            await _userRepository.AddAsync(
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                await _userRepository.AddAsync(
                 user,
                 cancellationToken
-            );
+                );
 
-            await _refreshTokenRepository.AddAsync(
-                refreshTokenResult.Entity,
-                cancellationToken
-            );
+                await _refreshTokenRepository.AddAsync(
+                    refreshTokenResult.Entity,
+                    cancellationToken
+                );
 
-            await _unitOfWork.SaveChangesAsync(
-                cancellationToken
-            );
+                await _unitOfWork.SaveChangesAsync(
+                    cancellationToken
+                );
+            }, cancellationToken);
 
             AccessTokenResult accessToken =
                 _tokenService.GenerateAccessToken(user);
@@ -134,16 +137,24 @@ namespace EcommerceAPI.Application.Services.Auth
             user.Role = await _roleRepository.GetByAsync(r => r.Id == user.RoleId, cancellationToken) ??
                 throw new NotFoundException("Role not found");
             var accesstoken = _tokenService.GenerateAccessToken(user);
-            var existingRefreshToken = await _refreshTokenRepository
+            var storedToken = await _refreshTokenRepository
                 .GetByAsync(rt => rt.UserId == user.Id && rt.IpAddress == ipAdress && rt.DeviceInfo == deviceInfo, cancellationToken);
-            if (null != existingRefreshToken)
-            {
-                _refreshTokenRepository.Delete(existingRefreshToken);
-            }
+            
             var refreshToken = _tokenService.GenerateRefreshToken(user, ipAdress, deviceInfo);
 
-            await _refreshTokenRepository.AddAsync(refreshToken.Entity, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                if (null != storedToken)
+                {
+                    _refreshTokenRepository.Delete(storedToken);
+                }
+                await _refreshTokenRepository.AddAsync(refreshToken.Entity, cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }, cancellationToken);
+            
+            
+
+            
 
             return new AuthResponse
             {
