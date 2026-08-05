@@ -26,7 +26,6 @@ namespace EcommerceAPI.Tests.Services.Auth
     public class AuthServiceTests
     {
         private readonly Mock<IRepository<User>> _userRepositoryMock = new();
-        private readonly Mock<IRepository<Role>> _roleRepositoryMock = new();
         private readonly Mock<IRepository<RefreshToken>> _refreshTokenRepositoryMock = new();
         private readonly Mock<IAuthMapper> _authMapperMock = new();
         private readonly Mock<IPasswordHasher> _passwordHasherMock = new();
@@ -40,7 +39,6 @@ namespace EcommerceAPI.Tests.Services.Auth
         {
             _sut = new AuthService(
                 _userRepositoryMock.Object,
-                _roleRepositoryMock.Object,
                 _refreshTokenRepositoryMock.Object,
                 _authMapperMock.Object,
                 _passwordHasherMock.Object,
@@ -61,7 +59,7 @@ namespace EcommerceAPI.Tests.Services.Auth
                 Id = id,
                 Email = email,
                 HashedPassword = hashedPassword,
-                RoleId = roleId
+                Role = Domain.Enums.Role.Customer
             };
         }
 
@@ -69,11 +67,6 @@ namespace EcommerceAPI.Tests.Services.Auth
             _userRepositoryMock
                 .Setup(r => r.GetByAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(user);
-
-        private void SetupRoleGetBy(Role? role) =>
-            _roleRepositoryMock
-                .Setup(r => r.GetByAsync(It.IsAny<Expression<Func<Role, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(role);
 
         private void SetupSimpleRefreshTokenGetBy(RefreshToken? token) =>
             _refreshTokenRepositoryMock
@@ -113,25 +106,22 @@ namespace EcommerceAPI.Tests.Services.Auth
 
             _passwordHasherMock.Setup(p => p.Hash(request.Password)).Returns("hashed-pw");
 
-            var role = new Role { Id = 1, Name = "Customer" };
-            SetupRoleGetBy(role);
-
             var refreshEntity = new RefreshToken { ExpiresAt = DateTime.UtcNow.AddDays(7) };
             _tokenServiceMock
-                .Setup(t => t.GenerateRefreshToken(mappedUser, ip, deviceInfo))
+                .Setup(t => t.GenerateRefreshToken(mappedUser))
                 .Returns(("raw-refresh", refreshEntity));
 
             var accessTokenResult = new AccessTokenResult("access-token", DateTime.UtcNow.AddMinutes(15));
             _tokenServiceMock.Setup(t => t.GenerateAccessToken(mappedUser)).Returns(accessTokenResult);
 
-            var result = await _sut.CreateUserAsync(request, ip, deviceInfo, CancellationToken.None);
+            var result = await _sut.CreateUserAsync(request,CancellationToken.None);
 
             Assert.Equal("access-token", result.AccessToken);
             Assert.Equal(accessTokenResult.ExpiresAtUtc, result.AccessTokenExpiresAtUtc);
             Assert.Equal("raw-refresh", result.RefreshToken);
             Assert.Equal(refreshEntity.ExpiresAt, result.RefreshTokenExpiresAtUtc);
 
-            Assert.Equal(role, mappedUser.Role);
+            Assert.Equal(Domain.Enums.Role.Customer, mappedUser.Role);
             Assert.Equal("hashed-pw", mappedUser.HashedPassword);
             Assert.Same(mappedUser, refreshEntity.User);
 
@@ -150,7 +140,7 @@ namespace EcommerceAPI.Tests.Services.Auth
                 .ReturnsAsync(true);
 
             await Assert.ThrowsAsync<ConflictException>(
-                () => _sut.CreateUserAsync(request, "127.0.0.1", "agent", CancellationToken.None));
+                () => _sut.CreateUserAsync(request, CancellationToken.None));
 
             _userRepositoryMock.Verify(
                 r => r.ExistByAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()),
@@ -169,7 +159,7 @@ namespace EcommerceAPI.Tests.Services.Auth
                 .ReturnsAsync(true);  // phone check
 
             await Assert.ThrowsAsync<ConflictException>(
-                () => _sut.CreateUserAsync(request, "127.0.0.1", "agent", CancellationToken.None));
+                () => _sut.CreateUserAsync(request, CancellationToken.None));
 
             _authMapperMock.Verify(m => m.ToUser(It.IsAny<RegisterRequest>()), Times.Never);
         }
@@ -186,11 +176,10 @@ namespace EcommerceAPI.Tests.Services.Auth
             var deviceInfo = "Mozilla/5.0 TestAgent";
 
             var user = CreateUser(email: "user@test.com");
-            var role = new Role { Id = user.RoleId };
+            var role = Domain.Enums.Role.Customer;
 
             SetupSimpleUserGetBy(user);
             _passwordHasherMock.Setup(p => p.Verify(request.Password, user.HashedPassword)).Returns(true);
-            SetupRoleGetBy(role);
             SetupSimpleRefreshTokenGetBy(null);
 
             var accessTokenResult = new AccessTokenResult("access-token-value", DateTime.UtcNow.AddMinutes(15));
@@ -203,10 +192,10 @@ namespace EcommerceAPI.Tests.Services.Auth
                 ExpiresAt = DateTime.UtcNow.AddDays(7)
             };
             _tokenServiceMock
-                .Setup(t => t.GenerateRefreshToken(user, ip, deviceInfo))
+                .Setup(t => t.GenerateRefreshToken(user))
                 .Returns(("raw-refresh-token-value", refreshTokenEntity));
 
-            var result = await _sut.Login(request, ip, deviceInfo, CancellationToken.None);
+            var result = await _sut.Login(request, CancellationToken.None);
 
             Assert.Equal(accessTokenResult.Token, result.AccessToken);
             Assert.Equal(accessTokenResult.ExpiresAtUtc, result.AccessTokenExpiresAtUtc);
@@ -226,7 +215,7 @@ namespace EcommerceAPI.Tests.Services.Auth
             SetupSimpleUserGetBy(null);
 
             await Assert.ThrowsAsync<UnauthorizedException>(
-                () => _sut.Login(request, "127.0.0.1", "test-agent", CancellationToken.None));
+                () => _sut.Login(request,CancellationToken.None));
 
             _passwordHasherMock.Verify(p => p.Verify(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
@@ -241,51 +230,9 @@ namespace EcommerceAPI.Tests.Services.Auth
             _passwordHasherMock.Setup(p => p.Verify(request.Password, user.HashedPassword)).Returns(false);
 
             await Assert.ThrowsAsync<UnauthorizedException>(
-                () => _sut.Login(request, "127.0.0.1", "test-agent", CancellationToken.None));
+                () => _sut.Login(request, CancellationToken.None));
 
             _tokenServiceMock.Verify(t => t.GenerateAccessToken(It.IsAny<User>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task Login_RoleNotFound_ThrowsNotFoundException()
-        {
-            var request = new LoginRequest { Email = "user@test.com", Password = "correct-password" };
-            var user = CreateUser(email: "user@test.com");
-
-            SetupSimpleUserGetBy(user);
-            _passwordHasherMock.Setup(p => p.Verify(request.Password, user.HashedPassword)).Returns(true);
-            SetupRoleGetBy(null);
-
-            await Assert.ThrowsAsync<NotFoundException>(
-                () => _sut.Login(request, "127.0.0.1", "test-agent", CancellationToken.None));
-
-            _tokenServiceMock.Verify(t => t.GenerateAccessToken(It.IsAny<User>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task Login_ExistingRefreshTokenForSameIpAndDevice_DeletesOldTokenBeforeIssuingNew()
-        {
-            var request = new LoginRequest { Email = "user@test.com", Password = "correct-password" };
-            var ip = "203.0.113.10";
-            var deviceInfo = "test-agent";
-
-            var user = CreateUser(email: "user@test.com");
-            var role = new Role { Id = user.RoleId };
-            var existingToken = new RefreshToken { UserId = user.Id, IpAddress = ip, DeviceInfo = deviceInfo };
-
-            SetupSimpleUserGetBy(user);
-            _passwordHasherMock.Setup(p => p.Verify(request.Password, user.HashedPassword)).Returns(true);
-            SetupRoleGetBy(role);
-            SetupSimpleRefreshTokenGetBy(existingToken);
-
-            _tokenServiceMock.Setup(t => t.GenerateAccessToken(user)).Returns(new AccessTokenResult("t", DateTime.UtcNow));
-            _tokenServiceMock
-                .Setup(t => t.GenerateRefreshToken(user, ip, deviceInfo))
-                .Returns(("raw", new RefreshToken { UserId = user.Id, IpAddress = ip }));
-
-            await _sut.Login(request, ip, deviceInfo, CancellationToken.None);
-
-            _refreshTokenRepositoryMock.Verify(r => r.Delete(existingToken), Times.Once);
         }
 
         [Fact]
@@ -295,7 +242,7 @@ namespace EcommerceAPI.Tests.Services.Auth
             SetupSimpleUserGetBy(null);
 
             await Assert.ThrowsAsync<UnauthorizedException>(
-                () => _sut.Login(request, "127.0.0.1", "test-agent", CancellationToken.None));
+                () => _sut.Login(request, CancellationToken.None));
 
             _userRepositoryMock.Verify(
                 r => r.GetByAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()),
@@ -361,7 +308,7 @@ namespace EcommerceAPI.Tests.Services.Auth
         public async Task Refresh_ValidActiveToken_RotatesAndReturnsNewAuthResponse()
         {
             var user = CreateUser();
-            user.Role = new Role { Id = user.RoleId, Name = "Customer" };
+            user.Role = Domain.Enums.Role.Customer;
 
             var storedToken = new RefreshToken
             {
@@ -391,12 +338,12 @@ namespace EcommerceAPI.Tests.Services.Auth
                 ExpiresAt = DateTime.UtcNow.AddDays(7)
             };
             _tokenServiceMock
-                .Setup(t => t.GenerateRefreshToken(user, currentIp, currentDevice))
+                .Setup(t => t.GenerateRefreshToken(user))
                 .Returns(("new-raw-refresh-token", newRefreshTokenEntity));
 
             var request = new RefreshTokenRequest { RefreshToken = "raw-refresh-token" };
 
-            var result = await _sut.Refresh(request, currentIp, currentDevice, CancellationToken.None);
+            var result = await _sut.Refresh(request, CancellationToken.None);
 
             Assert.Equal("new-access-token", result.AccessToken);
             Assert.Equal(accessTokenResult.ExpiresAtUtc, result.AccessTokenExpiresAtUtc);
@@ -411,8 +358,8 @@ namespace EcommerceAPI.Tests.Services.Auth
                 u => u.ExecuteInTransactionAsync(It.IsAny<Func<Task>>(), It.IsAny<CancellationToken>()), Times.Once);
 
             // Confirms the CURRENT request's ip/device were used, not the storedToken's stale ones
-            _tokenServiceMock.Verify(t => t.GenerateRefreshToken(user, currentIp, currentDevice), Times.Once);
-            _tokenServiceMock.Verify(t => t.GenerateRefreshToken(user, "old-ip", "old-device"), Times.Never);
+            _tokenServiceMock.Verify(t => t.GenerateRefreshToken(user), Times.Once);
+            _tokenServiceMock.Verify(t => t.GenerateRefreshToken(user), Times.Once);
         }
 
         [Fact]
@@ -424,7 +371,7 @@ namespace EcommerceAPI.Tests.Services.Auth
             var request = new RefreshTokenRequest { RefreshToken = "does-not-exist" };
 
             await Assert.ThrowsAsync<UnauthorizedException>(
-                () => _sut.Refresh(request, "1.2.3.4", "agent", CancellationToken.None));
+                () => _sut.Refresh(request, CancellationToken.None));
 
             _refreshTokenRepositoryMock.Verify(r => r.Delete(It.IsAny<RefreshToken>()), Times.Never);
             _unitOfWorkMock.Verify(
@@ -450,7 +397,7 @@ namespace EcommerceAPI.Tests.Services.Auth
             var request = new RefreshTokenRequest { RefreshToken = "expired-token" };
 
             await Assert.ThrowsAsync<UnauthorizedException>(
-                () => _sut.Refresh(request, "1.2.3.4", "agent", CancellationToken.None));
+                () => _sut.Refresh(request, CancellationToken.None));
 
             _tokenServiceMock.Verify(t => t.GenerateAccessToken(It.IsAny<User>()), Times.Never);
         }
@@ -473,12 +420,12 @@ namespace EcommerceAPI.Tests.Services.Auth
             _tokenServiceMock.Setup(t => t.HashRefreshToken("plain-text-raw-token")).Returns("expected-hash");
             _tokenServiceMock.Setup(t => t.GenerateAccessToken(user)).Returns(new AccessTokenResult("access", DateTime.UtcNow.AddMinutes(15)));
             _tokenServiceMock
-                .Setup(t => t.GenerateRefreshToken(user, "1.2.3.4", "agent"))
+                .Setup(t => t.GenerateRefreshToken(user))
                 .Returns(("new-raw", new RefreshToken { UserId = user.Id, ExpiresAt = DateTime.UtcNow.AddDays(7) }));
 
             var request = new RefreshTokenRequest { RefreshToken = "plain-text-raw-token" };
 
-            await _sut.Refresh(request, "1.2.3.4", "agent", CancellationToken.None);
+            await _sut.Refresh(request, CancellationToken.None);
 
             _tokenServiceMock.Verify(t => t.HashRefreshToken("plain-text-raw-token"), Times.Once);
         }

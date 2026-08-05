@@ -137,10 +137,6 @@ namespace EcommerceAPI.Application.Services.Auth
 
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                if (null != storedToken)
-                {
-                    _refreshTokenRepository.Delete(storedToken);
-                }
                 await _refreshTokenRepository.AddAsync(newRefreshToken, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);

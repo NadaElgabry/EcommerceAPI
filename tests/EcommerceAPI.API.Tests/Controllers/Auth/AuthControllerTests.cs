@@ -62,7 +62,7 @@ namespace EcommerceAPI.Tests.Controllers
             };
 
             _authServiceMock
-                .Setup(s => s.Login(request, "203.0.113.10", "Mozilla/5.0 TestAgent", It.IsAny<CancellationToken>()))
+                .Setup(s => s.Login(request, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResponse);
 
             var actionResult = await _sut.Login(request, CancellationToken.None);
@@ -84,14 +84,14 @@ namespace EcommerceAPI.Tests.Controllers
             };
 
             _authServiceMock
-                .Setup(s => s.Login(request, "unknown", "TestAgent/1.0", It.IsAny<CancellationToken>()))
+                .Setup(s => s.Login(request, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(BuildAuthResponse());
 
             var actionResult = await _sut.Login(request, CancellationToken.None);
 
             Assert.IsType<OkObjectResult>(actionResult);
             _authServiceMock.Verify(
-                s => s.Login(request, "unknown", "TestAgent/1.0", It.IsAny<CancellationToken>()),
+                s => s.Login(request, It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
@@ -107,13 +107,13 @@ namespace EcommerceAPI.Tests.Controllers
             };
 
             _authServiceMock
-                .Setup(s => s.Login(request, "198.51.100.7", userAgent, It.IsAny<CancellationToken>()))
+                .Setup(s => s.Login(request, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(BuildAuthResponse());
 
             await _sut.Login(request, CancellationToken.None);
 
             _authServiceMock.Verify(
-                s => s.Login(request, "198.51.100.7", userAgent, It.IsAny<CancellationToken>()),
+                s => s.Login(request, It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
@@ -131,7 +131,7 @@ namespace EcommerceAPI.Tests.Controllers
             };
 
             _authServiceMock
-                .Setup(s => s.Login(request, "127.0.0.1", "TestAgent", It.IsAny<CancellationToken>()))
+                .Setup(s => s.Login(request, It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("simulated failure"));
 
             await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.Login(request, CancellationToken.None));
@@ -160,7 +160,7 @@ namespace EcommerceAPI.Tests.Controllers
             };
 
             _authServiceMock
-                .Setup(s => s.CreateUserAsync(request, "203.0.113.10", "Mozilla/5.0 TestAgent", It.IsAny<CancellationToken>()))
+                .Setup(s => s.CreateUserAsync(request, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResponse);
 
             var actionResult = await _sut.Register(request, CancellationToken.None);
@@ -182,13 +182,13 @@ namespace EcommerceAPI.Tests.Controllers
             };
 
             _authServiceMock
-                .Setup(s => s.CreateUserAsync(request, "unknown", "TestAgent/1.0", It.IsAny<CancellationToken>()))
+                .Setup(s => s.CreateUserAsync(request, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(BuildAuthResponse());
 
             await _sut.Register(request, CancellationToken.None);
 
             _authServiceMock.Verify(
-                s => s.CreateUserAsync(request, "unknown", "TestAgent/1.0", It.IsAny<CancellationToken>()),
+                s => s.CreateUserAsync(request, It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
@@ -203,7 +203,7 @@ namespace EcommerceAPI.Tests.Controllers
             };
 
             _authServiceMock
-                .Setup(s => s.CreateUserAsync(request, "127.0.0.1", "TestAgent", It.IsAny<CancellationToken>()))
+                .Setup(s => s.CreateUserAsync(request, It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ConflictException("A user with this email already exists."));
 
             await Assert.ThrowsAsync<ConflictException>(() => _sut.Register(request, CancellationToken.None));
@@ -225,7 +225,7 @@ namespace EcommerceAPI.Tests.Controllers
             };
 
             _authServiceMock
-                .Setup(s => s.Refresh(request, "203.0.113.10", "Mozilla/5.0 TestAgent", It.IsAny<CancellationToken>()))
+                .Setup(s => s.Refresh(request, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResponse);
 
             var actionResult = await _sut.Refresh(request, CancellationToken.None);
@@ -246,13 +246,13 @@ namespace EcommerceAPI.Tests.Controllers
             };
 
             _authServiceMock
-                .Setup(s => s.Refresh(request, "unknown", "TestAgent/1.0", It.IsAny<CancellationToken>()))
+                .Setup(s => s.Refresh(request, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(BuildAuthResponse());
 
             await _sut.Refresh(request, CancellationToken.None);
 
             _authServiceMock.Verify(
-                s => s.Refresh(request, "unknown", "TestAgent/1.0", It.IsAny<CancellationToken>()),
+                s => s.Refresh(request, It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
@@ -267,7 +267,7 @@ namespace EcommerceAPI.Tests.Controllers
             };
 
             _authServiceMock
-                .Setup(s => s.Refresh(request, "127.0.0.1", "TestAgent", It.IsAny<CancellationToken>()))
+                .Setup(s => s.Refresh(request, It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new UnauthorizedException("Invalid or expired refresh token."));
 
             await Assert.ThrowsAsync<UnauthorizedException>(() => _sut.Refresh(request, CancellationToken.None));
