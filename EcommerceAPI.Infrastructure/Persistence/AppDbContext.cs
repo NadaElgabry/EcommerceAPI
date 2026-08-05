@@ -24,6 +24,10 @@ namespace EcommerceAPI.Infrastructure.Contexts
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<User>()
+                .Property(u => u.Role)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<User>()
                 .HasMany(user => user.Addresses)
                 .WithOne(address => address.User)
                 .HasForeignKey(address => address.UserId)

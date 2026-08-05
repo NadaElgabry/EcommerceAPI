@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EcommerceAPI.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260801212538_SeedRoles")]
-    partial class SeedRoles
+    [Migration("20260805121422_Intial")]
+    partial class Intial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -48,12 +48,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.Property<string>("IpAddress")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("ReplacedByTokenGuid")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("TokenHash")
                         .IsRequired()
                         .HasMaxLength(88)
@@ -70,35 +64,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
-                });
-
-            modelBuilder.Entity("EcommerceAPI.Domain.Entities.Role", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Roles");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "Customer"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Name = "Admin"
-                        });
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.User", b =>
@@ -136,8 +101,9 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("RoleId")
-                        .HasColumnType("int");
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -146,8 +112,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
-
-                    b.HasIndex("RoleId");
 
                     b.ToTable("Users");
                 });
@@ -185,17 +149,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("EcommerceAPI.Domain.Entities.User", b =>
-                {
-                    b.HasOne("EcommerceAPI.Domain.Entities.Role", "Role")
-                        .WithMany("Users")
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Role");
-                });
-
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.UserAddress", b =>
                 {
                     b.HasOne("EcommerceAPI.Domain.Entities.User", "User")
@@ -205,11 +158,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("EcommerceAPI.Domain.Entities.Role", b =>
-                {
-                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.User", b =>
