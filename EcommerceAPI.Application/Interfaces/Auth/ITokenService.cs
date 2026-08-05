@@ -19,10 +19,8 @@ namespace EcommerceAPI.Application.Interfaces.Auth
         /// Generates a refresh token for the specified user, along with the associated entity.
         /// </summary>
         /// <param name="user">The user for whom to generate the refresh token.</param>
-        /// <param name="ipAdress">The IP address of the client.</param>
-        /// <param name="deviceInfo">Information about the client device.</param>
         /// <returns>A tuple containing the raw token and the associated refresh token entity.</returns>
-        public (string RawToken, RefreshToken Entity) GenerateRefreshToken(User user, string ipAddress, string deviceInfo);
+        public (string RawToken, RefreshToken Entity) GenerateRefreshToken(User user);
       
         public string HashRefreshToken(string refreshToken);
     }

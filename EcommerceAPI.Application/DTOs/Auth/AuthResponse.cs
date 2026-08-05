@@ -9,5 +9,6 @@
         public required string RefreshToken { get; init; }
 
         public required DateTime RefreshTokenExpiresAtUtc { get; init; }
+
     }
 }

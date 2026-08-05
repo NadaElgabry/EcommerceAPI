@@ -13,7 +13,6 @@ namespace EcommerceAPI.Infrastructure.Contexts
 
         public DbSet<User> Users { get; set; }
 
-        public DbSet<Role> Roles { get; set; }
 
         public DbSet<UserAddress> UserAddresses { get; set; }
 
@@ -23,24 +22,6 @@ namespace EcommerceAPI.Infrastructure.Contexts
             ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            modelBuilder.Entity<Role>().HasData(
-                new Role
-                {
-                    Id = 1,
-                    Name = "Customer"
-                },
-                new Role
-                {
-                    Id = 2,
-                    Name = "Admin"
-                }
-            );
-
-            modelBuilder.Entity<User>()
-                .HasOne(user => user.Role)
-                .WithMany(role => role.Users)
-                .HasForeignKey(user => user.RoleId);
 
             modelBuilder.Entity<User>()
                 .HasMany(user => user.Addresses)

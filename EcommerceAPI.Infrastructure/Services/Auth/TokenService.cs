@@ -28,7 +28,7 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Guid.ToString()),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.Role, user.Role.Name) 
+                new Claim(ClaimTypes.Role, user.Role.ToString())
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
@@ -45,7 +45,7 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
             return new AccessTokenResult(new JwtSecurityTokenHandler().WriteToken(token), DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes));
         }
         /// <inheritdoc />
-        public (string RawToken, RefreshToken Entity) GenerateRefreshToken(User user, string ipAddress, string deviceInfo)
+        public (string RawToken, RefreshToken Entity) GenerateRefreshToken(User user)
         {
             var randomBytes = new byte[64];
             using var rng = RandomNumberGenerator.Create();
@@ -56,8 +56,6 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
             {
                 TokenHash = HashRefreshToken(rawToken),
                 ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays),
-                IpAddress = ipAddress,
-                DeviceInfo = deviceInfo,
                 UserId = user.Id
             };
 

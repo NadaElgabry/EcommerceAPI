@@ -1,4 +1,6 @@
-﻿namespace EcommerceAPI.Domain.Entities
+﻿using EcommerceAPI.Domain.Enums;
+
+namespace EcommerceAPI.Domain.Entities
 {
     public class User
     {
@@ -10,10 +12,7 @@
         public string Email { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public string HashedPassword { get; set; } = string.Empty;
-
-        public int RoleId { get; set; }
-        public Role Role { get; set; } = null!;
-
+        public Role Role { get; set; } = Role.Customer;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }

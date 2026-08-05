@@ -8,8 +8,6 @@
 
   <ItemGroup>
     <Compile Include="Persistence\Repositories\Repository.cs" />
-    <Compile Include="Persistence\Repositories\RoleRepository.cs" />
-    <Compile Include="Persistence\Repositories\UserRepository.cs" />
   </ItemGroup>
 
   <ItemGroup>
