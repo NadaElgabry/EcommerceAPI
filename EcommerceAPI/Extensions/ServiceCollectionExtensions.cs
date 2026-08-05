@@ -1,4 +1,5 @@
 ﻿using EcommerceAPI.Middlewares;
+using Microsoft.OpenApi;
 
 namespace EcommerceAPI.Extensions;
 
@@ -7,7 +8,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddPresentation(this IServiceCollection services)
     {
         services.AddControllers();
-        services.AddSwaggerGen();
+        services.AddSwagger();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
 
@@ -19,6 +20,25 @@ public static class ServiceCollectionExtensions
                       .AllowAnyMethod());
         });
 
+        return services;
+    }
+    private static IServiceCollection AddSwagger(this IServiceCollection services)
+    {
+        services.AddSwaggerGen(options =>
+        {
+            options.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+
+            // Define the JWT Bearer scheme
+            options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                Scheme = "Bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "Enter your JWT token below.\n\nExample: \"12345abcdef\""
+            });
+        });
         return services;
     }
 }
