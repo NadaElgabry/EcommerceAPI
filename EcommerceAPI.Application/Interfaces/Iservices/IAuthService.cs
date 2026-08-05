@@ -9,12 +9,10 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// returns an authentication response containing access and refresh tokens.
         /// </summary>
         /// <param name="request">The registration request containing user details</param>
-        /// <param name="ipAddress">The IP address of the client making the request</param>
-        /// <param name="deviceInfo">Information about the device making the request</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests</param>
         /// <returns>The authentication response containing access and refresh tokens</returns>
         Task<AuthResponse> CreateUserAsync(
-            RegisterRequest request, string ipAddress, string deviceInfo,
+            RegisterRequest request,
             CancellationToken cancellationToken = default
         );
 
@@ -23,26 +21,21 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// returns an authentication response containing access and refresh tokens.
         /// </summary>
         /// <param name="request">request entity contains the user's login credentials</param>
-        /// <param name="ipAddress">the IP address of the client making the request</param>
-        /// <param name="deviceInfo">information about the device making the request</param>
         /// <param name="cancellationToken">a token to monitor for cancellation requests</param>
         /// <returns>an authentication response containing access and refresh tokens</returns>
         /// <exception cref="UnauthorizedException">Thrown when the provided credentials are invalid.</exception>
         /// <exception cref="NotFoundException">Thrown when the user or their associated role is not found.</exception>
         public Task<AuthResponse> Login(
-            LoginRequest request, string ipAddress, string deviceInfo, CancellationToken cancellationToken);
+            LoginRequest request, CancellationToken cancellationToken);
         
         /// <summary>
         /// Refreshes the access token using the provided refresh token.
         /// </summary>
         /// <param name="request">The request containing the refresh token.</param>
-        /// <param name="ipAddress">The IP address of the client making the request.</param>
-        /// <param name="deviceInfo">The device information of the client making the request.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The response containing the new access token.</returns>
         public Task<AuthResponse> Refresh(
-            RefreshTokenRequest request, string ipAddress,
-            string deviceInfo, CancellationToken cancellationToken = default);
+            RefreshTokenRequest request, CancellationToken cancellationToken = default);
 
 
         /// <summary>

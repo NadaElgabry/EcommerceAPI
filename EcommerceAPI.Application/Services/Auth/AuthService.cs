@@ -14,7 +14,6 @@ namespace EcommerceAPI.Application.Services.Auth
     public class AuthService : IAuthService
     {
         private readonly IRepository<User> _userRepository;
-        private readonly IRepository<Role> _roleRepository;
         private readonly IRepository<RefreshToken> _refreshTokenRepository;
         private readonly IAuthMapper _authMapper;
         private readonly IPasswordHasher _passwordHasher;
@@ -24,7 +23,6 @@ namespace EcommerceAPI.Application.Services.Auth
 
         public AuthService(
             IRepository<User> userRepository,
-            IRepository<Role> roleRepository,
             IRepository<RefreshToken> refreshTokenRepository,
             IAuthMapper authMapper,
             IPasswordHasher passwordHasher,
@@ -33,7 +31,6 @@ namespace EcommerceAPI.Application.Services.Auth
             ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
-            _roleRepository = roleRepository;
             _refreshTokenRepository =
                 refreshTokenRepository;
             _authMapper = authMapper;
@@ -45,7 +42,7 @@ namespace EcommerceAPI.Application.Services.Auth
 
         /// <inheritdoc />
         public async Task<AuthResponse> CreateUserAsync(
-            RegisterRequest request, string ipAddress, string deviceInfo,
+            RegisterRequest request,
             CancellationToken cancellationToken = default)
         {
             string normalizedEmail =
@@ -85,12 +82,9 @@ namespace EcommerceAPI.Application.Services.Auth
 
             var user = _authMapper.ToUser( request );
 
-            user.CreatedAt = DateTime.UtcNow;
             user.HashedPassword = _passwordHasher.Hash(request.Password);
-            user.Role = await _roleRepository.GetByAsync(predicate:r=>r.Id==1, cancellationToken);
 
-
-            var refreshTokenResult = _tokenService.GenerateRefreshToken(user,ipAddress,deviceInfo);
+            var refreshTokenResult = _tokenService.GenerateRefreshToken(user);
 
             refreshTokenResult.Entity.User = user;
 
@@ -122,33 +116,28 @@ namespace EcommerceAPI.Application.Services.Auth
                 RefreshToken =
                     refreshTokenResult.RawToken,
                 RefreshTokenExpiresAtUtc =
-                    refreshTokenResult.Entity.ExpiresAt
+                    refreshTokenResult.Entity.ExpiresAt,
             };
         }
 
         /// <inheritdoc />
         public async Task<AuthResponse> Login
-            (LoginRequest request, string ipAdress, string deviceInfo, CancellationToken cancellationToken)
+            (LoginRequest request, CancellationToken cancellationToken)
         {
             var user = await _userRepository.GetByAsync(u => u.Email == request.Email.ToLower(), cancellationToken)
                 ?? throw new UnauthorizedException("Invalid credentials");
             if (!_passwordHasher.Verify(request.Password, user.HashedPassword))
                 throw new UnauthorizedException("Invalid credentials");
-            user.Role = await _roleRepository.GetByAsync(r => r.Id == user.RoleId, cancellationToken) ??
-                throw new NotFoundException("Role not found");
+
             var accesstoken = _tokenService.GenerateAccessToken(user);
             var storedToken = await _refreshTokenRepository
-                .GetByAsync(rt => rt.UserId == user.Id && rt.IpAddress == ipAdress && rt.DeviceInfo == deviceInfo, cancellationToken);
+                .GetByAsync(rt => rt.UserId == user.Id , cancellationToken);
             
-            var refreshToken = _tokenService.GenerateRefreshToken(user, ipAdress, deviceInfo);
+            var (rawToken, newRefreshToken) = _tokenService.GenerateRefreshToken(user);
 
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                if (null != storedToken)
-                {
-                    _refreshTokenRepository.Delete(storedToken);
-                }
-                await _refreshTokenRepository.AddAsync(refreshToken.Entity, cancellationToken);
+                await _refreshTokenRepository.AddAsync(newRefreshToken, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
             
@@ -160,8 +149,8 @@ namespace EcommerceAPI.Application.Services.Auth
             {
                 AccessToken = accesstoken.Token,
                 AccessTokenExpiresAtUtc = accesstoken.ExpiresAtUtc,
-                RefreshToken = refreshToken.RawToken,
-                RefreshTokenExpiresAtUtc = refreshToken.Entity.ExpiresAt
+                RefreshToken = rawToken,
+                RefreshTokenExpiresAtUtc = newRefreshToken.ExpiresAt,
             };
         }
 
@@ -193,14 +182,13 @@ namespace EcommerceAPI.Application.Services.Auth
         }
 
         /// <inheritdoc />
-        public async Task<AuthResponse> Refresh(RefreshTokenRequest request, string ipAddress, string deviceInfo, CancellationToken cancellationToken = default)
+        public async Task<AuthResponse> Refresh(RefreshTokenRequest request, CancellationToken cancellationToken = default)
         {
             var hashedToken = _tokenService.HashRefreshToken(request.RefreshToken);
 
             var storedToken = await _refreshTokenRepository.GetByAsync(
                 predicate: rt => rt.TokenHash == hashedToken,
-                include: query => query.Include(rt => rt.User)
-                                       .ThenInclude(u => u.Role));
+                include: query => query.Include(rt => rt.User));
 
             if (storedToken == null || !storedToken.IsActive)
             {
@@ -209,7 +197,7 @@ namespace EcommerceAPI.Application.Services.Auth
 
             var accessTokenResult = _tokenService.GenerateAccessToken(storedToken.User);
 
-            var (rawToken, newRefreshToken) = _tokenService.GenerateRefreshToken(storedToken.User, ipAddress, deviceInfo);
+            var (rawToken, newRefreshToken) = _tokenService.GenerateRefreshToken(storedToken.User);
 
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {

@@ -21,7 +21,7 @@ namespace EcommerceAPI.Controllers
         {
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             var deviceInfo = Request.Headers["User-Agent"].ToString();
-            var result = await _authService.Login(request, ipAddress, deviceInfo, cancellationToken);
+            var result = await _authService.Login(request, cancellationToken);
             return Ok(result);
         }
 
@@ -34,7 +34,7 @@ namespace EcommerceAPI.Controllers
             var deviceInfo = Request.Headers["User-Agent"].ToString();
             AuthResponse response =
                 await _authService.CreateUserAsync(
-                    request,ipAddress,deviceInfo,
+                    request,
                     cancellationToken
                 );
 
@@ -46,7 +46,7 @@ namespace EcommerceAPI.Controllers
         { 
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             var deviceInfo = Request.Headers["User-Agent"].ToString();
-            var response = await _authService.Refresh(request, ipAddress, deviceInfo, cancellationToken);
+            var response = await _authService.Refresh(request, cancellationToken);
             return Ok(response);
         }
 
