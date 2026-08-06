@@ -11,10 +11,21 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// <param name="request">The registration request containing user details</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests</param>
         /// <returns>The authentication response containing access and refresh tokens</returns>
-        Task<AuthResponse> CreateUserAsync(
+        Task<string> CreateUserAsync(
             RegisterRequest request,
             CancellationToken cancellationToken = default
         );
+
+        /// <summary>
+        /// Activates a user's email address using the provided activation code and
+        /// </summary>
+        /// <param name="request">The activation request containing the user's email and activation code</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests</param>
+        /// <returns>The authentication response containing access and refresh tokens</returns>
+        public Task<AuthResponse> ActivateEmailAsync(
+            ActivateEmailRequest request, CancellationToken cancellationToken = default);
+
+        public Task<bool> IsEmailAvailable(EmailRequest request, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Logs in a user with the provided credentials and

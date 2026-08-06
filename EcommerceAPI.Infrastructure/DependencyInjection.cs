@@ -27,11 +27,14 @@ public static class DependencyInjection
 
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();
+
         services.Configure<EmailSettings>(
            configuration.GetSection("EmailSettings"));
         services.AddScoped<IEmailService, EmailService>();
+
         services.AddJwtAuthentication(configuration);
 
         return services;

@@ -1,4 +1,5 @@
-﻿using EcommerceAPI.Middlewares;
+﻿using EcommerceAPI.Filters;
+using EcommerceAPI.Middlewares;
 using Microsoft.OpenApi;
 
 namespace EcommerceAPI.Extensions;
@@ -7,7 +8,18 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddPresentation(this IServiceCollection services)
     {
-        services.AddControllers();
+        services.AddScoped<ValidationFilter>();
+
+        services.AddControllers(options =>
+        {
+            options.Filters.Add<ValidationFilter>();
+        });
+
+        services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
+        {
+            options.SuppressModelStateInvalidFilter = true;
+        });
+
         services.AddSwagger();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
