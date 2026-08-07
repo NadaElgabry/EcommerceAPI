@@ -56,5 +56,27 @@ namespace EcommerceAPI.Controllers
             await _authService.Logout(request, cancellationToken);
             return NoContent();        
         }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cancellationToken)
+        {
+            var x= await _authService.ForgotPasswordAsync(request, cancellationToken);
+            return Ok(new { message = $"If an account with that email exists, a reset code has been sent. {x}" });
+        }
+
+        [HttpPost("verify-reset-code")]
+        public async Task<ActionResult<VerifyResetCodeResponse>> VerifyResetCode(
+        [FromBody] VerifyResetCodeRequest request, CancellationToken cancellationToken)
+        {
+            var response = await _authService.VerifyResetCodeAsync(request, cancellationToken);
+            return Ok(response);
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
+        {
+            await _authService.ResetPasswordAsync(request, cancellationToken);
+            return NoContent();
+        }
     }
 }

@@ -21,6 +21,6 @@ namespace EcommerceAPI.Domain.Entities
 
         public List<UserAddress> Addresses { get; set; } = new List<UserAddress>();
         public List<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
-
+        public List<VerificationToken> VerificationTokens { get; set; } = new List<VerificationToken>();
     }
 }

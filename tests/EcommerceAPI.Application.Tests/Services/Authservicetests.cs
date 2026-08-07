@@ -2,6 +2,7 @@
 using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
+using EcommerceAPI.Application.Interfaces.Email;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Application.Services.Auth;
@@ -26,12 +27,14 @@ namespace EcommerceAPI.Tests.Services.Auth
     public class AuthServiceTests
     {
         private readonly Mock<IRepository<User>> _userRepositoryMock = new();
+        private readonly Mock<IRepository<VerificationToken>> _verificationRepositoryMock = new();
         private readonly Mock<IRepository<RefreshToken>> _refreshTokenRepositoryMock = new();
         private readonly Mock<IAuthMapper> _authMapperMock = new();
         private readonly Mock<IPasswordHasher> _passwordHasherMock = new();
         private readonly Mock<ITokenService> _tokenServiceMock = new();
         private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
         private readonly Mock<ILogger<AuthService>> _loggerMock = new();
+        private readonly Mock<IEmailService> _emailServiceMock = new();
 
         private readonly AuthService _sut;
 
@@ -39,12 +42,14 @@ namespace EcommerceAPI.Tests.Services.Auth
         {
             _sut = new AuthService(
                 _userRepositoryMock.Object,
+                _verificationRepositoryMock.Object,
                 _refreshTokenRepositoryMock.Object,
                 _authMapperMock.Object,
                 _passwordHasherMock.Object,
                 _tokenServiceMock.Object,
                 _unitOfWorkMock.Object,
-                _loggerMock.Object);
+                _loggerMock.Object,
+                _emailServiceMock.Object);
 
             // Transactions just invoke the delegate for these tests.
             _unitOfWorkMock
@@ -259,7 +264,7 @@ namespace EcommerceAPI.Tests.Services.Auth
             var storedToken = new RefreshToken { Id = 1, TokenHash = "hashed-token" };
             var request = new LogoutRequest { RefreshToken = "raw-refresh-token" };
 
-            _tokenServiceMock.Setup(t => t.HashRefreshToken(request.RefreshToken)).Returns("hashed-token");
+            _tokenServiceMock.Setup(t => t.Hash(request.RefreshToken)).Returns("hashed-token");
             SetupSimpleRefreshTokenGetBy(storedToken);
 
             await _sut.Logout(request, CancellationToken.None);
@@ -275,7 +280,7 @@ namespace EcommerceAPI.Tests.Services.Auth
         {
             var request = new LogoutRequest { RefreshToken = "already-gone" };
 
-            _tokenServiceMock.Setup(t => t.HashRefreshToken(request.RefreshToken)).Returns("hashed-token");
+            _tokenServiceMock.Setup(t => t.Hash(request.RefreshToken)).Returns("hashed-token");
             SetupSimpleRefreshTokenGetBy(null);
 
             var exception = await Record.ExceptionAsync(
@@ -292,12 +297,12 @@ namespace EcommerceAPI.Tests.Services.Auth
         {
             var request = new LogoutRequest { RefreshToken = "plain-text-token" };
 
-            _tokenServiceMock.Setup(t => t.HashRefreshToken("plain-text-token")).Returns("expected-hash");
+            _tokenServiceMock.Setup(t => t.Hash("plain-text-token")).Returns("expected-hash");
             SetupSimpleRefreshTokenGetBy(new RefreshToken { TokenHash = "expected-hash" });
 
             await _sut.Logout(request, CancellationToken.None);
 
-            _tokenServiceMock.Verify(t => t.HashRefreshToken("plain-text-token"), Times.Once);
+            _tokenServiceMock.Verify(t => t.Hash("plain-text-token"), Times.Once);
         }
 
         #endregion
@@ -321,7 +326,7 @@ namespace EcommerceAPI.Tests.Services.Auth
                 ExpiresAt = DateTime.UtcNow.AddDays(3) // IsActive == true
             };
 
-            _tokenServiceMock.Setup(t => t.HashRefreshToken("raw-refresh-token")).Returns("old-hash");
+            _tokenServiceMock.Setup(t => t.Hash("raw-refresh-token")).Returns("old-hash");
             SetupIncludeRefreshTokenGetBy(storedToken);
 
             var accessTokenResult = new AccessTokenResult("new-access-token", DateTime.UtcNow.AddMinutes(15));
@@ -366,7 +371,7 @@ namespace EcommerceAPI.Tests.Services.Auth
         public async Task Refresh_TokenNotFound_ThrowsUnauthorizedException()
         {
             SetupIncludeRefreshTokenGetBy(null);
-            _tokenServiceMock.Setup(t => t.HashRefreshToken(It.IsAny<string>())).Returns("hash");
+            _tokenServiceMock.Setup(t => t.Hash(It.IsAny<string>())).Returns("hash");
 
             var request = new RefreshTokenRequest { RefreshToken = "does-not-exist" };
 
@@ -392,7 +397,7 @@ namespace EcommerceAPI.Tests.Services.Auth
             };
 
             SetupIncludeRefreshTokenGetBy(expiredToken);
-            _tokenServiceMock.Setup(t => t.HashRefreshToken(It.IsAny<string>())).Returns("hash");
+            _tokenServiceMock.Setup(t => t.Hash(It.IsAny<string>())).Returns("hash");
 
             var request = new RefreshTokenRequest { RefreshToken = "expired-token" };
 
@@ -417,7 +422,7 @@ namespace EcommerceAPI.Tests.Services.Auth
 
             SetupIncludeRefreshTokenGetBy(storedToken);
 
-            _tokenServiceMock.Setup(t => t.HashRefreshToken("plain-text-raw-token")).Returns("expected-hash");
+            _tokenServiceMock.Setup(t => t.Hash("plain-text-raw-token")).Returns("expected-hash");
             _tokenServiceMock.Setup(t => t.GenerateAccessToken(user)).Returns(new AccessTokenResult("access", DateTime.UtcNow.AddMinutes(15)));
             _tokenServiceMock
                 .Setup(t => t.GenerateRefreshToken(user))
@@ -427,7 +432,7 @@ namespace EcommerceAPI.Tests.Services.Auth
 
             await _sut.Refresh(request, CancellationToken.None);
 
-            _tokenServiceMock.Verify(t => t.HashRefreshToken("plain-text-raw-token"), Times.Once);
+            _tokenServiceMock.Verify(t => t.Hash("plain-text-raw-token"), Times.Once);
         }
 
         #endregion
