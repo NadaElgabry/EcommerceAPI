@@ -11,10 +11,19 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// <param name="request">The registration request containing user details</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests</param>
         /// <returns>The authentication response containing access and refresh tokens</returns>
-        Task<string> CreateUserAsync(
+        Task CreateUserAsync(
             RegisterRequest request,
             CancellationToken cancellationToken = default
         );
+
+        /// <summary>
+        /// Resends the email verification code to the user's email address for the specified purpose.
+        /// </summary>
+        /// <param name="request">The request containing the user's email and purpose</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests</param>
+        /// <returns>A task representing the asynchronous operation</returns>
+        public Task ResendEmailAsync(ResendEmailRequest request,
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Activates a user's email address using the provided activation code and
@@ -25,6 +34,12 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         public Task<AuthResponse> ActivateEmailAsync(
             ActivateEmailRequest request, CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// Checks if the provided email address is available for registration.
+        /// </summary>
+        /// <param name="request">The request containing the email address to check</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests</param>
+        /// <returns>True if the email is available, false otherwise</returns>
         public Task<bool> IsEmailAvailable(EmailRequest request, CancellationToken cancellationToken = default);
 
         /// <summary>

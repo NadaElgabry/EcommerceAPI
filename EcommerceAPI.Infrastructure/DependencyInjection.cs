@@ -6,6 +6,7 @@ using EcommerceAPI.Infrastructure.Contexts;
 using EcommerceAPI.Infrastructure.Persistence;
 using EcommerceAPI.Infrastructure.Persistence.Repositories;
 using EcommerceAPI.Infrastructure.Services.Auth;
+using EcommerceAPI.Infrastructure.Services.Email;
 using EcommerceAPI.Infrastructure.Services.Mail;
 using EcommerceAPI.Infrastructure.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -34,6 +35,7 @@ public static class DependencyInjection
         services.Configure<EmailSettings>(
            configuration.GetSection("EmailSettings"));
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IVerificationEmailTemplateProvider, VerificationEmailTemplateProvider>();
 
         services.AddJwtAuthentication(configuration);
 

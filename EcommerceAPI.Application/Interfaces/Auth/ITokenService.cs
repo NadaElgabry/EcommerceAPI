@@ -1,4 +1,5 @@
 ﻿using EcommerceAPI.Domain.Entities;
+using EcommerceAPI.Domain.Enums;
 
 namespace EcommerceAPI.Application.Interfaces.Auth
 {
@@ -26,6 +27,6 @@ namespace EcommerceAPI.Application.Interfaces.Auth
 
         public bool Verify(string rawToken, string hashedToken);
 
-        public (string RawToken, VerificationToken Entity) GenerateActivationToken(User user);
+        public (string RawToken, VerificationToken Entity) GenerateActivationToken(User user, VerificationPurpose purpose);
     }
 }

@@ -7,8 +7,11 @@ using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
+using EcommerceAPI.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Net.Mail;
+using System.Runtime;
 
 namespace EcommerceAPI.Application.Services.Auth
 {
@@ -23,7 +26,7 @@ namespace EcommerceAPI.Application.Services.Auth
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<AuthService> _logger;
         private readonly IEmailService _emailService;
-
+        private readonly IVerificationEmailTemplateProvider _templateProvider;
         public AuthService(
             IRepository<User> userRepository,
             IRepository<VerificationToken> verificationTokenRepository,
@@ -33,7 +36,8 @@ namespace EcommerceAPI.Application.Services.Auth
             ITokenService tokenService,
             IUnitOfWork unitOfWork,
             ILogger<AuthService> logger,
-            IEmailService emailService)
+            IEmailService emailService,
+            IVerificationEmailTemplateProvider templateProvider)
         {
             _userRepository = userRepository;
             _refreshTokenRepository =
@@ -45,10 +49,11 @@ namespace EcommerceAPI.Application.Services.Auth
             _unitOfWork = unitOfWork;
             _logger = logger;
             _emailService = emailService;
+            _templateProvider = templateProvider;
         }
 
         /// <inheritdoc />
-        public async Task<string> CreateUserAsync(
+        public async Task CreateUserAsync(
             RegisterRequest request,
             CancellationToken cancellationToken = default)
         {
@@ -63,7 +68,7 @@ namespace EcommerceAPI.Application.Services.Auth
                     user => user.Email == normalizedEmail,
                     cancellationToken
                 );
-
+            
             if (emailExists)
             {
                 throw new ConflictException(
@@ -78,8 +83,7 @@ namespace EcommerceAPI.Application.Services.Auth
 
             user.HashedPassword = _passwordHasher.Hash(request.Password);
 
-            var token = _tokenService.GenerateActivationToken(user);
-
+            var token = _tokenService.GenerateActivationToken(user, VerificationPurpose.EmailVerification);
 
 
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
@@ -92,30 +96,67 @@ namespace EcommerceAPI.Application.Services.Auth
                     token.Entity,
                     cancellationToken
                 );
+
                 await _unitOfWork.SaveChangesAsync(
                     cancellationToken
                 );
                 
             }, cancellationToken);
-            /*await _emailService.SendEmailAsync(
-                    user.Email,
-                    "Activate your account",
-                    $"Your activation code is: {token.RawToken}"
-                );*/
-            return token.RawToken;
+            await SendVerificationEmailAsync(user, token.RawToken,
+                VerificationPurpose.EmailVerification, cancellationToken);
         }
 
+        /// <inheritdoc />
+        public async Task ResendEmailAsync(ResendEmailRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            string normalizedEmail = request.Email.Trim().ToLowerInvariant();
+
+            var user = await _userRepository.GetByAsync(
+                predicate: u => u.Email == normalizedEmail,
+                include: query => query.Include(u => u.VerificationTokens),
+                cancellationToken: cancellationToken)
+                ?? throw new NotFoundException("User not found.");
+
+            var activeToken = user.VerificationTokens
+                .Where(vt => vt.Purpose == request.Purpose
+                          && !vt.ConsumedAt.HasValue
+                          && vt.ExpiresAt > DateTime.UtcNow)
+                .FirstOrDefault()
+                ?? throw new NotFoundException("No active verification token found.");
+
+            var newToken = _tokenService.GenerateActivationToken(user, request.Purpose);
+
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                _verificationTokenRepository.Delete(activeToken);
+                await _verificationTokenRepository.AddAsync(newToken.Entity, cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }, cancellationToken);
+
+            await SendVerificationEmailAsync(user, newToken.RawToken, request.Purpose, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        private async Task SendVerificationEmailAsync(User user, string rawToken,
+            VerificationPurpose purpose, CancellationToken cancellationToken)
+        {
+            var (subject, body) = _templateProvider.GetTemplate(purpose, rawToken);
+            await _emailService.SendEmailAsync(user.Email, subject, body, cancellationToken);
+        }
+
+        /// <inheritdoc />
         public async Task<AuthResponse> ActivateEmailAsync(
             ActivateEmailRequest request, CancellationToken cancellationToken = default)
         {
             var token = await _verificationTokenRepository.GetByAsync(
-                predicate: vt => vt.TokenHash == _tokenService.Hash(request.Token),
+                predicate: vt => vt.TokenHash == _tokenService.Hash(request.Token) 
+                && !vt.ConsumedAt.HasValue && vt.ExpiresAt > DateTime.UtcNow 
+                && vt.Purpose == VerificationPurpose.EmailVerification,
                 include: query => query.Include(vt => vt.User),
-                cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken)
+                ?? throw new NotFoundException("Invalid activation token.");
 
-            if(token == null || !token.IsActive ) {
-                throw new NotFoundException("Invalid activation token.");
-            }
 
             token.User.isActive = true;
             token.ConsumedAt = DateTime.UtcNow;
@@ -140,6 +181,7 @@ namespace EcommerceAPI.Application.Services.Auth
 
         }
 
+        /// <inheritdoc />
         public async Task<bool> IsEmailAvailable(EmailRequest request, CancellationToken cancellationToken = default)
         {
             var isValid = await _userRepository.ExistByAsync(u => u.Email == request.Email.ToLower(), cancellationToken);
@@ -150,8 +192,12 @@ namespace EcommerceAPI.Application.Services.Auth
         public async Task<AuthResponse> Login
             (LoginRequest request, CancellationToken cancellationToken)
         {
-            var user = await _userRepository.GetByAsync(u => u.Email == request.Email.Trim().ToLower() && u.isActive, cancellationToken)
+            var user = await _userRepository.GetByAsync(u => u.Email == request.Email.Trim().ToLower(), cancellationToken)
                 ?? throw new UnauthorizedException("Invalid credentials");
+
+            if(!user.isActive)
+                throw new UnauthorizedException("User is not Activated");
+
             if (!_passwordHasher.Verify(request.Password, user.HashedPassword))
                 throw new UnauthorizedException("Invalid credentials");
 
@@ -164,9 +210,6 @@ namespace EcommerceAPI.Application.Services.Auth
                 await _refreshTokenRepository.AddAsync(newRefreshToken, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
-            
-            
-
             
 
             return new AuthResponse

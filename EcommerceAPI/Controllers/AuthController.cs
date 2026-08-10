@@ -1,7 +1,9 @@
-﻿using EcommerceAPI.Application.DTOs.Auth;
-using Microsoft.AspNetCore.Mvc;
+﻿using EcommerceAPI.Application.Common;
+using EcommerceAPI.Application.DTOs.Auth;
 using EcommerceAPI.Application.Interfaces.IServices;
-using EcommerceAPI.Application.Common;
+using IdempotentAPI.Filters;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EcommerceAPI.Controllers
 {
@@ -24,17 +26,28 @@ namespace EcommerceAPI.Controllers
             return Ok(ApiResponse<AuthResponse>.SuccessResponse(message: "Login successful", statusCode: 200, data: result));
         }
 
+        [Idempotent(ExpiresInMilliseconds = 10 * 1000)]
         [HttpPost("register")]
         public async Task<IActionResult> Register(
             [FromBody] RegisterRequest request,
             CancellationToken cancellationToken)
         {
-            var token = await _authService.CreateUserAsync(
+            await _authService.CreateUserAsync(
                     request,
                     cancellationToken
                 );
 
-            return Created("Register",ApiResponse<string>.SuccessResponse(message: "User created successfully", statusCode: 201, data: token));
+            return Created("Register", ApiResponse<string>.SuccessResponse(message: "User created successfully", statusCode: 201));
+        }
+
+        [HttpPost("resend-email")]
+        [Idempotent(ExpiresInMilliseconds = 10*1000)]
+        public async Task<IActionResult> ResendEmail(
+            [FromBody] ResendEmailRequest request,
+            CancellationToken cancellationToken)
+        {
+            await _authService.ResendEmailAsync(request, cancellationToken);
+            return Ok(ApiResponse<string>.SuccessResponse(message: "Email verification code resent successfully", statusCode: 200));
         }
 
         [HttpPost("ActivateAccount")]

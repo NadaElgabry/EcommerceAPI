@@ -80,7 +80,7 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
             return hashedRawToken == hashedToken;
         }
 
-        public (string RawToken, VerificationToken Entity) GenerateActivationToken(User user)
+        public (string RawToken, VerificationToken Entity) GenerateActivationToken(User user, VerificationPurpose purpose)
         {
             byte[] randomBytes = new byte[4];
             RandomNumberGenerator.Fill(randomBytes);
@@ -92,7 +92,7 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
             var entity = new VerificationToken
             {
                 TokenHash = hashedToken,
-                Purpose = VerificationPurpose.EmailVerification,
+                Purpose = purpose,
                 CreatedAt = DateTime.UtcNow,
                 ExpiresAt = DateTime.UtcNow.AddMinutes(10),
                 User = user

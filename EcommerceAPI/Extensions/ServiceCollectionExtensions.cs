@@ -1,5 +1,7 @@
 ﻿using EcommerceAPI.Filters;
 using EcommerceAPI.Middlewares;
+using IdempotentAPI.Cache.DistributedCache.Extensions.DependencyInjection;
+using IdempotentAPI.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
 
 namespace EcommerceAPI.Extensions;
@@ -23,6 +25,14 @@ public static class ServiceCollectionExtensions
         services.AddSwagger();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
+
+        services.AddIdempotentAPI(new IdempotentAPI.Core.IdempotencyOptions
+        {
+            ExpireHours = 1
+        });
+        services.AddDistributedMemoryCache();
+
+        services.AddIdempotentAPIUsingDistributedCache(); ;
 
         services.AddCors(options =>
         {
