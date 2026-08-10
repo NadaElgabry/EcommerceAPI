@@ -149,7 +149,7 @@ namespace EcommerceAPI.Application.Services.Auth
         public async Task<AuthResponse> Login
             (LoginRequest request, CancellationToken cancellationToken)
         {
-            var user = await _userRepository.GetByAsync(u => u.Email == request.Email.ToLower(), cancellationToken)
+            var user = await _userRepository.GetByAsync(u => u.Email == request.Email.Trim().ToLower() && u.isActive, cancellationToken)
                 ?? throw new UnauthorizedException("Invalid credentials");
             if (!_passwordHasher.Verify(request.Password, user.HashedPassword))
                 throw new UnauthorizedException("Invalid credentials");
