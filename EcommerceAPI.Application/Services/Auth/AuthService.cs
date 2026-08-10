@@ -47,7 +47,7 @@ namespace EcommerceAPI.Application.Services.Auth
         }
 
         /// <inheritdoc />
-        public async Task<AuthResponse> CreateUserAsync(
+        public async Task<string> CreateUserAsync(
             RegisterRequest request,
             CancellationToken cancellationToken = default)
         {
@@ -70,29 +70,16 @@ namespace EcommerceAPI.Application.Services.Auth
                 );
             }
 
-            bool phoneNumberExists =
-                await _userRepository.ExistByAsync(
-                    user =>
-                        user.PhoneNumber ==
-                        normalizedPhoneNumber,
-                    cancellationToken
-                );
-
-            if (phoneNumberExists)
-            {
-                throw new ConflictException(
-                    "A user with this phone number already exists."
-                );
-            }
-
+            request.Email = normalizedEmail;
+            request.PhoneNumber = normalizedPhoneNumber;
 
             var user = _authMapper.ToUser( request );
 
             user.HashedPassword = _passwordHasher.Hash(request.Password);
 
-            var refreshTokenResult = _tokenService.GenerateRefreshToken(user);
+            var token = _tokenService.GenerateActivationToken(user);
 
-            refreshTokenResult.Entity.User = user;
+
 
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
@@ -100,30 +87,62 @@ namespace EcommerceAPI.Application.Services.Auth
                 user,
                 cancellationToken
                 );
-
-                await _refreshTokenRepository.AddAsync(
-                    refreshTokenResult.Entity,
+                await _verificationTokenRepository.AddAsync(
+                    token.Entity,
                     cancellationToken
                 );
-
                 await _unitOfWork.SaveChangesAsync(
                     cancellationToken
                 );
+                
             }, cancellationToken);
+            /*await _emailService.SendEmailAsync(
+                    user.Email,
+                    "Activate your account",
+                    $"Your activation code is: {token.RawToken}"
+                );*/
+            return token.RawToken;
+        }
 
-            AccessTokenResult accessToken =
-                _tokenService.GenerateAccessToken(user);
+        public async Task<AuthResponse> ActivateEmailAsync(
+            ActivateEmailRequest request, CancellationToken cancellationToken = default)
+        {
+            var token = await _verificationTokenRepository.GetByAsync(
+                predicate: vt => vt.TokenHash == _tokenService.Hash(request.Token),
+                include: query => query.Include(vt => vt.User),
+                cancellationToken: cancellationToken);
+
+            if(token == null || !token.IsActive ) {
+                throw new NotFoundException("Invalid activation token.");
+            }
+
+            token.User.isActive = true;
+            token.ConsumedAt = DateTime.UtcNow;
+
+            var accesstoken = _tokenService.GenerateAccessToken(token.User);
+
+            var (rawToken, newRefreshToken) = _tokenService.GenerateRefreshToken(token.User);
+
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                await _refreshTokenRepository.AddAsync(newRefreshToken, cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }, cancellationToken);
 
             return new AuthResponse
             {
-                AccessToken = accessToken.Token,
-                AccessTokenExpiresAtUtc =
-                    accessToken.ExpiresAtUtc,
-                RefreshToken =
-                    refreshTokenResult.RawToken,
-                RefreshTokenExpiresAtUtc =
-                    refreshTokenResult.Entity.ExpiresAt,
+                AccessToken = accesstoken.Token,
+                AccessTokenExpiresAtUtc = accesstoken.ExpiresAtUtc,
+                RefreshToken = rawToken,
+                RefreshTokenExpiresAtUtc = newRefreshToken.ExpiresAt,
             };
+
+        }
+
+        public async Task<bool> IsEmailAvailable(EmailRequest request, CancellationToken cancellationToken = default)
+        {
+            var isValid = await _userRepository.ExistByAsync(u => u.Email == request.Email.ToLower(), cancellationToken);
+            return !(isValid);
         }
 
         /// <inheritdoc />
@@ -136,8 +155,6 @@ namespace EcommerceAPI.Application.Services.Auth
                 throw new UnauthorizedException("Invalid credentials");
 
             var accesstoken = _tokenService.GenerateAccessToken(user);
-            var storedToken = await _refreshTokenRepository
-                .GetByAsync(rt => rt.UserId == user.Id , cancellationToken);
             
             var (rawToken, newRefreshToken) = _tokenService.GenerateRefreshToken(user);
 
@@ -194,7 +211,8 @@ namespace EcommerceAPI.Application.Services.Auth
 
             var storedToken = await _refreshTokenRepository.GetByAsync(
                 predicate: rt => rt.TokenHash == hashedToken,
-                include: query => query.Include(rt => rt.User));
+                include: query => query.Include(rt => rt.User),
+                cancellationToken: cancellationToken);
 
             if (storedToken == null || !storedToken.IsActive)
             {

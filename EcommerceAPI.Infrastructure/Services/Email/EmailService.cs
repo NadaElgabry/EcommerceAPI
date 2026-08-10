@@ -4,10 +4,6 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
 using MimeKit;
-using System;
-using System.Collections.Generic;
-using System.Runtime;
-using System.Text;
 
 namespace EcommerceAPI.Infrastructure.Services.Mail
 {

@@ -37,18 +37,12 @@ namespace EcommerceAPI.Application.Validators
             RuleFor(request => request.PhoneNumber)
                 .NotEmpty()
                 .WithMessage("Phone number is required.")
-                .MinimumLength(7)
-                .WithMessage(
-                    "Phone number must contain at least 7 characters."
-                )
-                .MaximumLength(20)
-                .WithMessage(
-                    "Phone number cannot exceed 20 characters."
-                )
-                .Matches(@"^\+?[0-9\s\-()]+$")
-                .WithMessage(
-                    "Phone number contains invalid characters."
-                );
+                .MinimumLength(10)
+                .WithMessage("Phone number must contain at least 10 characters.")
+                .MaximumLength(15)
+                .WithMessage("Phone number cannot exceed 15 characters.")
+                .Matches(@"^(\+20|0020|0)?1[0125][0-9]{8}$")
+                .WithMessage("Phone number must be a valid Egyptian mobile number (e.g. 01012345678).");
 
             RuleFor(request => request.Password)
                 .NotEmpty()

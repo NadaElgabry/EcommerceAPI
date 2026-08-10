@@ -62,8 +62,8 @@ namespace EcommerceAPI.Infrastructure.Contexts
             modelBuilder.Entity<User>()
                 .Property(e => e.isActive)
                 .HasConversion(
-                    v => v.ToString(),
-                    v => bool.Parse(v)
+                    v => v.ToString(),    
+                    v => bool.Parse(v)           
                 )
                 .HasColumnType("nvarchar(10)");
             modelBuilder.Entity<RefreshToken>()

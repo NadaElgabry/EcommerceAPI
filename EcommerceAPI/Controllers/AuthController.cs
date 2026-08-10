@@ -19,33 +19,40 @@ namespace EcommerceAPI.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
         {
-            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            var deviceInfo = Request.Headers["User-Agent"].ToString();
             var result = await _authService.Login(request, cancellationToken);
             return Ok(result);
         }
 
         [HttpPost("register")]
-        public async Task<ActionResult<AuthResponse>> Register(
+        public async Task<IActionResult> Register(
             [FromBody] RegisterRequest request,
             CancellationToken cancellationToken)
         {
-            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            var deviceInfo = Request.Headers["User-Agent"].ToString();
-            AuthResponse response =
-                await _authService.CreateUserAsync(
+            var token = await _authService.CreateUserAsync(
                     request,
                     cancellationToken
                 );
 
+            return Ok(token);
+        }
+
+        [HttpPost("ActivateAccount")]
+        public async Task<IActionResult> ActivateAccount([FromBody] ActivateEmailRequest request, CancellationToken cancellationToken)
+        {
+            var response = await _authService.ActivateEmailAsync(request, cancellationToken);
             return Ok(response);
+        }
+
+        [HttpPost("IsEmailAvailable")]
+        public async Task<IActionResult> IsEmailAvailable([FromBody] EmailRequest request, CancellationToken cancellationToken)
+        {
+            var isAvailable = await _authService.IsEmailAvailable(request, cancellationToken);
+            return Ok(isAvailable);
         }
 
         [HttpPost("refresh")]
         public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
         { 
-            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            var deviceInfo = Request.Headers["User-Agent"].ToString();
             var response = await _authService.Refresh(request, cancellationToken);
             return Ok(response);
         }
