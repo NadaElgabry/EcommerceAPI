@@ -69,7 +69,9 @@ namespace EcommerceAPI.Controllers
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cancellationToken)
         {
             var x= await _authService.ForgotPasswordAsync(request, cancellationToken);
-            return Ok(new { message = $"If an account with that email exists, a reset code has been sent. {x}" });
+            return Ok(ApiResponse<string>.SuccessResponse(
+                message: $"If an account with that email exists, a reset code has been sent.{x}",
+                statusCode: 200));
         }
 
         [HttpPost("verify-reset-code")]
@@ -77,14 +79,16 @@ namespace EcommerceAPI.Controllers
         [FromBody] VerifyResetCodeRequest request, CancellationToken cancellationToken)
         {
             var response = await _authService.VerifyResetCodeAsync(request, cancellationToken);
-            return Ok(response);
+            return Ok(ApiResponse<VerifyResetCodeResponse>.SuccessResponse(message: "Code verified successfully", statusCode: 200, data: response));
         }
 
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
         {
             await _authService.ResetPasswordAsync(request, cancellationToken);
-            return NoContent();
+            return Ok(ApiResponse<string>.SuccessResponse(
+                message: "Password reset successfully.",
+                statusCode: 200));
         }
     }
 }
