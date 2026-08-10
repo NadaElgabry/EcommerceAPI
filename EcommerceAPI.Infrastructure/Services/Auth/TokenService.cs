@@ -105,7 +105,7 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
         /// </summary>
         /// <param name="rawToken">The raw refresh token to hash.</param>
         /// <returns>The Base64 encoded hash of the refresh token.</returns>
-        public string HashRefreshToken(string rawToken)
+        public string Hash(string rawToken)
         {
             var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
             return Convert.ToBase64String(bytes);
