@@ -2,7 +2,10 @@
 using EcommerceAPI.Application.DTOs.Auth;
 using EcommerceAPI.Application.Interfaces.IServices;
 using IdempotentAPI.Filters;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace EcommerceAPI.Controllers
 {
@@ -101,6 +104,15 @@ namespace EcommerceAPI.Controllers
             return Ok(ApiResponse<string>.SuccessResponse(
                 message: "Password reset successfully.",
                 statusCode: 200));
+        }
+
+        [HttpPut("users")]
+        [Authorize]
+        public async Task<IActionResult> UpdateUser([FromBody] UpdateProfileRequest request, CancellationToken cancellationToken)
+        {
+            var userGuid = Guid.TryParse(User.FindFirstValue(JwtRegisteredClaimNames.Sub),out var guid)?guid: Guid.Empty;
+            await _authService.UpdateProfileAsync(userGuid, request, cancellationToken);
+            return Ok(ApiResponse<string>.SuccessResponse(message: "User updated successfully", statusCode: 200));
         }
     }
 }

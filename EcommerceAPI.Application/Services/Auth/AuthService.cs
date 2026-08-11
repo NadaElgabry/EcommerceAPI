@@ -361,6 +361,20 @@ namespace EcommerceAPI.Application.Services.Auth
             }, cancellationToken);
         }
 
+        /// <inheritdoc />
+        public async Task UpdateProfileAsync(Guid userId, UpdateProfileRequest request, CancellationToken cancellationToken = default)
+        {
+            var user = await _userRepository.GetByAsync(u => u.Guid == userId, cancellationToken)
+                ?? throw new NotFoundException("User not found.");
+            
+            _authMapper.UpdateUserFromRequest(user, request);
+
+            _userRepository.Update(user);
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        }
+
 
     }
 }
