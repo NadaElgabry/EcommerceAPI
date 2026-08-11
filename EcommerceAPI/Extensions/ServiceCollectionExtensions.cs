@@ -2,6 +2,7 @@
 using EcommerceAPI.Middlewares;
 using IdempotentAPI.Cache.DistributedCache.Extensions.DependencyInjection;
 using IdempotentAPI.Extensions.DependencyInjection;
+using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
 using Microsoft.OpenApi;
 
 namespace EcommerceAPI.Extensions;
@@ -61,6 +62,7 @@ public static class ServiceCollectionExtensions
                 Description = "Enter your JWT token below.\n\nExample: \"12345abcdef\""
             });
         });
+        services.AddFluentValidationRulesToSwagger();
         return services;
     }
 }
