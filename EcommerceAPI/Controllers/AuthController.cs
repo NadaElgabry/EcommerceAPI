@@ -106,7 +106,7 @@ namespace EcommerceAPI.Controllers
                 statusCode: 200));
         }
 
-        [HttpPut("users")]
+        [HttpPut("user")]
         [Authorize]
         public async Task<IActionResult> UpdateUser([FromBody] UpdateProfileRequest request, CancellationToken cancellationToken)
         {
