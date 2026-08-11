@@ -19,7 +19,7 @@ public static class DependencyInjection
         services.AddScoped<IUserMapper, UserMapper>();
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
-
+        services.AddValidatorsFromAssemblyContaining<UpdateProfileRequestValidator>();
 
         return services;
     }
