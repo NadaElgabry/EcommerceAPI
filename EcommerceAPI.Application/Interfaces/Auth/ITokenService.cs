@@ -16,6 +16,7 @@ namespace EcommerceAPI.Application.Interfaces.Auth
         /// <param name="user">The user for whom to generate the access token.</param>
         /// <returns>The generated access token.</returns>
         public AccessTokenResult GenerateAccessToken(User user);
+
         /// <summary>
         /// Generates a refresh token for the specified user, along with the associated entity.
         /// </summary>
@@ -25,8 +26,11 @@ namespace EcommerceAPI.Application.Interfaces.Auth
       
         public string Hash(string refreshToken);
 
+        public string GenerateHighEntropyToken();
+
         public bool Verify(string rawToken, string hashedToken);
 
-        public (string RawToken, VerificationToken Entity) GenerateActivationToken(User user, VerificationPurpose purpose);
+        public (string RawToken, VerificationToken Entity) GenerateVerificationToken(User user, VerificationPurpose purpose);
+
     }
 }

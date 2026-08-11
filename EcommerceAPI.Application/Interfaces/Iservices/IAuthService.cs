@@ -31,7 +31,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// <param name="request">The activation request containing the user's email and activation code</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests</param>
         /// <returns>The authentication response containing access and refresh tokens</returns>
-        public Task<AuthResponse> ActivateEmailAsync(
+        public Task<bool> ActivateEmailAsync(
             ActivateEmailRequest request, CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -72,5 +72,33 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// <returns>A task representing the asynchronous operation.</returns>
         public Task Logout(
             LogoutRequest request, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Receives an Email address and sends a reset code to the provided email address.
+        /// </summary>
+        /// <param name="request">The request containing the user's email address.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public Task ForgotPasswordAsync(
+            ForgotPasswordRequest request, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Verifies the reset code provided by the user.
+        /// </summary>
+        /// <param name="request">The request containing the reset code.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public Task<VerifyResetCodeResponse> VerifyResetCodeAsync(
+            VerifyResetCodeRequest request, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Resets the user's password using the provided reset code and new password.
+        /// </summary>
+        /// <param name="request">The request containing the reset code and new password.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public Task ResetPasswordAsync(
+            ResetPasswordRequest request, CancellationToken cancellationToken = default);
+
     }
 }

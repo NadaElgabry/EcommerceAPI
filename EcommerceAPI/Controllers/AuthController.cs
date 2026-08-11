@@ -2,7 +2,6 @@
 using EcommerceAPI.Application.DTOs.Auth;
 using EcommerceAPI.Application.Interfaces.IServices;
 using IdempotentAPI.Filters;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EcommerceAPI.Controllers
@@ -53,8 +52,8 @@ namespace EcommerceAPI.Controllers
         [HttpPost("ActivateAccount")]
         public async Task<IActionResult> ActivateAccount([FromBody] ActivateEmailRequest request, CancellationToken cancellationToken)
         {
-            var response = await _authService.ActivateEmailAsync(request, cancellationToken);
-            return Ok(ApiResponse<AuthResponse>.SuccessResponse(message: "Email activated successfully", statusCode: 200, data: response));
+            var result = await _authService.ActivateEmailAsync(request, cancellationToken);
+            return Ok(ApiResponse<bool>.SuccessResponse(message: "Email activated successfully", statusCode: 200, data:result));
         }
 
         [HttpPost("IsEmailAvailable")]
@@ -76,6 +75,32 @@ namespace EcommerceAPI.Controllers
         { 
             await _authService.Logout(request, cancellationToken);
             return StatusCode(204, ApiResponse<string>.SuccessResponse(message: "Logged out successfully", statusCode: 204));        
+        }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cancellationToken)
+        {
+            await _authService.ForgotPasswordAsync(request, cancellationToken);
+            return Ok(ApiResponse<string>.SuccessResponse(
+                message: $"If an account with that email exists, a reset code has been sent.",
+                statusCode: 200));
+        }
+
+        [HttpPost("verify-reset-code")]
+        public async Task<ActionResult<VerifyResetCodeResponse>> VerifyResetCode(
+        [FromBody] VerifyResetCodeRequest request, CancellationToken cancellationToken)
+        {
+            var response = await _authService.VerifyResetCodeAsync(request, cancellationToken);
+            return Ok(ApiResponse<VerifyResetCodeResponse>.SuccessResponse(message: "Code verified successfully", statusCode: 200, data: response));
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
+        {
+            await _authService.ResetPasswordAsync(request, cancellationToken);
+            return Ok(ApiResponse<string>.SuccessResponse(
+                message: "Password reset successfully.",
+                statusCode: 200));
         }
     }
 }

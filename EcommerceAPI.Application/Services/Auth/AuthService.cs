@@ -40,9 +40,8 @@ namespace EcommerceAPI.Application.Services.Auth
             IVerificationEmailTemplateProvider templateProvider)
         {
             _userRepository = userRepository;
-            _refreshTokenRepository =
-                refreshTokenRepository;
             _verificationTokenRepository = verificationTokenRepository;
+            _refreshTokenRepository = refreshTokenRepository;
             _authMapper = authMapper;
             _passwordHasher = passwordHasher;
             _tokenService = tokenService;
@@ -83,7 +82,7 @@ namespace EcommerceAPI.Application.Services.Auth
 
             user.HashedPassword = _passwordHasher.Hash(request.Password);
 
-            var token = _tokenService.GenerateActivationToken(user, VerificationPurpose.EmailVerification);
+            var token = _tokenService.GenerateVerificationToken(user, VerificationPurpose.EmailVerification);
 
 
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
@@ -125,7 +124,7 @@ namespace EcommerceAPI.Application.Services.Auth
                 .FirstOrDefault()
                 ?? throw new NotFoundException("No active verification token found.");
 
-            var newToken = _tokenService.GenerateActivationToken(user, request.Purpose);
+            var newToken = _tokenService.GenerateVerificationToken(user, request.Purpose);
 
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
@@ -146,7 +145,7 @@ namespace EcommerceAPI.Application.Services.Auth
         }
 
         /// <inheritdoc />
-        public async Task<AuthResponse> ActivateEmailAsync(
+        public async Task<bool> ActivateEmailAsync(
             ActivateEmailRequest request, CancellationToken cancellationToken = default)
         {
             var token = await _verificationTokenRepository.GetByAsync(
@@ -171,13 +170,7 @@ namespace EcommerceAPI.Application.Services.Auth
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
 
-            return new AuthResponse
-            {
-                AccessToken = accesstoken.Token,
-                AccessTokenExpiresAtUtc = accesstoken.ExpiresAtUtc,
-                RefreshToken = rawToken,
-                RefreshTokenExpiresAtUtc = newRefreshToken.ExpiresAt,
-            };
+            return true;
 
         }
 
@@ -283,5 +276,91 @@ namespace EcommerceAPI.Application.Services.Auth
                 RefreshTokenExpiresAtUtc = newRefreshToken.ExpiresAt
             };
         }
+
+        /// <inheritdoc/>
+        public async Task ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default)
+        {
+            var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+
+            var user = await _userRepository.GetByAsync(u => u.Email == normalizedEmail, cancellationToken);
+
+            // Not throwing error if the user doesnt exist to avoid giving away information about registered users
+            if (user == null)
+            {
+                _logger.LogInformation("Password reset requested for a non-existent user with email: {Email}", normalizedEmail);
+                return;
+            }
+
+            var (rawCode, TokenEntity) = _tokenService.GenerateVerificationToken(user, VerificationPurpose.PasswordReset);
+
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                await _verificationTokenRepository.AddAsync(TokenEntity, cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }, cancellationToken);
+
+            await SendVerificationEmailAsync(user, rawCode,
+                VerificationPurpose.PasswordReset, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public async Task<VerifyResetCodeResponse> VerifyResetCodeAsync(VerifyResetCodeRequest request, CancellationToken cancellationToken = default)
+        {
+            var hashedCode = _tokenService.Hash(request.Code);
+
+            var storedToken = await _verificationTokenRepository.GetByAsync(
+                predicate: vt => vt.TokenHash == hashedCode && vt.Purpose == VerificationPurpose.PasswordReset,
+                include: query => query.Include(vt => vt.User),
+                cancellationToken: cancellationToken);
+
+            if (storedToken == null || !storedToken.IsActive)
+            {
+                throw new BadRequestException("Invalid or expired reset code.");
+            }
+
+            var newResetToken = _tokenService.GenerateHighEntropyToken();
+
+            storedToken.TokenHash = _tokenService.Hash(newResetToken);
+            storedToken.ExpiresAt = DateTime.UtcNow.AddMinutes(10);
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return new VerifyResetCodeResponse
+            {
+                ResetToken = newResetToken,
+            };
+
+        }
+
+        /// <inheritdoc />
+        public async Task ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default)
+        {
+            var hashedToken = _tokenService.Hash(request.ResetToken);
+
+            var storedToken = await _verificationTokenRepository.GetByAsync(predicate: vt => vt.TokenHash == hashedToken && vt.Purpose == Domain.Enums.VerificationPurpose.PasswordReset,
+                include: query => query.Include(vt => vt.User),
+                cancellationToken: cancellationToken);
+
+            if(storedToken == null || !storedToken.IsActive)
+            {
+                throw new BadRequestException("Invalid or expired reset token. Please verify your email again.");
+            }
+
+            var user = storedToken.User;
+            user.HashedPassword = _passwordHasher.Hash(request.NewPassword);
+            storedToken.ConsumedAt = DateTime.UtcNow;
+
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                await _refreshTokenRepository.DeleteAllByAsync(
+                    rt => rt.UserId == user.Id,
+                    cancellationToken);
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            }, cancellationToken);
+        }
+
+
     }
 }

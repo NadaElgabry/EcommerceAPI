@@ -63,11 +63,24 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
             return (rawToken, entity);
         }
 
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <returns></returns>
+        public string GenerateHighEntropyToken()
+        {
+            var randomBytes = new byte[64];
+            var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomBytes);
+            return Convert.ToBase64String(randomBytes);
+        }
+
         /// <summary>
         /// Hashes the raw token using SHA256 and returns the Base64 encoded string.
         /// </summary>
-        /// <param name="rawToken">The raw token to hash.</param>
-        /// <returns>The Base64 encoded hash of the token.</returns>
+        /// <param name="rawToken">The raw refresh token to hash.</param>
+        /// <returns>The Base64 encoded hash of the refresh token.</returns>
         public string Hash(string rawToken)
         {
             var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
@@ -80,7 +93,7 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
             return hashedRawToken == hashedToken;
         }
 
-        public (string RawToken, VerificationToken Entity) GenerateActivationToken(User user, VerificationPurpose purpose)
+        public (string RawToken, VerificationToken Entity) GenerateVerificationToken(User user, VerificationPurpose purpose)
         {
             byte[] randomBytes = new byte[4];
             RandomNumberGenerator.Fill(randomBytes);
