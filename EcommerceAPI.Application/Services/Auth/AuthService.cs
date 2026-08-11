@@ -10,8 +10,6 @@ using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Net.Mail;
-using System.Runtime;
 
 namespace EcommerceAPI.Application.Services.Auth
 {
@@ -27,6 +25,7 @@ namespace EcommerceAPI.Application.Services.Auth
         private readonly ILogger<AuthService> _logger;
         private readonly IEmailService _emailService;
         private readonly IVerificationEmailTemplateProvider _templateProvider;
+        private readonly ICurrentUserService _currentUserService;
         public AuthService(
             IRepository<User> userRepository,
             IRepository<VerificationToken> verificationTokenRepository,
@@ -37,7 +36,8 @@ namespace EcommerceAPI.Application.Services.Auth
             IUnitOfWork unitOfWork,
             ILogger<AuthService> logger,
             IEmailService emailService,
-            IVerificationEmailTemplateProvider templateProvider)
+            IVerificationEmailTemplateProvider templateProvider,
+            ICurrentUserService currentUserService)
         {
             _userRepository = userRepository;
             _verificationTokenRepository = verificationTokenRepository;
@@ -49,6 +49,7 @@ namespace EcommerceAPI.Application.Services.Auth
             _logger = logger;
             _emailService = emailService;
             _templateProvider = templateProvider;
+            _currentUserService = currentUserService;
         }
 
         /// <inheritdoc />
@@ -211,6 +212,7 @@ namespace EcommerceAPI.Application.Services.Auth
                 AccessTokenExpiresAtUtc = accesstoken.ExpiresAtUtc,
                 RefreshToken = rawToken,
                 RefreshTokenExpiresAtUtc = newRefreshToken.ExpiresAt,
+                Role = user.Role
             };
         }
 
@@ -273,7 +275,8 @@ namespace EcommerceAPI.Application.Services.Auth
                 AccessToken = accessTokenResult.Token,
                 AccessTokenExpiresAtUtc = accessTokenResult.ExpiresAtUtc,
                 RefreshToken = rawToken,
-                RefreshTokenExpiresAtUtc = newRefreshToken.ExpiresAt
+                RefreshTokenExpiresAtUtc = newRefreshToken.ExpiresAt,
+                Role = storedToken.User.Role
             };
         }
 
@@ -361,6 +364,14 @@ namespace EcommerceAPI.Application.Services.Auth
             }, cancellationToken);
         }
 
-
+        /// <inheritdoc />
+        public async Task<UserResponse> GetUserProfileAsync(CancellationToken cancellationToken = default)
+        {
+            var user = await _userRepository.GetByAsync(
+                predicate: u => u.Guid == _currentUserService.UserGuid,
+                cancellationToken: cancellationToken)
+                ?? throw new NotFoundException("User not found.");
+            return _authMapper.ToUserResponse(user);
+        }
     }
 }
