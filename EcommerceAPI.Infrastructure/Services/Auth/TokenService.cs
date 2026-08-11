@@ -1,5 +1,6 @@
 ﻿using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Domain.Entities;
+using EcommerceAPI.Domain.Enums;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -54,22 +55,87 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
 
             var entity = new RefreshToken
             {
-                TokenHash = HashRefreshToken(rawToken),
+                TokenHash = Hash(rawToken),
                 ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays),
                 UserId = user.Id
             };
 
             return (rawToken, entity);
         }
+
         /// <summary>
-        /// Hashes the raw refresh token using SHA256 and returns the Base64 encoded string.
+        /// Generates a password reset token for the specified user.
+        /// </summary>
+        /// <param name="user">The user for whom to generate the password reset token.</param>
+        /// <returns>A tuple containing the raw token and the verification token entity.</returns>
+        public (string RawToken, VerificationToken Entity) GeneratePasswordResetToken(User user)
+        {
+            byte[] randomBytes = new byte[4];
+            RandomNumberGenerator.Fill(randomBytes);
+            uint randomValue = BitConverter.ToUInt32(randomBytes, 0);
+            int code = (int)(randomValue % 1_000_000);
+            string rawToken = code.ToString("D6");
+
+            string hashedToken = Hash(rawToken);
+            var entity = new VerificationToken 
+            { 
+                TokenHash = hashedToken,
+                Purpose = Domain.Enums.VerificationPurpose.PasswordReset,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(15),
+                User = user
+            };
+            return (rawToken, entity);
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <returns></returns>
+        public string GenerateHighEntropyToken()
+        {
+            var randomBytes = new byte[64];
+            var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomBytes);
+            return Convert.ToBase64String(randomBytes);
+        }
+
+        /// <summary>
+        /// Hashes the raw token using SHA256 and returns the Base64 encoded string.
         /// </summary>
         /// <param name="rawToken">The raw refresh token to hash.</param>
         /// <returns>The Base64 encoded hash of the refresh token.</returns>
-        public string HashRefreshToken(string rawToken)
+        public string Hash(string rawToken)
         {
             var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
             return Convert.ToBase64String(bytes);
+        }
+
+        public bool Verify(string rawToken, string hashedToken)
+        {
+            var hashedRawToken = Hash(rawToken);
+            return hashedRawToken == hashedToken;
+        }
+
+        public (string RawToken, VerificationToken Entity) GenerateActivationToken(User user)
+        {
+            byte[] randomBytes = new byte[4];
+            RandomNumberGenerator.Fill(randomBytes);
+            uint randomValue = BitConverter.ToUInt32(randomBytes, 0);
+            int code = (int)(randomValue % 1_000_000);
+            string rawToken = code.ToString("D6");
+
+            string hashedToken= Hash(rawToken);
+            var entity = new VerificationToken
+            {
+                TokenHash = hashedToken,
+                Purpose = VerificationPurpose.EmailVerification,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(10),
+                User = user
+            };
+
+            return (rawToken, entity);
         }
 
     }

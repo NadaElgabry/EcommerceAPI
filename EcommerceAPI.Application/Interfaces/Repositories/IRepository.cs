@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Query;
+﻿using EcommerceAPI.Domain.Entities;
+using Microsoft.EntityFrameworkCore.Query;
 using System.Linq.Expressions;
 
 namespace EcommerceAPI.Application.Interfaces.Repositories
@@ -30,9 +31,17 @@ namespace EcommerceAPI.Application.Interfaces.Repositories
         /// <returns>true if an entity exists; otherwise, false.</returns>
         public Task<bool> ExistByAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
         /// <summary>
+        ///  Deletes all entities of requested type that match the given predicate.
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public Task DeleteAllByAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
+        /// <summary>
         /// Updates an existing entity of requested type.
         /// </summary>
         /// <param name="entity">The entity to update.</param>
+        /// 
         public void Update(T entity);
         /// <summary>
         /// Deletes an entity of requested type from the database.

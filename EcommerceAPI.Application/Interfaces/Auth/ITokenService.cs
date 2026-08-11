@@ -22,6 +22,14 @@ namespace EcommerceAPI.Application.Interfaces.Auth
         /// <returns>A tuple containing the raw token and the associated refresh token entity.</returns>
         public (string RawToken, RefreshToken Entity) GenerateRefreshToken(User user);
       
-        public string HashRefreshToken(string refreshToken);
+        public string Hash(string refreshToken);
+
+        public string GenerateHighEntropyToken();
+
+        public bool Verify(string rawToken, string hashedToken);
+
+        public (string RawToken, VerificationToken Entity) GeneratePasswordResetToken(User user);
+
+        public (string RawToken, VerificationToken Entity) GenerateActivationToken(User user);
     }
 }

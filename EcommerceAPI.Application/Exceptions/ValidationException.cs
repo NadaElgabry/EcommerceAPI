@@ -7,7 +7,7 @@ namespace EcommerceAPI.Application.Exceptions
         public override int StatusCode => StatusCodes.Status400BadRequest;
         public override string Title => "Validation failure";
 
-        public List<ErrorDetail> Errors { get; }
+        public List<ErrorDetail> Errors { get; } = new();
 
         public ValidationException()
             : base("One or more validation failures occurred.")

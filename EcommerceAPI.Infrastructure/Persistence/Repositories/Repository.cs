@@ -42,6 +42,12 @@ namespace EcommerceAPI.Infrastructure.Persistence.Repositories
             }
             return await query.FirstOrDefaultAsync(predicate, cancellationToken);
         }
+        /// <inheritdoc />
+        public async Task DeleteAllByAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+        {
+            var entities = await _dbSet.Where(predicate).ToListAsync(cancellationToken);
+            _dbSet.RemoveRange(entities);
+        }
 
         /// <inheritdoc />
         public void Update(T entity)
