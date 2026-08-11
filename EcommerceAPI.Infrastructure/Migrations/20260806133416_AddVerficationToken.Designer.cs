@@ -4,6 +4,7 @@ using EcommerceAPI.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EcommerceAPI.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260806133416_AddVerficationToken")]
+    partial class AddVerficationToken
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -100,15 +103,13 @@ namespace EcommerceAPI.Infrastructure.Migrations
 
                     b.Property<string>("Role")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("isActive")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(10)");
+                    b.Property<bool>("isActive")
+                        .HasColumnType("bit");
 
                     b.HasKey("Id");
 
@@ -157,10 +158,8 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Purpose")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<int>("Purpose")
+                        .HasColumnType("int");
 
                     b.Property<string>("TokenHash")
                         .IsRequired()
@@ -205,7 +204,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.VerificationToken", b =>
                 {
                     b.HasOne("EcommerceAPI.Domain.Entities.User", "User")
-                        .WithMany("VerificationTokens")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -218,8 +217,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.Navigation("Addresses");
 
                     b.Navigation("RefreshTokens");
-
-                    b.Navigation("VerificationTokens");
                 });
 #pragma warning restore 612, 618
         }

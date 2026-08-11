@@ -18,6 +18,8 @@ namespace EcommerceAPI.Infrastructure.Contexts
 
         public DbSet<RefreshToken> RefreshTokens { get; set; }
 
+        public DbSet<VerificationToken> VerificationTokens { get; set; }
+
         protected override void OnModelCreating(
             ModelBuilder modelBuilder)
         {
@@ -25,7 +27,8 @@ namespace EcommerceAPI.Infrastructure.Contexts
 
             modelBuilder.Entity<User>()
                 .Property(u => u.Role)
-                .HasConversion<string>();
+                .HasConversion<string>()
+                .HasMaxLength(50);
 
             modelBuilder.Entity<User>()
                 .HasMany(user => user.Addresses)
@@ -37,6 +40,11 @@ namespace EcommerceAPI.Infrastructure.Contexts
                 .HasMany(user => user.RefreshTokens)
                 .WithOne(refreshToken => refreshToken.User)
                 .HasForeignKey(refreshToken => refreshToken.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<User>()
+                .HasMany(user => user.VerificationTokens)
+                .WithOne(verificationToken => verificationToken.User)
+                .HasForeignKey(verificationToken => verificationToken.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<User>()
@@ -51,9 +59,29 @@ namespace EcommerceAPI.Infrastructure.Contexts
                 .HasIndex(user => user.Email)
                 .IsUnique();
 
+            modelBuilder.Entity<User>()
+                .Property(e => e.isActive)
+                .HasConversion(
+                    v => v.ToString(),    
+                    v => bool.Parse(v)           
+                )
+                .HasColumnType("nvarchar(10)");
             modelBuilder.Entity<RefreshToken>()
                 .HasIndex(refreshToken => refreshToken.TokenHash)
                 .IsUnique();
+
+            modelBuilder.Entity<VerificationToken>()
+                .Property(verificationToken => verificationToken.TokenHash)
+                .HasMaxLength(88);
+
+            modelBuilder.Entity<VerificationToken>()
+                .HasIndex(verificationToken => verificationToken.TokenHash)
+                .IsUnique();
+
+            modelBuilder.Entity<VerificationToken>()
+                .Property(vt => vt.Purpose)
+                .HasConversion<string>()
+                .HasMaxLength(50);
         }
     }
 }

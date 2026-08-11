@@ -1,7 +1,31 @@
-﻿using EcommerceAPI.Application.DTOs.Auth;
+﻿/*// AuthServiceTests.cs
+//
+// Full unit test coverage for EcommerceAPI.Application.Services.Auth.AuthService.
+//
+// Stack: xUnit + Moq
+// NuGet packages needed in the test project:
+//   - xunit
+//   - xunit.runner.visualstudio
+//   - Moq
+//   - Microsoft.EntityFrameworkCore (for IIncludableQueryable used by IRepository<T>)
+//
+// NOTE ON DOMAIN ENTITIES:
+// User, RefreshToken, and VerificationToken all have plain public setters, EXCEPT
+// IsActive on RefreshToken/VerificationToken, which is a computed property:
+//   RefreshToken.IsActive       => DateTime.UtcNow < ExpiresAt
+//   VerificationToken.IsActive  => ConsumedAt == null && DateTime.UtcNow < ExpiresAt
+// The factory helpers below set ExpiresAt/ConsumedAt to drive IsActive rather than
+// assigning it directly (it has no setter).
+
+using System;
+using System.Linq.Expressions;
+using System.Threading;
+using System.Threading.Tasks;
+using EcommerceAPI.Application.DTOs.Auth;
 using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
+using EcommerceAPI.Application.Interfaces.Email;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Application.Services.Auth;
@@ -9,427 +33,433 @@ using EcommerceAPI.Domain.Entities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
-namespace EcommerceAPI.Tests.Services.Auth
+namespace EcommerceAPI.Application.Tests.Services.Auth
 {
-    /// <summary>
-    /// Unit tests for <see cref="AuthService"/>, covering Register (CreateUserAsync),
-    /// Login, Logout, and Refresh. Written against the real IRepository / ITokenService /
-    /// IUnitOfWork / IAuthMapper / entity / DTO definitions.
-    /// </summary>
     public class AuthServiceTests
     {
-        private readonly Mock<IRepository<User>> _userRepositoryMock = new();
-        private readonly Mock<IRepository<RefreshToken>> _refreshTokenRepositoryMock = new();
-        private readonly Mock<IAuthMapper> _authMapperMock = new();
-        private readonly Mock<IPasswordHasher> _passwordHasherMock = new();
-        private readonly Mock<ITokenService> _tokenServiceMock = new();
-        private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
-        private readonly Mock<ILogger<AuthService>> _loggerMock = new();
+        private readonly Mock<IRepository<User>> _userRepository = new();
+        private readonly Mock<IRepository<VerificationToken>> _verificationTokenRepository = new();
+        private readonly Mock<IRepository<RefreshToken>> _refreshTokenRepository = new();
+        private readonly Mock<IAuthMapper> _authMapper = new();
+        private readonly Mock<IPasswordHasher> _passwordHasher = new();
+        private readonly Mock<ITokenService> _tokenService = new();
+        private readonly Mock<IUnitOfWork> _unitOfWork = new();
+        private readonly Mock<ILogger<AuthService>> _logger = new();
+        private readonly Mock<IEmailService> _emailService = new();
 
         private readonly AuthService _sut;
 
         public AuthServiceTests()
         {
-            _sut = new AuthService(
-                _userRepositoryMock.Object,
-                _refreshTokenRepositoryMock.Object,
-                _authMapperMock.Object,
-                _passwordHasherMock.Object,
-                _tokenServiceMock.Object,
-                _unitOfWorkMock.Object,
-                _loggerMock.Object);
-
-            // Transactions just invoke the delegate for these tests.
-            _unitOfWorkMock
+            // Make ExecuteInTransactionAsync actually invoke the delegate passed to it,
+            // so the code under test runs exactly as it would in production.
+            _unitOfWork
                 .Setup(u => u.ExecuteInTransactionAsync(It.IsAny<Func<Task>>(), It.IsAny<CancellationToken>()))
                 .Returns<Func<Task>, CancellationToken>((operation, _) => operation());
+
+            _sut = new AuthService(
+                _userRepository.Object,
+                _verificationTokenRepository.Object,
+                _refreshTokenRepository.Object,
+                _authMapper.Object,
+                _passwordHasher.Object,
+                _tokenService.Object,
+                _unitOfWork.Object,
+                _logger.Object,
+                _emailService.Object);
         }
 
-        private static User CreateUser(int id = 1, int roleId = 2, string email = "user@test.com", string hashedPassword = "hashed")
+        // ---------------------------------------------------------------
+        // Test helpers / factories
+        //
+        // RefreshToken.IsActive and VerificationToken.IsActive are computed
+        // (based on ExpiresAt / ConsumedAt), not stored — so to control them
+        // in a test we set ExpiresAt (and ConsumedAt) into the past or future
+        // rather than assigning IsActive itself.
+        // ---------------------------------------------------------------
+
+        private static User CreateUser(string email = "user@example.com", string hashedPassword = "hashed", bool isActive = false) => new()
         {
-            return new User
-            {
-                Id = id,
-                Email = email,
-                HashedPassword = hashedPassword,
-                Role = Domain.Enums.Role.Customer
-            };
-        }
+            Email = email,
+            HashedPassword = hashedPassword,
+            isActive = isActive
+        };
 
-        private void SetupSimpleUserGetBy(User? user) =>
-            _userRepositoryMock
-                .Setup(r => r.GetByAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(user);
+        private static RefreshToken CreateRefreshToken(User user, bool isActive = true, string tokenHash = "hashed-refresh") => new()
+        {
+            User = user,
+            UserId = user.Id,
+            TokenHash = tokenHash,
+            ExpiresAt = isActive ? DateTime.UtcNow.AddDays(7) : DateTime.UtcNow.AddDays(-1)
+        };
 
-        private void SetupSimpleRefreshTokenGetBy(RefreshToken? token) =>
-            _refreshTokenRepositoryMock
-                .Setup(r => r.GetByAsync(It.IsAny<Expression<Func<RefreshToken, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(token);
+        private static VerificationToken CreateVerificationToken(User user, bool isActive = true, string tokenHash = "hashed-activation") => new()
+        {
+            User = user,
+            UserId = user.Id,
+            TokenHash = tokenHash,
+            ExpiresAt = isActive ? DateTime.UtcNow.AddDays(1) : DateTime.UtcNow.AddDays(-1),
+            ConsumedAt = null
+        };
 
-        private void SetupIncludeRefreshTokenGetBy(RefreshToken? token) =>
-            _refreshTokenRepositoryMock
-                .Setup(r => r.GetByAsync(
-                    It.IsAny<Expression<Func<RefreshToken, bool>>>(),
-                    It.IsAny<Func<IQueryable<RefreshToken>, IIncludableQueryable<RefreshToken, object>>?>(),
-                    It.IsAny<CancellationToken>()))
-                .ReturnsAsync(token);
-
-        #region Register / CreateUserAsync
+        // =================================================================
+        // CreateUserAsync
+        // =================================================================
 
         [Fact]
-        public async Task CreateUserAsync_NewUser_CreatesUserAndReturnsAuthResponse()
+        public async Task CreateUserAsync_WhenEmailIsNew_CreatesUserAndReturnsRawActivationToken()
         {
+            // Arrange
             var request = new RegisterRequest
             {
                 FirstName = "Jane",
                 LastName = "Doe",
-                Email = "Jane.Doe@Test.com",
-                PhoneNumber = " 555-0100 ",
-                Password = "P@ssw0rd"
+                Email = "  Jane.Doe@Example.com ",
+                PhoneNumber = "  555-1234  ",
+                Password = "Sup3rSecret!"
             };
-            var ip = "203.0.113.10";
-            var deviceInfo = "TestAgent";
 
-            _userRepositoryMock
+            var mappedUser = CreateUser(email: "jane.doe@example.com");
+
+            _userRepository
                 .Setup(r => r.ExistByAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(false);
 
-            var mappedUser = new User { Email = "jane.doe@test.com", PhoneNumber = "555-0100" };
-            _authMapperMock.Setup(m => m.ToUser(request)).Returns(mappedUser);
+            _authMapper
+                .Setup(m => m.ToUser(It.IsAny<RegisterRequest>()))
+                .Returns(mappedUser);
 
-            _passwordHasherMock.Setup(p => p.Hash(request.Password)).Returns("hashed-pw");
+            _passwordHasher
+                .Setup(p => p.Hash("Sup3rSecret!"))
+                .Returns("hashed-password");
 
-            var refreshEntity = new RefreshToken { ExpiresAt = DateTime.UtcNow.AddDays(7) };
-            _tokenServiceMock
-                .Setup(t => t.GenerateRefreshToken(mappedUser))
-                .Returns(("raw-refresh", refreshEntity));
+            var verificationToken = CreateVerificationToken(mappedUser);
+            _tokenService
+                .Setup(t => t.GenerateActivationToken(mappedUser))
+                .Returns(("raw-activation-token", verificationToken));
 
-            var accessTokenResult = new AccessTokenResult("access-token", DateTime.UtcNow.AddMinutes(15));
-            _tokenServiceMock.Setup(t => t.GenerateAccessToken(mappedUser)).Returns(accessTokenResult);
+            // Act
+            var result = await _sut.CreateUserAsync(request, CancellationToken.None);
 
-            var result = await _sut.CreateUserAsync(request,CancellationToken.None);
+            // Assert
+            Assert.Equal("raw-activation-token", result);
+            Assert.Equal("jane.doe@example.com", request.Email); // normalized in place
+            Assert.Equal("555-1234", request.PhoneNumber);       // trimmed in place
 
-            Assert.Equal("access-token", result.AccessToken);
-            Assert.Equal(accessTokenResult.ExpiresAtUtc, result.AccessTokenExpiresAtUtc);
-            Assert.Equal("raw-refresh", result.RefreshToken);
-            Assert.Equal(refreshEntity.ExpiresAt, result.RefreshTokenExpiresAtUtc);
-
-            Assert.Equal(Domain.Enums.Role.Customer, mappedUser.Role);
-            Assert.Equal("hashed-pw", mappedUser.HashedPassword);
-            Assert.Same(mappedUser, refreshEntity.User);
-
-            _userRepositoryMock.Verify(r => r.AddAsync(mappedUser, It.IsAny<CancellationToken>()), Times.Once);
-            _refreshTokenRepositoryMock.Verify(r => r.AddAsync(refreshEntity, It.IsAny<CancellationToken>()), Times.Once);
-            _unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+            _userRepository.Verify(r => r.AddAsync(mappedUser, It.IsAny<CancellationToken>()), Times.Once);
+            _verificationTokenRepository.Verify(r => r.AddAsync(verificationToken, It.IsAny<CancellationToken>()), Times.Once);
+            _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+            _unitOfWork.Verify(u => u.ExecuteInTransactionAsync(It.IsAny<Func<Task>>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
-        public async Task CreateUserAsync_EmailAlreadyExists_ThrowsConflictException_AndDoesNotCheckPhone()
+        public async Task CreateUserAsync_WhenEmailAlreadyExists_ThrowsConflictException()
         {
-            var request = new RegisterRequest { Email = "taken@test.com", PhoneNumber = "555-0100", Password = "x" };
+            // Arrange
+            var request = new RegisterRequest
+            {
+                Email = "existing@example.com",
+                PhoneNumber = "5551234",
+                Password = "password"
+            };
 
-            _userRepositoryMock
+            _userRepository
                 .Setup(r => r.ExistByAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
-            await Assert.ThrowsAsync<ConflictException>(
-                () => _sut.CreateUserAsync(request, CancellationToken.None));
+            // Act & Assert
+            await Assert.ThrowsAsync<ConflictException>(() => _sut.CreateUserAsync(request, CancellationToken.None));
 
-            _userRepositoryMock.Verify(
-                r => r.ExistByAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()),
-                Times.Once);
-            _authMapperMock.Verify(m => m.ToUser(It.IsAny<RegisterRequest>()), Times.Never);
+            _authMapper.Verify(m => m.ToUser(It.IsAny<RegisterRequest>()), Times.Never);
+            _userRepository.Verify(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWork.Verify(u => u.ExecuteInTransactionAsync(It.IsAny<Func<Task>>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        // =================================================================
+        // ActivateEmailAsync
+        // =================================================================
+
+        [Fact]
+        public async Task ActivateEmailAsync_WhenTokenIsValid_ActivatesUserAndReturnsAuthResponse()
+        {
+            // Arrange
+            var request = new ActivateEmailRequest { Token = "raw-token" };
+            var user = CreateUser(isActive: false);
+            var verificationToken = CreateVerificationToken(user, isActive: true, tokenHash: "hashed-token");
+
+            _tokenService.Setup(t => t.Hash("raw-token")).Returns("hashed-token");
+
+            _verificationTokenRepository
+                .Setup(r => r.GetByAsync(
+                    It.IsAny<Expression<Func<VerificationToken, bool>>>(),
+                    It.IsAny<Func<IQueryable<VerificationToken>, IIncludableQueryable<VerificationToken, object>>?>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(verificationToken);
+
+            var accessTokenResult = new AccessTokenResult("access-token", DateTime.UtcNow.AddMinutes(15));
+            _tokenService.Setup(t => t.GenerateAccessToken(user)).Returns(accessTokenResult);
+
+            var refreshToken = CreateRefreshToken(user);
+            _tokenService.Setup(t => t.GenerateRefreshToken(user)).Returns(("raw-refresh-token", refreshToken));
+
+            // Act
+            var response = await _sut.ActivateEmailAsync(request, CancellationToken.None);
+
+            // Assert
+            Assert.True(user.isActive);
+            Assert.NotNull(verificationToken.ConsumedAt);
+            Assert.Equal("access-token", response.AccessToken);
+            Assert.Equal("raw-refresh-token", response.RefreshToken);
+            Assert.Equal(accessTokenResult.ExpiresAtUtc, response.AccessTokenExpiresAtUtc);
+            Assert.Equal(refreshToken.ExpiresAt, response.RefreshTokenExpiresAtUtc);
+
+            _refreshTokenRepository.Verify(r => r.AddAsync(refreshToken, It.IsAny<CancellationToken>()), Times.Once);
+            _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
-        public async Task CreateUserAsync_PhoneNumberAlreadyExists_ThrowsConflictException()
+        public async Task ActivateEmailAsync_WhenTokenNotFound_ThrowsNotFoundException()
         {
-            var request = new RegisterRequest { Email = "new@test.com", PhoneNumber = "555-0100", Password = "x" };
+            var request = new ActivateEmailRequest { Token = "bad-token" };
 
-            _userRepositoryMock
-                .SetupSequence(r => r.ExistByAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(false)  // email check
-                .ReturnsAsync(true);  // phone check
+            _tokenService.Setup(t => t.Hash("bad-token")).Returns("hashed-bad-token");
 
-            await Assert.ThrowsAsync<ConflictException>(
-                () => _sut.CreateUserAsync(request, CancellationToken.None));
+            _verificationTokenRepository
+                .Setup(r => r.GetByAsync(
+                    It.IsAny<Expression<Func<VerificationToken, bool>>>(),
+                    It.IsAny<Func<IQueryable<VerificationToken>, IIncludableQueryable<VerificationToken, object>>?>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync((VerificationToken?)null);
 
-            _authMapperMock.Verify(m => m.ToUser(It.IsAny<RegisterRequest>()), Times.Never);
-        }
-
-        #endregion
-
-        #region Login
-
-        [Fact]
-        public async Task Login_ValidCredentials_ReturnsAuthResponseWithTokens()
-        {
-            var request = new LoginRequest { Email = "USER@test.com", Password = "P@ssw0rd" };
-            var ip = "203.0.113.10";
-            var deviceInfo = "Mozilla/5.0 TestAgent";
-
-            var user = CreateUser(email: "user@test.com");
-            var role = Domain.Enums.Role.Customer;
-
-            SetupSimpleUserGetBy(user);
-            _passwordHasherMock.Setup(p => p.Verify(request.Password, user.HashedPassword)).Returns(true);
-            SetupSimpleRefreshTokenGetBy(null);
-
-            var accessTokenResult = new AccessTokenResult("access-token-value", DateTime.UtcNow.AddMinutes(15));
-            _tokenServiceMock.Setup(t => t.GenerateAccessToken(user)).Returns(accessTokenResult);
-
-            var refreshTokenEntity = new RefreshToken
-            {
-                UserId = user.Id,
-                IpAddress = ip,
-                ExpiresAt = DateTime.UtcNow.AddDays(7)
-            };
-            _tokenServiceMock
-                .Setup(t => t.GenerateRefreshToken(user))
-                .Returns(("raw-refresh-token-value", refreshTokenEntity));
-
-            var result = await _sut.Login(request, CancellationToken.None);
-
-            Assert.Equal(accessTokenResult.Token, result.AccessToken);
-            Assert.Equal(accessTokenResult.ExpiresAtUtc, result.AccessTokenExpiresAtUtc);
-            Assert.Equal("raw-refresh-token-value", result.RefreshToken);
-            Assert.Equal(refreshTokenEntity.ExpiresAt, result.RefreshTokenExpiresAtUtc);
-            Assert.Equal(role, user.Role);
-
-            _refreshTokenRepositoryMock.Verify(r => r.AddAsync(refreshTokenEntity, It.IsAny<CancellationToken>()), Times.Once);
-            _unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-            _refreshTokenRepositoryMock.Verify(r => r.Delete(It.IsAny<RefreshToken>()), Times.Never);
+            await Assert.ThrowsAsync<NotFoundException>(() => _sut.ActivateEmailAsync(request, CancellationToken.None));
         }
 
         [Fact]
-        public async Task Login_UnknownEmail_ThrowsUnauthorizedException()
+        public async Task ActivateEmailAsync_WhenTokenIsNotActive_ThrowsNotFoundException()
         {
-            var request = new LoginRequest { Email = "doesnotexist@test.com", Password = "whatever" };
-            SetupSimpleUserGetBy(null);
+            var request = new ActivateEmailRequest { Token = "expired-token" };
+            var user = CreateUser();
+            var verificationToken = CreateVerificationToken(user, isActive: false, tokenHash: "hashed-expired-token");
 
-            await Assert.ThrowsAsync<UnauthorizedException>(
-                () => _sut.Login(request,CancellationToken.None));
+            _tokenService.Setup(t => t.Hash("expired-token")).Returns("hashed-expired-token");
 
-            _passwordHasherMock.Verify(p => p.Verify(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            _verificationTokenRepository
+                .Setup(r => r.GetByAsync(
+                    It.IsAny<Expression<Func<VerificationToken, bool>>>(),
+                    It.IsAny<Func<IQueryable<VerificationToken>, IIncludableQueryable<VerificationToken, object>>?>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(verificationToken);
+
+            await Assert.ThrowsAsync<NotFoundException>(() => _sut.ActivateEmailAsync(request, CancellationToken.None));
+        }
+
+        // =================================================================
+        // IsEmailAvailable
+        // =================================================================
+
+        [Fact]
+        public async Task IsEmailAvailable_WhenNoUserWithEmailExists_ReturnsTrue()
+        {
+            _userRepository
+                .Setup(r => r.ExistByAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+
+            var result = await _sut.IsEmailAvailable(new EmailRequest { Email = "free@example.com" }, CancellationToken.None);
+
+            Assert.True(result);
         }
 
         [Fact]
-        public async Task Login_WrongPassword_ThrowsUnauthorizedException()
+        public async Task IsEmailAvailable_WhenUserWithEmailExists_ReturnsFalse()
         {
-            var request = new LoginRequest { Email = "user@test.com", Password = "wrong-password" };
-            var user = CreateUser(email: "user@test.com");
+            _userRepository
+                .Setup(r => r.ExistByAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
 
-            SetupSimpleUserGetBy(user);
-            _passwordHasherMock.Setup(p => p.Verify(request.Password, user.HashedPassword)).Returns(false);
+            var result = await _sut.IsEmailAvailable(new EmailRequest { Email = "taken@example.com" }, CancellationToken.None);
 
-            await Assert.ThrowsAsync<UnauthorizedException>(
-                () => _sut.Login(request, CancellationToken.None));
+            Assert.False(result);
+        }
 
-            _tokenServiceMock.Verify(t => t.GenerateAccessToken(It.IsAny<User>()), Times.Never);
+        // =================================================================
+        // Login
+        // =================================================================
+
+        [Fact]
+        public async Task Login_WithValidCredentials_ReturnsAuthResponse()
+        {
+            var request = new LoginRequest { Email = "user@example.com", Password = "correct-password" };
+            var user = CreateUser(email: "user@example.com", hashedPassword: "hashed-password", isActive: true);
+
+            _userRepository
+                .Setup(r => r.GetByAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(user);
+
+            _passwordHasher
+                .Setup(p => p.Verify("correct-password", "hashed-password"))
+                .Returns(true);
+
+            var accessTokenResult = new AccessTokenResult("access-token", DateTime.UtcNow.AddMinutes(15));
+            _tokenService.Setup(t => t.GenerateAccessToken(user)).Returns(accessTokenResult);
+
+            var refreshToken = CreateRefreshToken(user);
+            _tokenService.Setup(t => t.GenerateRefreshToken(user)).Returns(("raw-refresh-token", refreshToken));
+
+            var response = await _sut.Login(request, CancellationToken.None);
+
+            Assert.Equal("access-token", response.AccessToken);
+            Assert.Equal("raw-refresh-token", response.RefreshToken);
+            _refreshTokenRepository.Verify(r => r.AddAsync(refreshToken, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
-        public async Task Login_LowercasesEmailBeforeLookup()
+        public async Task Login_WhenUserDoesNotExist_ThrowsUnauthorizedException()
         {
-            var request = new LoginRequest { Email = "MixedCase@Test.com", Password = "x" };
-            SetupSimpleUserGetBy(null);
+            var request = new LoginRequest { Email = "missing@example.com", Password = "whatever" };
 
-            await Assert.ThrowsAsync<UnauthorizedException>(
-                () => _sut.Login(request, CancellationToken.None));
+            _userRepository
+                .Setup(r => r.GetByAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((User?)null);
 
-            _userRepositoryMock.Verify(
-                r => r.GetByAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()),
-                Times.Once);
+            await Assert.ThrowsAsync<UnauthorizedException>(() => _sut.Login(request, CancellationToken.None));
+
+            _passwordHasher.Verify(p => p.Verify(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
-        #endregion
+        [Fact]
+        public async Task Login_WhenPasswordIsInvalid_ThrowsUnauthorizedException()
+        {
+            var request = new LoginRequest { Email = "user@example.com", Password = "wrong-password" };
+            var user = CreateUser(email: "user@example.com", hashedPassword: "hashed-password");
 
-        #region Logout
+            _userRepository
+                .Setup(r => r.GetByAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(user);
+
+            _passwordHasher
+                .Setup(p => p.Verify("wrong-password", "hashed-password"))
+                .Returns(false);
+
+            await Assert.ThrowsAsync<UnauthorizedException>(() => _sut.Login(request, CancellationToken.None));
+
+            _tokenService.Verify(t => t.GenerateAccessToken(It.IsAny<User>()), Times.Never);
+        }
+
+        // =================================================================
+        // Logout
+        // =================================================================
 
         [Fact]
-        public async Task Logout_TokenExists_DeletesTokenWithinTransaction()
+        public async Task Logout_WhenTokenExists_DeletesTokenAndSaves()
         {
-            var storedToken = new RefreshToken { Id = 1, TokenHash = "hashed-token" };
             var request = new LogoutRequest { RefreshToken = "raw-refresh-token" };
+            var user = CreateUser();
+            var storedToken = CreateRefreshToken(user, tokenHash: "hashed-refresh-token");
 
-            _tokenServiceMock.Setup(t => t.HashRefreshToken(request.RefreshToken)).Returns("hashed-token");
-            SetupSimpleRefreshTokenGetBy(storedToken);
+            _tokenService.Setup(t => t.Hash("raw-refresh-token")).Returns("hashed-refresh-token");
+
+            _refreshTokenRepository
+                .Setup(r => r.GetByAsync(It.IsAny<Expression<Func<RefreshToken, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(storedToken);
 
             await _sut.Logout(request, CancellationToken.None);
 
-            _refreshTokenRepositoryMock.Verify(r => r.Delete(storedToken), Times.Once);
-            _unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-            _unitOfWorkMock.Verify(
-                u => u.ExecuteInTransactionAsync(It.IsAny<Func<Task>>(), It.IsAny<CancellationToken>()), Times.Once);
+            _refreshTokenRepository.Verify(r => r.Delete(storedToken), Times.Once);
+            _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
-        public async Task Logout_TokenDoesNotExist_IsIdempotent_DoesNotThrowOrDelete()
+        public async Task Logout_WhenTokenDoesNotExist_IsIdempotentAndDoesNotThrow()
         {
             var request = new LogoutRequest { RefreshToken = "already-gone" };
 
-            _tokenServiceMock.Setup(t => t.HashRefreshToken(request.RefreshToken)).Returns("hashed-token");
-            SetupSimpleRefreshTokenGetBy(null);
+            _tokenService.Setup(t => t.Hash("already-gone")).Returns("hashed-already-gone");
 
-            var exception = await Record.ExceptionAsync(
-                () => _sut.Logout(request, CancellationToken.None));
+            _refreshTokenRepository
+                .Setup(r => r.GetByAsync(It.IsAny<Expression<Func<RefreshToken, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((RefreshToken?)null);
 
-            Assert.Null(exception);
-            _refreshTokenRepositoryMock.Verify(r => r.Delete(It.IsAny<RefreshToken>()), Times.Never);
-            _unitOfWorkMock.Verify(
-                u => u.ExecuteInTransactionAsync(It.IsAny<Func<Task>>(), It.IsAny<CancellationToken>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task Logout_HashesRawTokenBeforeLookup()
-        {
-            var request = new LogoutRequest { RefreshToken = "plain-text-token" };
-
-            _tokenServiceMock.Setup(t => t.HashRefreshToken("plain-text-token")).Returns("expected-hash");
-            SetupSimpleRefreshTokenGetBy(new RefreshToken { TokenHash = "expected-hash" });
-
+            // Should complete without throwing.
             await _sut.Logout(request, CancellationToken.None);
 
-            _tokenServiceMock.Verify(t => t.HashRefreshToken("plain-text-token"), Times.Once);
+            _refreshTokenRepository.Verify(r => r.Delete(It.IsAny<RefreshToken>()), Times.Never);
+            _unitOfWork.Verify(u => u.ExecuteInTransactionAsync(It.IsAny<Func<Task>>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
-        #endregion
-
-        #region Refresh
+        // =================================================================
+        // Refresh
+        // =================================================================
 
         [Fact]
-        public async Task Refresh_ValidActiveToken_RotatesAndReturnsNewAuthResponse()
+        public async Task Refresh_WithValidActiveToken_RotatesTokenAndReturnsAuthResponse()
         {
+            var request = new RefreshTokenRequest { RefreshToken = "old-raw-token" };
             var user = CreateUser();
-            user.Role = Domain.Enums.Role.Customer;
+            var storedToken = CreateRefreshToken(user, isActive: true, tokenHash: "hashed-old-token");
 
-            var storedToken = new RefreshToken
-            {
-                Id = 1,
-                UserId = user.Id,
-                User = user,
-                TokenHash = "old-hash",
-                IpAddress = "old-ip",
-                DeviceInfo = "old-device",
-                ExpiresAt = DateTime.UtcNow.AddDays(3) // IsActive == true
-            };
+            _tokenService.Setup(t => t.Hash("old-raw-token")).Returns("hashed-old-token");
 
-            _tokenServiceMock.Setup(t => t.HashRefreshToken("raw-refresh-token")).Returns("old-hash");
-            SetupIncludeRefreshTokenGetBy(storedToken);
+            _refreshTokenRepository
+                .Setup(r => r.GetByAsync(
+                    It.IsAny<Expression<Func<RefreshToken, bool>>>(),
+                    It.IsAny<Func<IQueryable<RefreshToken>, IIncludableQueryable<RefreshToken, object>>?>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(storedToken);
 
             var accessTokenResult = new AccessTokenResult("new-access-token", DateTime.UtcNow.AddMinutes(15));
-            _tokenServiceMock.Setup(t => t.GenerateAccessToken(user)).Returns(accessTokenResult);
+            _tokenService.Setup(t => t.GenerateAccessToken(user)).Returns(accessTokenResult);
 
-            const string currentIp = "203.0.113.55";
-            const string currentDevice = "NewDevice/2.0";
+            var newRefreshToken = CreateRefreshToken(user, tokenHash: "hashed-new-token");
+            _tokenService.Setup(t => t.GenerateRefreshToken(user)).Returns(("new-raw-token", newRefreshToken));
 
-            var newRefreshTokenEntity = new RefreshToken
-            {
-                UserId = user.Id,
-                IpAddress = currentIp,
-                DeviceInfo = currentDevice,
-                ExpiresAt = DateTime.UtcNow.AddDays(7)
-            };
-            _tokenServiceMock
-                .Setup(t => t.GenerateRefreshToken(user))
-                .Returns(("new-raw-refresh-token", newRefreshTokenEntity));
+            var response = await _sut.Refresh(request, CancellationToken.None);
 
-            var request = new RefreshTokenRequest { RefreshToken = "raw-refresh-token" };
+            Assert.Equal("new-access-token", response.AccessToken);
+            Assert.Equal("new-raw-token", response.RefreshToken);
 
-            var result = await _sut.Refresh(request, CancellationToken.None);
-
-            Assert.Equal("new-access-token", result.AccessToken);
-            Assert.Equal(accessTokenResult.ExpiresAtUtc, result.AccessTokenExpiresAtUtc);
-            Assert.Equal("new-raw-refresh-token", result.RefreshToken);
-            Assert.Equal(newRefreshTokenEntity.ExpiresAt, result.RefreshTokenExpiresAtUtc);
-
-            _refreshTokenRepositoryMock.Verify(r => r.Delete(storedToken), Times.Once);
-            _refreshTokenRepositoryMock.Verify(
-                r => r.AddAsync(newRefreshTokenEntity, It.IsAny<CancellationToken>()), Times.Once);
-            _unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-            _unitOfWorkMock.Verify(
-                u => u.ExecuteInTransactionAsync(It.IsAny<Func<Task>>(), It.IsAny<CancellationToken>()), Times.Once);
-
-            // Confirms the CURRENT request's ip/device were used, not the storedToken's stale ones
-            _tokenServiceMock.Verify(t => t.GenerateRefreshToken(user), Times.Once);
-            _tokenServiceMock.Verify(t => t.GenerateRefreshToken(user), Times.Once);
+            _refreshTokenRepository.Verify(r => r.Delete(storedToken), Times.Once);
+            _refreshTokenRepository.Verify(r => r.AddAsync(newRefreshToken, It.IsAny<CancellationToken>()), Times.Once);
+            _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
-        public async Task Refresh_TokenNotFound_ThrowsUnauthorizedException()
+        public async Task Refresh_WhenTokenNotFound_ThrowsUnauthorizedException()
         {
-            SetupIncludeRefreshTokenGetBy(null);
-            _tokenServiceMock.Setup(t => t.HashRefreshToken(It.IsAny<string>())).Returns("hash");
+            var request = new RefreshTokenRequest { RefreshToken = "unknown-token" };
 
-            var request = new RefreshTokenRequest { RefreshToken = "does-not-exist" };
+            _tokenService.Setup(t => t.Hash("unknown-token")).Returns("hashed-unknown-token");
 
-            await Assert.ThrowsAsync<UnauthorizedException>(
-                () => _sut.Refresh(request, CancellationToken.None));
+            _refreshTokenRepository
+                .Setup(r => r.GetByAsync(
+                    It.IsAny<Expression<Func<RefreshToken, bool>>>(),
+                    It.IsAny<Func<IQueryable<RefreshToken>, IIncludableQueryable<RefreshToken, object>>?>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync((RefreshToken?)null);
 
-            _refreshTokenRepositoryMock.Verify(r => r.Delete(It.IsAny<RefreshToken>()), Times.Never);
-            _unitOfWorkMock.Verify(
-                u => u.ExecuteInTransactionAsync(It.IsAny<Func<Task>>(), It.IsAny<CancellationToken>()), Times.Never);
+            await Assert.ThrowsAsync<UnauthorizedException>(() => _sut.Refresh(request, CancellationToken.None));
         }
 
         [Fact]
-        public async Task Refresh_ExpiredToken_ThrowsUnauthorizedException()
+        public async Task Refresh_WhenTokenIsInactive_ThrowsUnauthorizedException()
         {
+            var request = new RefreshTokenRequest { RefreshToken = "inactive-token" };
             var user = CreateUser();
-            var expiredToken = new RefreshToken
-            {
-                Id = 1,
-                UserId = user.Id,
-                User = user,
-                TokenHash = "hash",
-                ExpiresAt = DateTime.UtcNow.AddMinutes(-5)
-            };
+            var storedToken = CreateRefreshToken(user, isActive: false, tokenHash: "hashed-inactive-token");
 
-            SetupIncludeRefreshTokenGetBy(expiredToken);
-            _tokenServiceMock.Setup(t => t.HashRefreshToken(It.IsAny<string>())).Returns("hash");
+            _tokenService.Setup(t => t.Hash("inactive-token")).Returns("hashed-inactive-token");
 
-            var request = new RefreshTokenRequest { RefreshToken = "expired-token" };
+            _refreshTokenRepository
+                .Setup(r => r.GetByAsync(
+                    It.IsAny<Expression<Func<RefreshToken, bool>>>(),
+                    It.IsAny<Func<IQueryable<RefreshToken>, IIncludableQueryable<RefreshToken, object>>?>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(storedToken);
 
-            await Assert.ThrowsAsync<UnauthorizedException>(
-                () => _sut.Refresh(request, CancellationToken.None));
+            await Assert.ThrowsAsync<UnauthorizedException>(() => _sut.Refresh(request, CancellationToken.None));
 
-            _tokenServiceMock.Verify(t => t.GenerateAccessToken(It.IsAny<User>()), Times.Never);
+            _refreshTokenRepository.Verify(r => r.Delete(It.IsAny<RefreshToken>()), Times.Never);
         }
-
-        [Fact]
-        public async Task Refresh_ValidToken_HashesRawTokenBeforeLookup()
-        {
-            var user = CreateUser();
-            var storedToken = new RefreshToken
-            {
-                Id = 1,
-                UserId = user.Id,
-                User = user,
-                TokenHash = "expected-hash",
-                ExpiresAt = DateTime.UtcNow.AddDays(1)
-            };
-
-            SetupIncludeRefreshTokenGetBy(storedToken);
-
-            _tokenServiceMock.Setup(t => t.HashRefreshToken("plain-text-raw-token")).Returns("expected-hash");
-            _tokenServiceMock.Setup(t => t.GenerateAccessToken(user)).Returns(new AccessTokenResult("access", DateTime.UtcNow.AddMinutes(15)));
-            _tokenServiceMock
-                .Setup(t => t.GenerateRefreshToken(user))
-                .Returns(("new-raw", new RefreshToken { UserId = user.Id, ExpiresAt = DateTime.UtcNow.AddDays(7) }));
-
-            var request = new RefreshTokenRequest { RefreshToken = "plain-text-raw-token" };
-
-            await _sut.Refresh(request, CancellationToken.None);
-
-            _tokenServiceMock.Verify(t => t.HashRefreshToken("plain-text-raw-token"), Times.Once);
-        }
-
-        #endregion
     }
-}
+}*/

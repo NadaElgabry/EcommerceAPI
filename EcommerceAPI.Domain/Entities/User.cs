@@ -14,11 +14,15 @@ namespace EcommerceAPI.Domain.Entities
         public string HashedPassword { get; set; } = string.Empty;
         public Role Role { get; set; } = Role.Customer;
 
+        public bool isActive { get; set; }=false;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 
         public List<UserAddress> Addresses { get; set; } = new List<UserAddress>();
         public List<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+        
+        public List<VerificationToken> VerificationTokens { get; set; } = new List<VerificationToken>();
 
     }
 }
