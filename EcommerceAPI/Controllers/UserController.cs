@@ -1,0 +1,28 @@
+﻿using EcommerceAPI.Application.Common;
+using EcommerceAPI.Application.DTOs.User;
+using EcommerceAPI.Application.Interfaces.Iservices;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace EcommerceAPI.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class UserController : ControllerBase
+    {
+        private readonly IUserService _userService;
+        public UserController(IUserService userService)
+        {
+            _userService = userService;
+        }
+
+        [HttpGet("profile")]
+        [Authorize]
+        public async Task<IActionResult> Profile([FromQuery] Guid? guid, CancellationToken cancellationToken)
+        {
+            var userProfile = await _userService.GetUserProfileAsync(guid, cancellationToken);
+            return Ok(ApiResponse<UserResponse>.SuccessResponse(message: "User profile retrieved successfully", statusCode: 200, data: userProfile));
+        }
+    }
+}

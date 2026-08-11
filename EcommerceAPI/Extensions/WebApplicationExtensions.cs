@@ -22,7 +22,7 @@ public static class WebApplicationExtensions
         else
         {
             app.UseHttpsRedirection();
-        }    
+        }     
         app.UseCors("Dev");
         app.UseAuthentication();
         app.UseAuthorization();

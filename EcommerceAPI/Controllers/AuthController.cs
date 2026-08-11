@@ -105,14 +105,6 @@ namespace EcommerceAPI.Controllers
                 message: "Password reset successfully.",
                 statusCode: 200));
         }
-
-        [HttpGet("profile")]
-        [Authorize]
-        public async Task<IActionResult> Profile(CancellationToken cancellationToken)
-        {
-            var userProfile = await _authService.GetUserProfileAsync(cancellationToken);
-            return Ok(ApiResponse<UserResponse>.SuccessResponse(message: "User profile retrieved successfully", statusCode: 200, data: userProfile));
-        }
          
     }
 }

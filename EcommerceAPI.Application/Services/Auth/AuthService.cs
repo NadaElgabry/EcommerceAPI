@@ -364,14 +364,6 @@ namespace EcommerceAPI.Application.Services.Auth
             }, cancellationToken);
         }
 
-        /// <inheritdoc />
-        public async Task<UserResponse> GetUserProfileAsync(CancellationToken cancellationToken = default)
-        {
-            var user = await _userRepository.GetByAsync(
-                predicate: u => u.Guid == _currentUserService.UserGuid,
-                cancellationToken: cancellationToken)
-                ?? throw new NotFoundException("User not found.");
-            return _authMapper.ToUserResponse(user);
-        }
+        
     }
 }

@@ -97,11 +97,5 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         public Task ResetPasswordAsync(
             ResetPasswordRequest request, CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Retrieves the profile information of the currently authenticated user.
-        /// </summary>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>Profile of authenticated user</returns>
-        public Task<UserResponse> GetUserProfileAsync(CancellationToken cancellationToken = default);
     }
 }

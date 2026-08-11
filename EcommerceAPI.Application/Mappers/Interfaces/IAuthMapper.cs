@@ -6,6 +6,6 @@ namespace EcommerceAPI.Application.Mappers.Interfaces
     public interface IAuthMapper
     {
         public User ToUser(RegisterRequest request);
-        public UserResponse ToUserResponse(User user);
+        
     }
 }
