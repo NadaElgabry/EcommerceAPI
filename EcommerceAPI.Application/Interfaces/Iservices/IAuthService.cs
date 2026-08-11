@@ -100,8 +100,6 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         public Task ResetPasswordAsync(
             ResetPasswordRequest request, CancellationToken cancellationToken = default);
 
-        public Task UpdateProfileAsync(
-            Guid userId, UpdateProfileRequest request, CancellationToken cancellationToken = default);
 
     }
 }
