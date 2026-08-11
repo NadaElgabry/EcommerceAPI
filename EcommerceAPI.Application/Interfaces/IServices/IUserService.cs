@@ -2,7 +2,7 @@
 
 namespace EcommerceAPI.Application.Interfaces.IServices
 {
-    public interface IUsersService
+    public interface IUserService
     {
         public Task UpdateProfileAsync(
            Guid? userId, UpdateProfileRequest request, CancellationToken cancellationToken = default);

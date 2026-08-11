@@ -3,7 +3,7 @@ using EcommerceAPI.Domain.Entities;
 
 namespace EcommerceAPI.Application.Mappers.Interfaces
 {
-    public interface IUsersMapper
+    public interface IUserMapper
     {
         public void UpdateUserFromRequest(User user, UpdateProfileRequest request);
     }

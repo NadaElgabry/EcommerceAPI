@@ -11,18 +11,18 @@ using Microsoft.Extensions.Logging;
 
 namespace EcommerceAPI.Application.Services.Users
 {
-    public class UsersService : IUsersService
+    public class UserService : IUserService
     {
         private readonly IRepository<User> _userRepository;
         private readonly ITokenService _tokenService;
-        private readonly IUsersMapper _usersMapper;
+        private readonly IUserMapper _usersMapper;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
 
-        public UsersService(
+        public UserService(
             IRepository<User> userRepository,
             ITokenService tokenService,
-            IUsersMapper usersMapper,
+            IUserMapper usersMapper,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService
             )

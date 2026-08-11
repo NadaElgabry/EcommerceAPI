@@ -4,7 +4,7 @@ using EcommerceAPI.Domain.Entities;
 
 namespace EcommerceAPI.Application.Mappers.Mappings
 {
-    public class UsersMapper : IUsersMapper
+    public class UserMapper : IUserMapper
     {
         public void UpdateUserFromRequest(User user, UpdateProfileRequest request)
         {

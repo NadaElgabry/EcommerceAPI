@@ -8,11 +8,11 @@ namespace EcommerceAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UsersController : ControllerBase
+    public class UserController : ControllerBase
     {
-        private readonly IUsersService _UsersService;
+        private readonly IUserService _UsersService;
 
-        public UsersController(IUsersService usersService)
+        public UserController(IUserService usersService)
         {
             _UsersService = usersService;
         }
