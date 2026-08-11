@@ -106,13 +106,6 @@ namespace EcommerceAPI.Controllers
                 statusCode: 200));
         }
 
-        [HttpPut("user")]
-        [Authorize]
-        public async Task<IActionResult> UpdateUser([FromBody] UpdateProfileRequest request, CancellationToken cancellationToken)
-        {
-            var userGuid = Guid.TryParse(User.FindFirstValue(JwtRegisteredClaimNames.Sub),out var guid)?guid: Guid.Empty;
-            await _authService.UpdateProfileAsync(userGuid, request, cancellationToken);
-            return Ok(ApiResponse<string>.SuccessResponse(message: "User updated successfully", statusCode: 200));
-        }
+
     }
 }

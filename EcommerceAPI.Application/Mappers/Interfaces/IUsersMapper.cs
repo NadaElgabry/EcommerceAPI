@@ -3,8 +3,8 @@ using EcommerceAPI.Domain.Entities;
 
 namespace EcommerceAPI.Application.Mappers.Interfaces
 {
-    public interface IAuthMapper
+    public interface IUsersMapper
     {
-        public User ToUser(RegisterRequest request);
+        public void UpdateUserFromRequest(User user, UpdateProfileRequest request);
     }
 }
