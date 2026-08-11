@@ -17,7 +17,7 @@ namespace EcommerceAPI.Controllers
             _UsersService = usersService;
         }
 
-        [HttpPut("/{userId?}")]
+        [HttpPut("{userId?}")]
         [Authorize]
         public async Task<IActionResult> UpdateUser(
             Guid? userId, [FromBody] UpdateProfileRequest request, CancellationToken cancellationToken)
