@@ -9,6 +9,8 @@ namespace EcommerceAPI.Application.Mappers.Mappings
 {
     public class UserMapper : IUserMapper
     {
+
+        ///<inheritdoc/>
         public UserResponse ToUserResponse(User user)
         {
             return new UserResponse

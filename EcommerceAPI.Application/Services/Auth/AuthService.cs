@@ -25,7 +25,6 @@ namespace EcommerceAPI.Application.Services.Auth
         private readonly ILogger<AuthService> _logger;
         private readonly IEmailService _emailService;
         private readonly IVerificationEmailTemplateProvider _templateProvider;
-        private readonly ICurrentUserService _currentUserService;
         public AuthService(
             IRepository<User> userRepository,
             IRepository<VerificationToken> verificationTokenRepository,
@@ -36,8 +35,7 @@ namespace EcommerceAPI.Application.Services.Auth
             IUnitOfWork unitOfWork,
             ILogger<AuthService> logger,
             IEmailService emailService,
-            IVerificationEmailTemplateProvider templateProvider,
-            ICurrentUserService currentUserService)
+            IVerificationEmailTemplateProvider templateProvider)
         {
             _userRepository = userRepository;
             _verificationTokenRepository = verificationTokenRepository;
@@ -49,7 +47,6 @@ namespace EcommerceAPI.Application.Services.Auth
             _logger = logger;
             _emailService = emailService;
             _templateProvider = templateProvider;
-            _currentUserService = currentUserService;
         }
 
         /// <inheritdoc />
