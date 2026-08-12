@@ -25,18 +25,14 @@ namespace EcommerceAPI.Application.Services.UserService
         }
 
         /// <inheritdoc />
-        public async Task<UserResponse> GetUserProfileAsync(Guid? userGuid, CancellationToken cancellationToken = default)
+        public async Task<UserResponse> GetUserProfileAsync(Guid userGuid, CancellationToken cancellationToken = default)
         {
-            if (userGuid is null || userGuid == Guid.Empty)
+            if(_currentUserService.Role != "Admin")
             {
-                if (!_currentUserService.IsAuthenticated)
-                    throw new UnauthorizedAccessException("You must be authenticated to view your profile.");
-
-                userGuid = _currentUserService.UserGuid;
-            }
-            else if (_currentUserService.Role != "Admin" && userGuid != _currentUserService.UserGuid)
-            {
-                throw new ForbiddenException("You are not authorized to view this user's profile.");
+                if (_currentUserService.UserGuid != userGuid)
+                {
+                    throw new UnauthorizedAccessException("You are not authorized to access this resource.");
+                }
             }
 
             var user = await _userRepository.GetByAsync(

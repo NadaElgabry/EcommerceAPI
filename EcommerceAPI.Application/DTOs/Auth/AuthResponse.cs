@@ -14,5 +14,7 @@ namespace EcommerceAPI.Application.DTOs.Auth
 
         public required Role Role { get; init; }
 
+        public required Guid UserId { get; init; }
+
     }
 }

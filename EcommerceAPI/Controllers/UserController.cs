@@ -17,9 +17,9 @@ namespace EcommerceAPI.Controllers
             _userService = userService;
         }
 
-        [HttpGet("{userId?}")]
+        [HttpGet("{userId}")]
         [Authorize]
-        public async Task<IActionResult> Profile([FromRoute] Guid? userId, CancellationToken cancellationToken)
+        public async Task<IActionResult> Profile([FromRoute] Guid userId, CancellationToken cancellationToken)
         {
             var userProfile = await _userService.GetUserProfileAsync(userId, cancellationToken);
             return Ok(ApiResponse<UserResponse>.SuccessResponse(message: "User profile retrieved successfully", statusCode: 200, data: userProfile));
