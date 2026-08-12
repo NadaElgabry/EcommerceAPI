@@ -4,11 +4,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using EcommerceAPI.Application.DTOs.Auth;
 using EcommerceAPI.Application.UseCases.Auth.Login;
+using EcommerceAPI.Application.UseCases.Auth.ResetPassword;
+using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Controllers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Xunit;
+using System.Reflection;
+using System.Security.Claims;
 
 namespace EcommerceAPI.Tests.Controllers
 {
@@ -36,11 +41,12 @@ namespace EcommerceAPI.Tests.Controllers
     public class AuthControllerTests
     {
         private readonly Mock<ILoginUseCase> _loginUseCaseMock = new();
+        private readonly Mock<IResetPasswordUseCase> _resetPasswordUseCaseMock = new();
         private readonly AuthController _sut;
 
         public AuthControllerTests()
         {
-            _sut = new AuthController(_loginUseCaseMock.Object);
+            _sut = new AuthController(_loginUseCaseMock.Object, _resetPasswordUseCaseMock.Object);
         }
 
         private static DefaultHttpContext BuildHttpContext(string? remoteIp, string userAgent)
@@ -169,6 +175,68 @@ namespace EcommerceAPI.Tests.Controllers
 
             // Act & Assert
             await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.Login(request, CancellationToken.None));
+        }
+
+        [Fact]
+        public async Task ResetPassword_AuthenticatedSubject_PassesGuidAndReturnsNoContent()
+        {
+            var userGuid = Guid.NewGuid();
+            var request = CreateResetPasswordRequest();
+            var cancellationToken = new CancellationTokenSource().Token;
+            var context = BuildHttpContext("127.0.0.1", "TestAgent");
+            context.User = new ClaimsPrincipal(new ClaimsIdentity(
+                new[] { new Claim(ClaimTypes.NameIdentifier, userGuid.ToString()) },
+                "TestAuthentication"));
+            _sut.ControllerContext = new ControllerContext { HttpContext = context };
+
+            var result = await _sut.ResetPassword(request, cancellationToken);
+
+            Assert.IsType<NoContentResult>(result);
+            _resetPasswordUseCaseMock.Verify(
+                useCase => useCase.ResetPasswordAsync(userGuid, request, cancellationToken),
+                Times.Once);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("not-a-guid")]
+        public async Task ResetPassword_MissingOrMalformedSubject_ThrowsUnauthorizedException(string? subject)
+        {
+            var context = BuildHttpContext("127.0.0.1", "TestAgent");
+            var claims = subject is null
+                ? Array.Empty<Claim>()
+                : new[] { new Claim(ClaimTypes.NameIdentifier, subject) };
+            context.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthentication"));
+            _sut.ControllerContext = new ControllerContext { HttpContext = context };
+
+            await Assert.ThrowsAsync<UnauthorizedException>(
+                () => _sut.ResetPassword(CreateResetPasswordRequest(), CancellationToken.None));
+
+            _resetPasswordUseCaseMock.Verify(
+                useCase => useCase.ResetPasswordAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<ResetPasswordRequest>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public void ResetPassword_HasAuthorizeAttribute()
+        {
+            var method = typeof(AuthController).GetMethod(nameof(AuthController.ResetPassword));
+
+            Assert.NotNull(method);
+            Assert.NotNull(method.GetCustomAttribute<AuthorizeAttribute>());
+        }
+
+        private static ResetPasswordRequest CreateResetPasswordRequest()
+        {
+            return new ResetPasswordRequest
+            {
+                OldPassword = "OldP@ssword1",
+                NewPassword = "NewP@ssword2",
+                ConfirmNewPassword = "NewP@ssword2"
+            };
         }
     }
 }

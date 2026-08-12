@@ -1,8 +1,10 @@
-﻿using EcommerceAPI.Application.DTOs.Auth;
+using EcommerceAPI.Application.DTOs.Auth;
+using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.UseCases.Auth.Login;
-using Microsoft.AspNetCore.Http;
+using EcommerceAPI.Application.UseCases.Auth.ResetPassword;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Net;
+using System.Security.Claims;
 
 namespace EcommerceAPI.Controllers
 {
@@ -11,39 +13,81 @@ namespace EcommerceAPI.Controllers
     public class AuthController : ControllerBase
     {
         private readonly ILoginUseCase _loginUseCase;
-        public AuthController(ILoginUseCase loginUseCase)
+        private readonly IResetPasswordUseCase _resetPasswordUseCase;
+
+        public AuthController(
+            ILoginUseCase loginUseCase,
+            IResetPasswordUseCase resetPasswordUseCase)
         {
             _loginUseCase = loginUseCase;
-        } 
+            _resetPasswordUseCase = resetPasswordUseCase;
+        }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> Login(
+            [FromBody] LoginRequest request,
+            CancellationToken cancellationToken)
         {
-            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            var deviceInfo = Request.Headers["User-Agent"].ToString();
-            var result = await _loginUseCase.Login(request, ipAddress, deviceInfo, cancellationToken);
+            var ipAddress =
+                HttpContext.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown";
+
+            var deviceInfo =
+                Request.Headers["User-Agent"].ToString();
+
+            var result = await _loginUseCase.Login(
+                request,
+                ipAddress,
+                deviceInfo,
+                cancellationToken
+            );
+
             return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(
+            [FromBody] ResetPasswordRequest request,
+            CancellationToken cancellationToken)
+        {
+            var subject =
+                User.FindFirstValue(
+                    ClaimTypes.NameIdentifier
+                );
+
+            if (!Guid.TryParse(subject, out var userGuid))
+            {
+                throw new UnauthorizedException(
+                    "Invalid authenticated user."
+                );
+            }
+
+            await _resetPasswordUseCase.ResetPasswordAsync(
+                userGuid,
+                request,
+                cancellationToken
+            );
+
+            return NoContent();
         }
 
         /*
         [HttpPost("register")]
         public IActionResult Register([FromBody] RegisterRequest request)
         {
-            // Implementation for register logic
             return Ok();
         }
 
         [HttpPost("refresh")]
         public IActionResult Refresh([FromBody] RefreshTokenRequest request)
         {
-            // Implementation for refresh token logic
             return Ok();
         }
 
         [HttpPost("logout")]
         public IActionResult Logout()
         {
-            // Implementation for logout logic
             return Ok();
         }
         */
