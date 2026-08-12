@@ -36,7 +36,7 @@ namespace EcommerceAPI.Application.Services.UserService
             }
             else if (_currentUserService.Role != "Admin" && userGuid != _currentUserService.UserGuid)
             {
-                throw new UnauthorizedAccessException("You are not authorized to view this user's profile.");
+                throw new ForbiddenException("You are not authorized to view this user's profile.");
             }
 
             var user = await _userRepository.GetByAsync(
