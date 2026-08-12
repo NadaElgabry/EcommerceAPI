@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EcommerceAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/users")]
     [ApiController]
     public class UserController : ControllerBase
     {
@@ -20,7 +20,7 @@ namespace EcommerceAPI.Controllers
         [HttpPut("{userId?}")]
         [Authorize]
         public async Task<IActionResult> UpdateUser(
-            Guid? userId, [FromBody] UpdateProfileRequest request, CancellationToken cancellationToken)
+            [FromRoute] Guid? userId, [FromBody] UpdateProfileRequest request, CancellationToken cancellationToken)
         {
             await _UsersService.UpdateProfileAsync(
                 userId,
