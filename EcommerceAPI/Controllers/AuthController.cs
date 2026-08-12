@@ -36,7 +36,7 @@ namespace EcommerceAPI.Controllers
                     cancellationToken
                 );
 
-            return Created("Register", ApiResponse<string>.SuccessResponse(message: "User created successfully", statusCode: 201));
+            return Created("api/auth/register", ApiResponse<string>.SuccessResponse(message: "User created successfully", statusCode: 201));
         }
 
         [HttpPost("resend-email")]

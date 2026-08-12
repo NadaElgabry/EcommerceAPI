@@ -1,0 +1,29 @@
+﻿using EcommerceAPI.Application.Common;
+using EcommerceAPI.Application.DTOs.Category;
+using EcommerceAPI.Application.Interfaces.Iservices;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace EcommerceAPI.Controllers
+{
+    [Route("api/categories")]
+    [ApiController]
+    public class CategoryController : ControllerBase
+    {
+        private readonly ICategoryService _categoryService;
+        
+        public CategoryController(ICategoryService categoryService)
+        {
+            _categoryService = categoryService;
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CreateCategory([FromForm] CreateCategoryRequest request, CancellationToken cancellationToken)
+        {
+            var categoryResponse = await _categoryService.CreateCategoryAsync(request, cancellationToken);
+            return Created("api/categories", ApiResponse<CategoryResponse>.SuccessResponse(statusCode: 201, message: "Category created successfully.", data: categoryResponse));
+        }
+    }
+}
