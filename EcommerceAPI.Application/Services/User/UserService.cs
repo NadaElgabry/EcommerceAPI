@@ -35,29 +35,26 @@ namespace EcommerceAPI.Application.Services.Users
         }
 
         /// <inheritdoc />
-        public async Task UpdateProfileAsync(Guid? userId, UpdateProfileRequest request, CancellationToken cancellationToken = default)
+        public async Task UpdateProfileAsync(Guid userId, UpdateProfileRequest request, CancellationToken cancellationToken = default)
         {
-            if (userId.HasValue && _currentUserService.Role != "Admin")
+            if (_currentUserService.Role != "Admin")
             {
-                throw new UnauthorizedException("Only administrators can specify a user ID.");                
+                if (_currentUserService.UserGuid != userId)
+                {
+                    throw new UnauthorizedAccessException("You are not authorized to access this resource.");
+                }
+
+                var user = await _userRepository.GetByAsync(
+                    u => u.Guid == userId,
+                    cancellationToken)
+                    ?? throw new NotFoundException("User not found.");
+
+                _usersMapper.UpdateUserFromRequest(user, request);
+
+                _userRepository.Update(user);
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
             }
-            if (!_currentUserService.IsAuthenticated)
-            {
-                throw new UnauthorizedException( "User is not authenticated.");
-            }
-
-            Guid targetUserId = userId ?? _currentUserService.UserGuid;
-
-            var user = await _userRepository.GetByAsync(
-                u => u.Guid == targetUserId,
-                cancellationToken)
-                ?? throw new NotFoundException("User not found.");
-
-            _usersMapper.UpdateUserFromRequest(user, request);
-
-            _userRepository.Update(user);
-
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
     }
 }

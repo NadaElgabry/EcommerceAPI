@@ -17,10 +17,10 @@ namespace EcommerceAPI.Controllers
             _UsersService = usersService;
         }
 
-        [HttpPut("{userId?}")]
+        [HttpPut("{userId}")]
         [Authorize]
         public async Task<IActionResult> UpdateUser(
-            [FromRoute] Guid? userId, [FromBody] UpdateProfileRequest request, CancellationToken cancellationToken)
+            [FromRoute] Guid userId, [FromBody] UpdateProfileRequest request, CancellationToken cancellationToken)
         {
             await _UsersService.UpdateProfileAsync(
                 userId,
