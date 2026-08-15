@@ -20,10 +20,16 @@ namespace EcommerceAPI.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
+        [RequestSizeLimit(6 * 1024 * 1024)]
         public async Task<IActionResult> CreateCategory([FromForm] CreateCategoryRequest request, CancellationToken cancellationToken)
         {
             var categoryResponse = await _categoryService.CreateCategoryAsync(request, cancellationToken);
-            return Created("api/categories", ApiResponse<CategoryResponse>.SuccessResponse(statusCode: 201, message: "Category created successfully.", data: categoryResponse));
+            return Created(
+                "api/categories",
+                ApiResponse<CategoryResponse>.SuccessResponse(
+                    statusCode: 201,
+                    message: "Category created successfully.",
+                    data: categoryResponse));
         }
     }
 }

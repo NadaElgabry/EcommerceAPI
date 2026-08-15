@@ -27,7 +27,7 @@ namespace EcommerceAPI.Application.Services.CategoryService
 
         public async Task<CategoryResponse> CreateCategoryAsync(CreateCategoryRequest request, CancellationToken cancellationToken)
         {
-            var category = _categoryRepository.GetByAsync(c => c.Name == request.Name, cancellationToken);
+            var category = await _categoryRepository.GetByAsync(c => c.Name == request.Name, cancellationToken);
             
             if(category != null)
             {
@@ -40,7 +40,10 @@ namespace EcommerceAPI.Application.Services.CategoryService
                 Name = request.Name,
                 ImageUrl = imageurl,
             };
-            
+
+            await _categoryRepository.AddAsync(newCategory, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
             return _categoryMapper.toCategoryResponse(newCategory);
 
         }

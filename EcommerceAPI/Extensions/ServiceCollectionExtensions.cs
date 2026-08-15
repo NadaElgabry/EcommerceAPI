@@ -59,7 +59,12 @@ public static class ServiceCollectionExtensions
                 Scheme = "Bearer",
                 BearerFormat = "JWT",
                 In = ParameterLocation.Header,
-                Description = "Enter your JWT token below.\n\nExample: \"12345abcdef\""
+                Description = "Enter your JWT token below (no 'Bearer ' prefix needed).\n\nExample: \"eyJhbGciOi...\""
+            });
+
+            options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference("Bearer", document)] = []
             });
         });
         services.AddFluentValidationRulesToSwagger();
