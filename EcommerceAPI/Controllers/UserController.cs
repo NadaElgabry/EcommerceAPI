@@ -21,7 +21,7 @@ namespace EcommerceAPI.Controllers
 
         [HttpGet]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetUsers([FromQuery] GetUsersRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetAllUsers([FromQuery] GetUsersRequest request, CancellationToken cancellationToken)
         {
             var result = await _userService.GetUsersAsync(request, cancellationToken);
             return Ok(ApiResponse<PagedResult<UserResponse>>.SuccessResponse(
