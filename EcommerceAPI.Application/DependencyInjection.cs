@@ -1,8 +1,10 @@
 ﻿using FluentValidation;
 using EcommerceAPI.Application.Interfaces.IServices;
+using EcommerceAPI.Application.Interfaces.Iservices;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Application.Mappers.Mappings;
 using EcommerceAPI.Application.Services.Auth;
+using EcommerceAPI.Application.Services.UserService;
 using EcommerceAPI.Application.Validators;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,6 +16,8 @@ public static class DependencyInjection
     {
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IAuthMapper, AuthMapper>();
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IUserMapper, UserMapper>();
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 

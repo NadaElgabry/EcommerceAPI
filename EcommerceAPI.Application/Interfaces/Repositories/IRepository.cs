@@ -42,6 +42,21 @@ namespace EcommerceAPI.Application.Interfaces.Repositories
         /// </summary>
         /// <param name="entity">The entity to update.</param>
         /// 
+
+        Task<List<T>> GetPagedAsync<TKey1, TKey2>(
+            Expression<Func<T, bool>> predicate,
+            Expression<Func<T, TKey1>> orderBy,
+            Expression<Func<T, TKey2>> thenBy,
+            int take,
+            CancellationToken cancellationToken = default);
+
+        Task<List<T>> GetPagedDescendingAsync<TKey1, TKey2>(
+            Expression<Func<T, bool>> predicate,
+            Expression<Func<T, TKey1>> orderBy,
+            Expression<Func<T, TKey2>> thenBy,
+            int take,
+            CancellationToken cancellationToken = default);
+
         public void Update(T entity);
         /// <summary>
         /// Deletes an entity of requested type from the database.
