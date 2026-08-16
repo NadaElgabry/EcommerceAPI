@@ -6,13 +6,8 @@ using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Iservices;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Mappers.Interfaces;
-using EcommerceAPI.Application.Mappers.Mappings;
-using EcommerceAPI.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
+
 using EcommerceAPI.Application.Common;
-using EcommerceAPI.Application.Interfaces.Repositories;
 
 namespace EcommerceAPI.Application.Services.UserService
 {
@@ -49,7 +44,7 @@ namespace EcommerceAPI.Application.Services.UserService
 
             return _userMapper.ToUserResponse(user);
         }
-        public Task<PagedResult<UserResponse>> GetUsersAsync(
+        public Task<PagedResult<UserResponse>> GetAllUsersAsync(
     GetUsersRequest request,
     CancellationToken cancellationToken = default)
         {
