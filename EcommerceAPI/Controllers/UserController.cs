@@ -10,11 +10,11 @@ namespace EcommerceAPI.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly IUserService _UsersService;
+        private readonly IUserService _userService;
 
         public UserController(IUserService usersService)
         {
-            _UsersService = usersService;
+            _userService = usersService;
         }
 
         [HttpPut("{userId}")]
@@ -22,7 +22,7 @@ namespace EcommerceAPI.Controllers
         public async Task<IActionResult> UpdateUser(
             [FromRoute] Guid userId, [FromBody] UpdateProfileRequest request, CancellationToken cancellationToken)
         {
-            await _UsersService.UpdateProfileAsync(
+            await _userService.UpdateProfileAsync(
                 userId,
                 request,
                 cancellationToken);

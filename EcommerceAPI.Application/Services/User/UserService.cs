@@ -15,23 +15,42 @@ namespace EcommerceAPI.Application.Services.Users
     {
         private readonly IRepository<User> _userRepository;
         private readonly ITokenService _tokenService;
-        private readonly IUserMapper _usersMapper;
+        private readonly IUserMapper _userMapper;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
 
         public UserService(
             IRepository<User> userRepository,
             ITokenService tokenService,
-            IUserMapper usersMapper,
+            IUserMapper userMapper,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService
             )
         {
             _userRepository = userRepository;
             _tokenService = tokenService;
-            _usersMapper = usersMapper;
+            _userMapper = userMapper;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
+        }
+
+        /// <inheritdoc />
+        public async Task<UserResponse> GetUserProfileAsync(Guid userGuid, CancellationToken cancellationToken = default)
+        {
+            if (_currentUserService.Role != "Admin")
+            {
+                if (_currentUserService.UserGuid != userGuid)
+                {
+                    throw new UnauthorizedAccessException("You are not authorized to access this resource.");
+                }
+            }
+
+            var user = await _userRepository.GetByAsync(
+                predicate: u => u.Guid == userGuid,
+                cancellationToken: cancellationToken)
+                ?? throw new NotFoundException("User not found.");
+
+            return _userMapper.ToUserResponse(user);
         }
 
         /// <inheritdoc />
@@ -49,7 +68,7 @@ namespace EcommerceAPI.Application.Services.Users
                     cancellationToken)
                     ?? throw new NotFoundException("User not found.");
 
-                _usersMapper.UpdateUserFromRequest(user, request);
+                _userMapper.UpdateUserFromRequest(user, request);
 
                 _userRepository.Update(user);
 
