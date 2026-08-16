@@ -6,7 +6,7 @@ public static class WebApplicationExtensions
 {
     public static WebApplication UseAppPipeline(this WebApplication app)
     {
-        app.UseExceptionHandler();
+        
 
         app.UseSerilogRequestLogging(options =>
         {
@@ -14,13 +14,17 @@ public static class WebApplicationExtensions
                 "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
         });
 
+        app.UseExceptionHandler();
+
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
             app.UseSwaggerUI();
         }
-
-        app.UseHttpsRedirection();
+        else
+        {
+            app.UseHttpsRedirection();
+        }     
         app.UseCors("Dev");
         app.UseAuthentication();
         app.UseAuthorization();

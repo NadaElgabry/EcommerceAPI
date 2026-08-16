@@ -10,8 +10,6 @@ using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Net.Mail;
-using System.Runtime;
 
 namespace EcommerceAPI.Application.Services.Auth
 {
@@ -211,6 +209,8 @@ namespace EcommerceAPI.Application.Services.Auth
                 AccessTokenExpiresAtUtc = accesstoken.ExpiresAtUtc,
                 RefreshToken = rawToken,
                 RefreshTokenExpiresAtUtc = newRefreshToken.ExpiresAt,
+                Role = user.Role,
+                UserId = user.Guid
             };
         }
 
@@ -273,7 +273,9 @@ namespace EcommerceAPI.Application.Services.Auth
                 AccessToken = accessTokenResult.Token,
                 AccessTokenExpiresAtUtc = accessTokenResult.ExpiresAtUtc,
                 RefreshToken = rawToken,
-                RefreshTokenExpiresAtUtc = newRefreshToken.ExpiresAt
+                RefreshTokenExpiresAtUtc = newRefreshToken.ExpiresAt,
+                Role = storedToken.User.Role,
+                UserId = storedToken.User.Guid
             };
         }
 
