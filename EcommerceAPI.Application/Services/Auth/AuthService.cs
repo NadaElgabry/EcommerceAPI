@@ -211,6 +211,8 @@ namespace EcommerceAPI.Application.Services.Auth
                 AccessTokenExpiresAtUtc = accesstoken.ExpiresAtUtc,
                 RefreshToken = rawToken,
                 RefreshTokenExpiresAtUtc = newRefreshToken.ExpiresAt,
+                Role = user.Role,
+                UserId = user.Guid
             };
         }
 
@@ -273,7 +275,9 @@ namespace EcommerceAPI.Application.Services.Auth
                 AccessToken = accessTokenResult.Token,
                 AccessTokenExpiresAtUtc = accessTokenResult.ExpiresAtUtc,
                 RefreshToken = rawToken,
-                RefreshTokenExpiresAtUtc = newRefreshToken.ExpiresAt
+                RefreshTokenExpiresAtUtc = newRefreshToken.ExpiresAt,
+                Role = storedToken.User.Role,
+                UserId = storedToken.User.Guid
             };
         }
 
@@ -360,7 +364,5 @@ namespace EcommerceAPI.Application.Services.Auth
 
             }, cancellationToken);
         }
-
-
     }
 }

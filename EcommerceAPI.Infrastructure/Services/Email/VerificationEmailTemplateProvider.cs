@@ -17,6 +17,7 @@ namespace EcommerceAPI.Infrastructure.Services.Email
             ),
         };
 
+        /// <inheritdoc/>
         public (string Subject, string Body) GetTemplate(VerificationPurpose purpose, string rawToken)
         {
             if (!Templates.TryGetValue(purpose, out var template))
