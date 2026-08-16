@@ -6,6 +6,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
 {
     public class AuthMapper : IAuthMapper
     {
+        /// <inheritdoc />
         public User ToUser(RegisterRequest request)
         {
             return new User
@@ -17,5 +18,6 @@ namespace EcommerceAPI.Application.Mappers.Mappings
             };
 
         }
+        
     }
 }

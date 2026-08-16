@@ -22,6 +22,7 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
         {
             _jwtSettings = jwtSettings.Value;
         }
+
         /// <inheritdoc />
         public AccessTokenResult GenerateAccessToken(User user)
         {
@@ -45,6 +46,7 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
 
             return new AccessTokenResult(new JwtSecurityTokenHandler().WriteToken(token), DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes));
         }
+
         /// <inheritdoc />
         public (string RawToken, RefreshToken Entity) GenerateRefreshToken(User user)
         {
@@ -64,10 +66,7 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
         }
 
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc/>
         public string GenerateHighEntropyToken()
         {
             var randomBytes = new byte[64];
@@ -76,23 +75,21 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
             return Convert.ToBase64String(randomBytes);
         }
 
-        /// <summary>
-        /// Hashes the raw token using SHA256 and returns the Base64 encoded string.
-        /// </summary>
-        /// <param name="rawToken">The raw refresh token to hash.</param>
-        /// <returns>The Base64 encoded hash of the refresh token.</returns>
+        /// <inheritdoc/>
         public string Hash(string rawToken)
         {
             var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
             return Convert.ToBase64String(bytes);
         }
 
+        /// <inheritdoc/>
         public bool Verify(string rawToken, string hashedToken)
         {
             var hashedRawToken = Hash(rawToken);
             return hashedRawToken == hashedToken;
         }
 
+        /// <inheritdoc/>
         public (string RawToken, VerificationToken Entity) GenerateVerificationToken(User user, VerificationPurpose purpose)
         {
             byte[] randomBytes = new byte[4];
