@@ -8,6 +8,7 @@ using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Services.Auth;
 using EcommerceAPI.Domain.Entities;
 using Microsoft.Extensions.Logging;
+using EcommerceAPI.Application.DTOs.User;
 
 namespace EcommerceAPI.Application.Services.Users
 {

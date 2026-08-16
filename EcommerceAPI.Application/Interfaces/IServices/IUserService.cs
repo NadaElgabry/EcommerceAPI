@@ -1,4 +1,5 @@
 ﻿using EcommerceAPI.Application.DTOs.Auth;
+using EcommerceAPI.Application.DTOs.User;
 
 namespace EcommerceAPI.Application.Interfaces.IServices
 {

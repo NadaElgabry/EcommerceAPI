@@ -1,4 +1,5 @@
 ﻿using EcommerceAPI.Application.DTOs.Auth;
+using EcommerceAPI.Application.DTOs.User;
 using EcommerceAPI.Domain.Entities;
 
 namespace EcommerceAPI.Application.Mappers.Interfaces
