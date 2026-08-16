@@ -25,77 +25,45 @@ namespace EcommerceAPI.Application.Services.UserService
             _userMapper = userMapper;
         }
 
-        public async Task<PagedResult<UserResponse>> GetUsersAsync(
-    GetUsersRequest request, CancellationToken cancellationToken = default)
+        public Task<PagedResult<UserResponse>> GetUsersAsync(
+            GetUsersRequest request,
+            CancellationToken cancellationToken = default)
         {
-            if(!string.IsNullOrEmpty(request.After) && !string.IsNullOrEmpty(request.Before))
-            {
-                throw new BadRequestException("Both 'After' and 'Before' parameters cannot be provided at the same time.");
-            }
+            return CursorPaginator.PaginateAsync(
+                repository: _userRepository,
 
-            int fetchSize= request.PageSize + 1; // Fetch one extra to determine if there's a next page
+                after: request.After,
+                before: request.Before,
 
-            List<User> users;
+                pageSize: request.PageSize,
 
-            bool hasMoreInQueryDirection;
-            bool navigatingBackward = !string.IsNullOrEmpty(request.Before);
+                defaultCursor: new UserCursor(
+                    DateTime.MinValue,
+                    int.MinValue),
 
-            if (navigatingBackward)
-            {
-                var cursor = CursorHelper.Decode<UserCursor>(request.Before!);
+                forwardPredicate: c =>
+                    u =>
+                        u.CreatedAt > c.CreatedAt ||
+                        (u.CreatedAt == c.CreatedAt &&
+                         u.Id > c.Id),
 
-                users = await _userRepository.GetPagedDescendingAsync(
-                    predicate: u => u.CreatedAt < cursor.CreatedAt || (u.CreatedAt == cursor.CreatedAt && u.Id < cursor.Id),
-                    orderBy: u => u.CreatedAt,
-                    thenBy: u => u.Id,
-                    take: fetchSize,
-                    cancellationToken: cancellationToken
-                );
+                backwardPredicate: c =>
+                    u =>
+                        u.CreatedAt < c.CreatedAt ||
+                        (u.CreatedAt == c.CreatedAt &&
+                         u.Id < c.Id),
 
-                hasMoreInQueryDirection = users.Count > request.PageSize;
-                if (hasMoreInQueryDirection)
-                {
-                    users = users.Take(request.PageSize).ToList();
-                }
-                users.Reverse();
-            }
-            else
-            {
-                var cursor = string.IsNullOrEmpty(request.After)
-                    ? new UserCursor(DateTime.MinValue,int.MinValue)
-                    :CursorHelper.Decode<UserCursor>(request.After);
+                orderBy: u => u.CreatedAt,
+                thenBy: u => u.Id,
 
-                users = await _userRepository.GetPagedAsync(
-                    predicate: u => u.CreatedAt > cursor.CreatedAt || (u.CreatedAt == cursor.CreatedAt && u.Id > cursor.Id),
-                    orderBy: u => u.CreatedAt,
-                    thenBy: u => u.Id,
-                    take: fetchSize,
-                    cancellationToken: cancellationToken
-                );
-                hasMoreInQueryDirection = users.Count > request.PageSize;
-                if(hasMoreInQueryDirection) {
-                    users = users.Take(request.PageSize).ToList();
-                }
-            }
-            string? startCursor = null;
-            string? endCursor = null;
-            if (users.Count > 0)
-            {
-                startCursor = CursorHelper.Encode(new UserCursor(users[0].CreatedAt, users[0].Id));
-                endCursor=CursorHelper.Encode(new UserCursor(users[^1].CreatedAt, users[^1].Id));
-            }
+                selectCursor: u =>
+                    new UserCursor(
+                        u.CreatedAt,
+                        u.Id),
 
-            bool hasNextPage = navigatingBackward ? true : hasMoreInQueryDirection;
-            bool hasPreviousPage = navigatingBackward ? hasMoreInQueryDirection : !string.IsNullOrEmpty(request.After);
+                map: _userMapper.ToUserResponse,
 
-            return new PagedResult<UserResponse>
-            {
-                Items = users.Select(_userMapper.ToUserResponse).ToList(),
-                StartCursor = startCursor,
-                EndCursor = endCursor,
-                HasNextPage = hasNextPage,
-                HasPreviousPage = hasPreviousPage,
-            };
+                cancellationToken: cancellationToken);
         }
     }
 }
