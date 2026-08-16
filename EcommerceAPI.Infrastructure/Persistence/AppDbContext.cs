@@ -60,6 +60,10 @@ namespace EcommerceAPI.Infrastructure.Contexts
                 .IsUnique();
 
             modelBuilder.Entity<User>()
+                .HasIndex(user => user.Guid)
+                .IsUnique();
+
+            modelBuilder.Entity<User>()
                 .Property(e => e.isActive)
                 .HasConversion(
                     v => v.ToString(),    

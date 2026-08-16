@@ -7,6 +7,8 @@ using EcommerceAPI.Application.Services.Auth;
 using EcommerceAPI.Application.Services.UserService;
 using EcommerceAPI.Application.Validators;
 using Microsoft.Extensions.DependencyInjection;
+using EcommerceAPI.Application.Services.UserService;
+using EcommerceAPI.Application.Interfaces.Iservices;
 
 namespace EcommerceAPI.Application;
 
