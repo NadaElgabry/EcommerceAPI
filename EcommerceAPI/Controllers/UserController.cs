@@ -23,6 +23,7 @@ namespace EcommerceAPI.Controllers
         {
             var userProfile = await _userService.GetUserProfileAsync(userId, cancellationToken);
             return Ok(ApiResponse<UserResponse>.SuccessResponse(message: "User profile retrieved successfully", statusCode: 200, data: userProfile));
+        
         }
     }
 }
