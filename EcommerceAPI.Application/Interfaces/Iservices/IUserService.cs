@@ -8,7 +8,7 @@ namespace EcommerceAPI.Application.Interfaces.Iservices
 {
     public interface IUserService
     {
-        public Task<PagedResult<UserResponse>> GetUsersAsync(
+        public Task<PagedResult<UserResponse>> GetAllUsersAsync(
     GetUsersRequest request, CancellationToken cancellationToken = default);
     }
 }

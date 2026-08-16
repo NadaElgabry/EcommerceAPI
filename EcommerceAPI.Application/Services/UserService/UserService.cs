@@ -2,6 +2,7 @@
 using EcommerceAPI.Application.DTOs.User;
 using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Application.Exceptions;
+using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Interfaces.Iservices;
 using EcommerceAPI.Application.Mappers.Interfaces;
 
