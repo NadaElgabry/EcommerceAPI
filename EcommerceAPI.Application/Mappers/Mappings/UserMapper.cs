@@ -9,17 +9,14 @@ namespace EcommerceAPI.Application.Mappers.Mappings
 {
     public class UserMapper : IUserMapper
     {
-
-        ///<inheritdoc/>
         public UserResponse ToUserResponse(User user)
         {
             return new UserResponse
             {
-                UserId = user.Guid,
+                Guid = user.Guid,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Email = user.Email,
-                Role = user.Role.ToString(),
                 PhoneNumber = user.PhoneNumber,
                 CreatedAt = user.CreatedAt
             };

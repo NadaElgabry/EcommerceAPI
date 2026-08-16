@@ -20,8 +20,6 @@ namespace EcommerceAPI.Infrastructure.Services.Mail
             _settings = options.Value;
             _logger = logger;
         }
-
-        /// <inheritdoc/>
         public async Task SendEmailAsync(
             string to, string subject, string htmlBody, CancellationToken cancellationToken = default)
         {

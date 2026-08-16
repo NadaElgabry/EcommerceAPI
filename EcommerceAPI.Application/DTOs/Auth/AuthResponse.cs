@@ -1,6 +1,4 @@
-﻿using EcommerceAPI.Domain.Enums;
-
-namespace EcommerceAPI.Application.DTOs.Auth
+﻿namespace EcommerceAPI.Application.DTOs.Auth
 {
     public class AuthResponse
     {
@@ -11,10 +9,6 @@ namespace EcommerceAPI.Application.DTOs.Auth
         public required string RefreshToken { get; init; }
 
         public required DateTime RefreshTokenExpiresAtUtc { get; init; }
-
-        public required Role Role { get; init; }
-
-        public required Guid UserId { get; init; }
 
     }
 }
