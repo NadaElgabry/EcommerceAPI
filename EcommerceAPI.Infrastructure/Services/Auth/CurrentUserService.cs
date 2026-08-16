@@ -15,7 +15,6 @@ public class CurrentUserService : ICurrentUserService
         _httpContextAccessor = httpContextAccessor;
     }
 
-    ///<inheritdoc/>
     public Guid UserGuid
     {
         get
@@ -30,11 +29,9 @@ public class CurrentUserService : ICurrentUserService
         }
     }
 
-    ///<inheritdoc/>
     public string? Role => _httpContextAccessor.HttpContext?.User
         .FindFirst(ClaimTypes.Role)?.Value;
 
-    ///<inheritdoc/>
     public bool IsAuthenticated => _httpContextAccessor.HttpContext?.User
         .Identity?.IsAuthenticated ?? false;
 }

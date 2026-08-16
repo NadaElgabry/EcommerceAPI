@@ -1,8 +1,7 @@
 ﻿using EcommerceAPI.Application.Common;
-using EcommerceAPI.Application.DTOs.User;
-using EcommerceAPI.Application.Interfaces.Iservices;
+using EcommerceAPI.Application.DTOs.Auth;
+using EcommerceAPI.Application.Interfaces.IServices;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EcommerceAPI.Controllers
@@ -11,18 +10,11 @@ namespace EcommerceAPI.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly IUserService _userService;
-        public UserController(IUserService userService)
-        {
-            _userService = userService;
-        }
+        private readonly IUserService _UsersService;
 
-        [HttpGet("{userId}")]
-        [Authorize]
-        public async Task<IActionResult> Profile([FromRoute] Guid userId, CancellationToken cancellationToken)
+        public UserController(IUserService usersService)
         {
-            var userProfile = await _userService.GetUserProfileAsync(userId, cancellationToken);
-            return Ok(ApiResponse<UserResponse>.SuccessResponse(message: "User profile retrieved successfully", statusCode: 200, data: userProfile));
+            _UsersService = usersService;
         }
 
         [HttpPut("{userId}")]
