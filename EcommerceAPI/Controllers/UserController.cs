@@ -1,28 +1,36 @@
 ﻿using EcommerceAPI.Application.Common;
-using EcommerceAPI.Application.DTOs.User;
-using EcommerceAPI.Application.Interfaces.Iservices;
+using EcommerceAPI.Application.DTOs.Auth;
+using EcommerceAPI.Application.Interfaces.IServices;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EcommerceAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/users")]
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly IUserService _userService;
-        public UserController(IUserService userService)
+        private readonly IUserService _UsersService;
+
+        public UserController(IUserService usersService)
         {
-            _userService = userService;
+            _UsersService = usersService;
         }
 
-        [HttpGet("{userId}")]
+        [HttpPut("{userId}")]
         [Authorize]
-        public async Task<IActionResult> Profile([FromRoute] Guid userId, CancellationToken cancellationToken)
+        public async Task<IActionResult> UpdateUser(
+            [FromRoute] Guid userId, [FromBody] UpdateProfileRequest request, CancellationToken cancellationToken)
         {
-            var userProfile = await _userService.GetUserProfileAsync(userId, cancellationToken);
-            return Ok(ApiResponse<UserResponse>.SuccessResponse(message: "User profile retrieved successfully", statusCode: 200, data: userProfile));
+            await _UsersService.UpdateProfileAsync(
+                userId,
+                request,
+                cancellationToken);
+
+            return Ok(
+                ApiResponse<string>.SuccessResponse(
+                    message: "User updated successfully",
+                    statusCode: 200));
         }
     }
 }

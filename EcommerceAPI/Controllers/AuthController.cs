@@ -4,12 +4,12 @@ using EcommerceAPI.Application.Interfaces.IServices;
 using IdempotentAPI.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace EcommerceAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/auth")]
     [ApiController]
     public class AuthController : ControllerBase
     {
@@ -52,14 +52,14 @@ namespace EcommerceAPI.Controllers
             return Ok(ApiResponse<string>.SuccessResponse(message: "Email verification code resent successfully", statusCode: 200));
         }
 
-        [HttpPost("ActivateAccount")]
+        [HttpPost("activate-account")]
         public async Task<IActionResult> ActivateAccount([FromBody] ActivateEmailRequest request, CancellationToken cancellationToken)
         {
             var result = await _authService.ActivateEmailAsync(request, cancellationToken);
             return Ok(ApiResponse<bool>.SuccessResponse(message: "Email activated successfully", statusCode: 200, data:result));
         }
 
-        [HttpPost("IsEmailAvailable")]
+        [HttpPost("is-email-available")]
         public async Task<IActionResult> IsEmailAvailable([FromBody] EmailRequest request, CancellationToken cancellationToken)
         {
             var isAvailable = await _authService.IsEmailAvailable(request, cancellationToken);
@@ -105,6 +105,7 @@ namespace EcommerceAPI.Controllers
                 message: "Password reset successfully.",
                 statusCode: 200));
         }
-         
+
+
     }
 }
