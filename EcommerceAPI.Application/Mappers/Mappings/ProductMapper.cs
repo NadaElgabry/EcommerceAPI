@@ -27,12 +27,19 @@ namespace EcommerceAPI.Application.Mappers.Mappings
         {
             return new ProductResponse
             {
-                Slug = product.Slug,
                 Name = product.Name,
+                Slug = product.Slug,
+                Description = product.Description,
+                Brand = product.Brand,
                 Price = product.Price,
+                StockQuantity = product.StockQuantity,
+                AltText = product.AltText,
+                CategoryId = product.CategoryId,
                 ProductImage = product.ProductImage,
-                CreationDate = product.CreationDate
+                CreationDate = DateTime.UtcNow
             };
         }
+
+
     }
 }

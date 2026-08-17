@@ -1,4 +1,6 @@
-﻿using EcommerceAPI.Application.DTOs.Product;
+﻿using EcommerceAPI.Application.Common;
+using EcommerceAPI.Application.DTOs.Common;
+using EcommerceAPI.Application.DTOs.Product;
 using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Image;
@@ -6,6 +8,7 @@ using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
+using System.Linq.Expressions;
 
 namespace EcommerceAPI.Application.Services.ProductService
 {
@@ -32,14 +35,12 @@ namespace EcommerceAPI.Application.Services.ProductService
         }
         public async Task<ProductResponse> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken)
         {
-            // 1. Validate Category exists
             var category = await _categoryRepository.GetByAsync(c => c.Id == request.CategoryId, cancellationToken);
             if (category == null)
             {
                 throw new NotFoundException($"Category with ID {request.CategoryId} not found.");
             }
 
-            // 2. Generate and validate Slug
             var slug = request.Name.ToLowerInvariant().Replace(" ", "-");
             var existingProduct = await _productRepository.GetByAsync(p => p.Slug == slug, cancellationToken);
             if (existingProduct != null)
@@ -47,18 +48,14 @@ namespace EcommerceAPI.Application.Services.ProductService
                 throw new ConflictException("A product with a similar name already exists.");
             }
 
-            // 3. Handle Image Upload
             string? imageUrl = null;
             if (request.Image != null)
             {
-                // SaveFileAsync takes an IFormFile and CancellationToken
                 imageUrl = await _imageService.SaveFileAsync(request.Image, cancellationToken);
             }
 
-            // 4. Map Request to Domain Entity
             var newProduct = _productMapper.ToProduct(request, slug, imageUrl);
 
-            // 5. Handle Tags (Many-to-Many Relationship)
             if (request.TagIds != null && request.TagIds.Any())
             {
                 foreach (var tagId in request.TagIds)
@@ -70,7 +67,6 @@ namespace EcommerceAPI.Application.Services.ProductService
                 }
             }
 
-            // 6. Save to Database
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
                 await _productRepository.AddAsync(newProduct, cancellationToken);
@@ -78,9 +74,39 @@ namespace EcommerceAPI.Application.Services.ProductService
             }, cancellationToken);
 
 
-            // 7. Return Response
             return _productMapper.ToProductResponse(newProduct);
 
+        }
+
+        public async Task<CursorPagedResponse<ProductResponse>> GetProductsPagedAsync(
+     string? cursor,
+     int pageSize,
+     CancellationToken cancellationToken)
+        {
+            if (pageSize <= 0) pageSize = 10;
+            if (pageSize > 50) pageSize = 50;
+
+            var products = await _productRepository.GetPagedDescendingAsync(
+                predicate: string.IsNullOrWhiteSpace(cursor)
+                    ? p => true
+                    : p => p.Id < CursorHelper.Decode<int>(cursor),
+                orderBy: p => p.Id,
+                take: pageSize + 1,
+                cancellationToken: cancellationToken);
+
+            bool hasNextPage = products.Count > pageSize;
+            if (hasNextPage) products = products.Take(pageSize).ToList();
+
+            string? nextCursor = hasNextPage && products.Count > 0
+                ? CursorHelper.Encode(products[^1].Id)
+                : null;
+
+            return new CursorPagedResponse<ProductResponse>
+            {
+                Data = products.Select(_productMapper.ToProductResponse).ToList(),
+                NextCursor = nextCursor,
+                HasNext = hasNextPage
+            };
         }
     }
 }

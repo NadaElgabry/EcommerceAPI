@@ -1,4 +1,5 @@
 ﻿using EcommerceAPI.Application.Common;
+using EcommerceAPI.Application.DTOs.Common;
 using EcommerceAPI.Application.DTOs.Product;
 using EcommerceAPI.Application.Interfaces.IServices;
 using Microsoft.AspNetCore.Authorization;
@@ -30,6 +31,20 @@ namespace EcommerceAPI.Controllers
                     statusCode: 201,
                     message: "Product created successfully.",
                     data: productResponse));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetProducts(
+            [FromQuery] string? cursor,
+            [FromQuery] int pageSize = 10,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await _productService.GetProductsPagedAsync(cursor, pageSize, cancellationToken);
+
+            return Ok(ApiResponse<CursorPagedResponse<ProductResponse>>.SuccessResponse(
+                statusCode: 200,
+                message: "Products fetched successfully.",
+                data: result));
         }
     }
 }
