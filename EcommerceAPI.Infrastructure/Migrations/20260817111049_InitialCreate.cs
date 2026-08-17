@@ -53,7 +53,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     SalePrice = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     DiscountPercentage = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
                     StockQuantity = table.Column<int>(type: "int", nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false),
                     ProductImage = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     AltText = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreationDate = table.Column<DateTime>(type: "datetime2", nullable: false),

@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EcommerceAPI.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260816222821_InitialCreate")]
+    [Migration("20260817111049_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -80,9 +80,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
 
                     b.Property<decimal?>("DiscountPercentage")
                         .HasColumnType("decimal(5,2)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
