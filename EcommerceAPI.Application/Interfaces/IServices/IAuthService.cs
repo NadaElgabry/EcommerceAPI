@@ -69,6 +69,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// </summary>
         /// <param name="request">The logout request.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public Task Logout(
             LogoutRequest request, CancellationToken cancellationToken = default);
 
@@ -77,6 +78,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// </summary>
         /// <param name="request">The request containing the user's email address.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public Task ForgotPasswordAsync(
             ForgotPasswordRequest request, CancellationToken cancellationToken = default);
 
@@ -85,7 +87,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// </summary>
         /// <param name="request">The request containing the reset code.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>High entropy reset token</returns>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public Task<VerifyResetCodeResponse> VerifyResetCodeAsync(
             VerifyResetCodeRequest request, CancellationToken cancellationToken = default);
 
@@ -94,6 +96,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// </summary>
         /// <param name="request">The request containing the reset code and new password.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public Task ResetPasswordAsync(
             ResetPasswordRequest request, CancellationToken cancellationToken = default);
 

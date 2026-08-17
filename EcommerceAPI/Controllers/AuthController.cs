@@ -2,7 +2,6 @@
 using EcommerceAPI.Application.DTOs.Auth;
 using EcommerceAPI.Application.Interfaces.IServices;
 using IdempotentAPI.Filters;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
@@ -105,7 +104,5 @@ namespace EcommerceAPI.Controllers
                 message: "Password reset successfully.",
                 statusCode: 200));
         }
-
-
     }
 }

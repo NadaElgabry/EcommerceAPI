@@ -11,12 +11,12 @@ namespace EcommerceAPI.Application.Mappers.Mappings
         {
             return new UserResponse
             {
-                UserId = user.Guid,
+                Guid = user.Guid,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Email = user.Email,
-                Role = user.Role.ToString(),
                 PhoneNumber = user.PhoneNumber,
+                IsActive = user.isActive,
                 CreatedAt = user.CreatedAt
             };
         }
