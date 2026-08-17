@@ -12,6 +12,8 @@ namespace EcommerceAPI.Domain.Entities
 
         public required string ImageUrl { get; set; } = string.Empty;
 
+        public List<User> Users { get; set; } = new();
+    
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

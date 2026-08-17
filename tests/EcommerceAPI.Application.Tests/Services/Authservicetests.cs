@@ -80,27 +80,27 @@ namespace EcommerceAPI.Application.Tests.Services.Auth
         // rather than assigning IsActive itself.
         // ---------------------------------------------------------------
 
-        private static User CreateUser(string email = "user@example.com", string hashedPassword = "hashed", bool isActive = false) => new()
+        private static User CreateUser(string email = "user@example.com", string hashedPassword = "hashed", bool IsActive = false) => new()
         {
             Email = email,
             HashedPassword = hashedPassword,
-            isActive = isActive
+            IsActive = IsActive
         };
 
-        private static RefreshToken CreateRefreshToken(User user, bool isActive = true, string tokenHash = "hashed-refresh") => new()
+        private static RefreshToken CreateRefreshToken(User user, bool IsActive = true, string tokenHash = "hashed-refresh") => new()
         {
             User = user,
             UserId = user.Id,
             TokenHash = tokenHash,
-            ExpiresAt = isActive ? DateTime.UtcNow.AddDays(7) : DateTime.UtcNow.AddDays(-1)
+            ExpiresAt = IsActive ? DateTime.UtcNow.AddDays(7) : DateTime.UtcNow.AddDays(-1)
         };
 
-        private static VerificationToken CreateVerificationToken(User user, bool isActive = true, string tokenHash = "hashed-activation") => new()
+        private static VerificationToken CreateVerificationToken(User user, bool IsActive = true, string tokenHash = "hashed-activation") => new()
         {
             User = user,
             UserId = user.Id,
             TokenHash = tokenHash,
-            ExpiresAt = isActive ? DateTime.UtcNow.AddDays(1) : DateTime.UtcNow.AddDays(-1),
+            ExpiresAt = IsActive ? DateTime.UtcNow.AddDays(1) : DateTime.UtcNow.AddDays(-1),
             ConsumedAt = null
         };
 
@@ -186,8 +186,8 @@ namespace EcommerceAPI.Application.Tests.Services.Auth
         {
             // Arrange
             var request = new ActivateEmailRequest { Token = "raw-token" };
-            var user = CreateUser(isActive: false);
-            var verificationToken = CreateVerificationToken(user, isActive: true, tokenHash: "hashed-token");
+            var user = CreateUser(IsActive: false);
+            var verificationToken = CreateVerificationToken(user, IsActive: true, tokenHash: "hashed-token");
 
             _tokenService.Setup(t => t.Hash("raw-token")).Returns("hashed-token");
 
@@ -208,7 +208,7 @@ namespace EcommerceAPI.Application.Tests.Services.Auth
             var response = await _sut.ActivateEmailAsync(request, CancellationToken.None);
 
             // Assert
-            Assert.True(user.isActive);
+            Assert.True(user.IsActive);
             Assert.NotNull(verificationToken.ConsumedAt);
             Assert.Equal("access-token", response.AccessToken);
             Assert.Equal("raw-refresh-token", response.RefreshToken);
@@ -241,7 +241,7 @@ namespace EcommerceAPI.Application.Tests.Services.Auth
         {
             var request = new ActivateEmailRequest { Token = "expired-token" };
             var user = CreateUser();
-            var verificationToken = CreateVerificationToken(user, isActive: false, tokenHash: "hashed-expired-token");
+            var verificationToken = CreateVerificationToken(user, IsActive: false, tokenHash: "hashed-expired-token");
 
             _tokenService.Setup(t => t.Hash("expired-token")).Returns("hashed-expired-token");
 
@@ -291,7 +291,7 @@ namespace EcommerceAPI.Application.Tests.Services.Auth
         public async Task Login_WithValidCredentials_ReturnsAuthResponse()
         {
             var request = new LoginRequest { Email = "user@example.com", Password = "correct-password" };
-            var user = CreateUser(email: "user@example.com", hashedPassword: "hashed-password", isActive: true);
+            var user = CreateUser(email: "user@example.com", hashedPassword: "hashed-password", IsActive: true);
 
             _userRepository
                 .Setup(r => r.GetByAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
@@ -397,7 +397,7 @@ namespace EcommerceAPI.Application.Tests.Services.Auth
         {
             var request = new RefreshTokenRequest { RefreshToken = "old-raw-token" };
             var user = CreateUser();
-            var storedToken = CreateRefreshToken(user, isActive: true, tokenHash: "hashed-old-token");
+            var storedToken = CreateRefreshToken(user, IsActive: true, tokenHash: "hashed-old-token");
 
             _tokenService.Setup(t => t.Hash("old-raw-token")).Returns("hashed-old-token");
 
@@ -446,7 +446,7 @@ namespace EcommerceAPI.Application.Tests.Services.Auth
         {
             var request = new RefreshTokenRequest { RefreshToken = "inactive-token" };
             var user = CreateUser();
-            var storedToken = CreateRefreshToken(user, isActive: false, tokenHash: "hashed-inactive-token");
+            var storedToken = CreateRefreshToken(user, IsActive: false, tokenHash: "hashed-inactive-token");
 
             _tokenService.Setup(t => t.Hash("inactive-token")).Returns("hashed-inactive-token");
 

@@ -10,6 +10,8 @@
 
         public string PhoneNumber { get; set; } = string.Empty;
 
+        public DateTime BirthDate { get; set; } = DateTime.UtcNow;
+
         public string Password { get; set; } = string.Empty;
     }
 }
