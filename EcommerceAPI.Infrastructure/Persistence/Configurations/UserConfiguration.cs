@@ -36,7 +36,7 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
                 new User
                 {
                     Id = 1,
-                    Guid = Guid.NewGuid(),
+                    Guid = Guid.Parse("f47ac10b-58cc-4372-a567-0e02b2c3d479"),
                     FirstName = "admin",
                     LastName = "user",
                     Role = Domain.Enums.Role.Admin,
