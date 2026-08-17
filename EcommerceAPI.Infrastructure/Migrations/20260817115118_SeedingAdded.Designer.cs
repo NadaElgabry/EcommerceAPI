@@ -4,6 +4,7 @@ using EcommerceAPI.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EcommerceAPI.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260817115118_SeedingAdded")]
+    partial class SeedingAdded
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -48,22 +51,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Categories");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            ImageUrl = "https://www.flaticon.com/free-icon/electronics_1555401",
-                            Name = "Electronics"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            ImageUrl = "https://www.flaticon.com/free-icon/electronics_1555401",
-                            Name = "Groceries"
-                        });
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.Product", b =>
@@ -118,32 +105,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Products");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Brand = "AudioTech",
-                            CategoryId = 1,
-                            CreationDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "High quality noise-canceling headphones.",
-                            Name = "Wireless Headphones",
-                            Price = 199.99m,
-                            Slug = "wireless-headphones",
-                            StockQuantity = 50
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Brand = "Cadbury",
-                            CategoryId = 2,
-                            CreationDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Has chocolate in it.",
-                            Name = "Moro Dark Chocolate",
-                            Price = 5.12m,
-                            Slug = "moro-dark-chocolate",
-                            StockQuantity = 100
-                        });
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.ProductTag", b =>
@@ -224,23 +185,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Tags");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "New Arrival"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Name = "Bestseller"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Name = "Sale"
-                        });
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.User", b =>
@@ -307,22 +251,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            BirthDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Email = "admin@example.com",
-                            FirstName = "admin",
-                            Guid = new Guid("658737c3-35ee-4f28-bd40-decde11dc19d"),
-                            HashedPassword = "$2y$10$7rLSvRVyTQORapkDOqmkhetjF6H9lJHngr4hJMSM2lHObJbW5EQh6",
-                            IsActive = "True",
-                            LastName = "user",
-                            PhoneNumber = "01200032134",
-                            Role = "Admin"
-                        });
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.UserAddress", b =>

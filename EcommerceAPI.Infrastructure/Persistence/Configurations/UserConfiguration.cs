@@ -31,6 +31,24 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
                 .WithOne(a => a.User)
                 .HasForeignKey(a => a.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasData(
+                new User
+                {
+                    Id = 1,
+                    Guid = Guid.NewGuid(),
+                    FirstName = "admin",
+                    LastName = "user",
+                    Role = Domain.Enums.Role.Admin,
+                    Email = "admin@example.com",
+                    // Initial password is : Password@123
+                    HashedPassword = "$2y$10$7rLSvRVyTQORapkDOqmkhetjF6H9lJHngr4hJMSM2lHObJbW5EQh6",
+                    IsActive=true,
+                    BirthDate= new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    PhoneNumber ="01200032134"
+                }
+                );
         }
     }
 }

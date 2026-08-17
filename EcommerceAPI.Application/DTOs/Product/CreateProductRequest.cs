@@ -9,8 +9,6 @@ namespace EcommerceAPI.Application.DTOs.Product
         public required string Description { get; set; }
         public required string Brand { get; set; }
         public decimal Price { get; set; }
-        public decimal? SalePrice { get; set; }
-        public decimal? DiscountPercentage { get; set; }
         public int StockQuantity { get; set; }
         public string? AltText { get; set; }
         public int CategoryId { get; set; }
