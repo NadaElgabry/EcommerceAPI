@@ -44,6 +44,12 @@ namespace EcommerceAPI.Application.Validators
                 .Matches(@"^(\+20|0020|0)?1[0125][0-9]{8}$")
                 .WithMessage("Phone number must be a valid Egyptian mobile number (e.g. 01012345678).");
 
+            RuleFor(request => request.BirthDate)
+                .NotEmpty()
+                .WithMessage("Birth date is required.")
+                .LessThan(DateTime.UtcNow.Date)
+                .WithMessage("Birth Date is invalid");
+
             RuleFor(request => request.Password)
                 .NotEmpty()
                 .WithMessage("Password is required.")
