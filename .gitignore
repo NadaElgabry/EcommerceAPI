@@ -122,3 +122,5 @@ $RECYCLE.BIN/
 .env
 .env.*
 *.env.local
+
+EcommerceAPI/Uploads/

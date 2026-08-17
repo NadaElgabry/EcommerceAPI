@@ -360,7 +360,5 @@ namespace EcommerceAPI.Application.Services.Auth
 
             }, cancellationToken);
         }
-
-
     }
 }

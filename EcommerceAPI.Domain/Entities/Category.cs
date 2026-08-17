@@ -1,0 +1,17 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace EcommerceAPI.Domain.Entities
+{
+    public class Category
+    {
+        public int Id { get; set; }
+
+        public required string Name { get; set; } = string.Empty;
+
+        public required string ImageUrl { get; set; } = string.Empty;
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+}

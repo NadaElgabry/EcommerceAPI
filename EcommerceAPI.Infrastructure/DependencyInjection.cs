@@ -1,12 +1,14 @@
 ﻿using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Email;
+using EcommerceAPI.Application.Interfaces.Image;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Infrastructure.Contexts;
 using EcommerceAPI.Infrastructure.Persistence;
 using EcommerceAPI.Infrastructure.Persistence.Repositories;
 using EcommerceAPI.Infrastructure.Services.Auth;
 using EcommerceAPI.Infrastructure.Services.Email;
+using EcommerceAPI.Infrastructure.Services.Image;
 using EcommerceAPI.Infrastructure.Services.Mail;
 using EcommerceAPI.Infrastructure.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -31,12 +33,15 @@ public static class DependencyInjection
 
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IImageService, ImageService>();
 
         services.Configure<EmailSettings>(
            configuration.GetSection("EmailSettings"));
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IVerificationEmailTemplateProvider, VerificationEmailTemplateProvider>();
 
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddJwtAuthentication(configuration);
 
         return services;

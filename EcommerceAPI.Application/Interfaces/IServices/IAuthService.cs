@@ -100,5 +100,6 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         public Task ResetPasswordAsync(
             ResetPasswordRequest request, CancellationToken cancellationToken = default);
 
+
     }
 }
