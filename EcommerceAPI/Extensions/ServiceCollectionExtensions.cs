@@ -60,6 +60,7 @@ public static class ServiceCollectionExtensions
                 In = ParameterLocation.Header,
                 Description = "Enter your JWT token below (no 'Bearer ' prefix needed).\n\nExample: \"eyJhbGciOi...\""
             });
+
             options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
             {
                 [new OpenApiSecuritySchemeReference("Bearer", document)] = []

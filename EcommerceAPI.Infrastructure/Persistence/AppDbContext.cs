@@ -20,6 +20,8 @@ namespace EcommerceAPI.Infrastructure.Contexts
 
         public DbSet<VerificationToken> VerificationTokens { get; set; }
 
+        public DbSet<Category> Categories { get; set; }
+
         protected override void OnModelCreating(
             ModelBuilder modelBuilder)
         {
@@ -86,6 +88,15 @@ namespace EcommerceAPI.Infrastructure.Contexts
                 .Property(vt => vt.Purpose)
                 .HasConversion<string>()
                 .HasMaxLength(50);
+
+            modelBuilder.Entity<Category>()
+                .Property(c => c.Name)
+                .HasMaxLength(100);
+
+            modelBuilder.Entity<Category>()
+                .HasIndex(c => c.Name)
+                .IsUnique();
+
         }
     }
 }
