@@ -1,4 +1,5 @@
 ﻿using EcommerceAPI.Application.DTOs.Auth;
+using EcommerceAPI.Application.DTOs.User;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
 
@@ -16,7 +17,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 LastName = user.LastName,
                 Email = user.Email,
                 PhoneNumber = user.PhoneNumber,
-                IsActive = user.isActive,
+                IsActive = user.IsActive,
                 CreatedAt = user.CreatedAt
             };
         }
