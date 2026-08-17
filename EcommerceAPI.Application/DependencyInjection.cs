@@ -1,6 +1,5 @@
 ﻿using FluentValidation;
 using EcommerceAPI.Application.Interfaces.IServices;
-using EcommerceAPI.Application.Interfaces.Iservices;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Application.Mappers.Mappings;
 using EcommerceAPI.Application.Services.Auth;
