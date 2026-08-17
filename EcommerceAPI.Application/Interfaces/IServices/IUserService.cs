@@ -1,4 +1,6 @@
 ﻿using EcommerceAPI.Application.DTOs.Auth;
+using EcommerceAPI.Application.DTOs.Common;
+using EcommerceAPI.Application.DTOs.User;
 using System.Threading;
 using System.Threading.Tasks;
 

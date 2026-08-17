@@ -4,10 +4,9 @@ using EcommerceAPI.Application.Interfaces.Iservices;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Application.Mappers.Mappings;
 using EcommerceAPI.Application.Services.Auth;
-using EcommerceAPI.Application.Services.Users;
+using EcommerceAPI.Application.Services.UserService;
 using EcommerceAPI.Application.Validators;
 using Microsoft.Extensions.DependencyInjection;
-using EcommerceAPI.Application.Interfaces.Iservices;
 using EcommerceAPI.Application.Services.CategoryService;
 
 namespace EcommerceAPI.Application;
