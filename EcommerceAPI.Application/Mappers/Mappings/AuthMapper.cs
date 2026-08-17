@@ -13,8 +13,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 Email = request.Email,
-                PhoneNumber = request.PhoneNumber,
-                BirthDate = request.BirthDate
+                PhoneNumber = request.PhoneNumber
             };
 
         }

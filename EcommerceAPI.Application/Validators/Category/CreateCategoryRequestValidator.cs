@@ -1,5 +1,10 @@
 ﻿using EcommerceAPI.Application.DTOs.Category;
 using FluentValidation;
+using FluentValidation.Validators;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Text;
 
 namespace EcommerceAPI.Application.Validators.Category
 {
