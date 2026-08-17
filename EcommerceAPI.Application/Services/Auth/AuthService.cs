@@ -276,8 +276,8 @@ namespace EcommerceAPI.Application.Services.Auth
                 AccessTokenExpiresAtUtc = accessTokenResult.ExpiresAtUtc,
                 RefreshToken = rawToken,
                 RefreshTokenExpiresAtUtc = newRefreshToken.ExpiresAt,
-                Role = storedToken.User.Role,
-                UserId = storedToken.User.Guid
+                Role = newRefreshToken.User.Role,
+                UserId = newRefreshToken.User.Guid
             };
         }
 
