@@ -7,6 +7,7 @@ namespace EcommerceAPI.Application.Mappers.Interfaces
     {
         Product ToProduct(CreateProductRequest request,string slug, string imageUrl);
         ProductResponse ToProductResponse(Product product);
-
+        ProductSummaryResponse ToProductSummaryResponse(Product product);
+        void UpdateProductFromRequest(Product product, UpdateProductRequest request);
     }
 }

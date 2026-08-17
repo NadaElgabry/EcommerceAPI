@@ -8,6 +8,7 @@ using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace EcommerceAPI.Application.Services.ProductService
@@ -78,7 +79,7 @@ namespace EcommerceAPI.Application.Services.ProductService
 
         }
 
-        public async Task<CursorPagedResponse<ProductResponse>> GetProductsPagedAsync(
+        public async Task<CursorPagedResponse<ProductSummaryResponse>> GetProductsPagedAsync(
      string? cursor,
      int pageSize,
      CancellationToken cancellationToken)
@@ -101,12 +102,81 @@ namespace EcommerceAPI.Application.Services.ProductService
                 ? CursorHelper.Encode(products[^1].Id)
                 : null;
 
-            return new CursorPagedResponse<ProductResponse>
+            return new CursorPagedResponse<ProductSummaryResponse>
             {
-                Data = products.Select(_productMapper.ToProductResponse).ToList(),
+                Data = products.Select(_productMapper.ToProductSummaryResponse).ToList(),
                 NextCursor = nextCursor,
                 HasNext = hasNextPage
             };
+        }
+
+        public async Task<ProductResponse> UpdateProductAsync(
+            string slug, UpdateProductRequest request, CancellationToken cancellationToken)
+        {
+            var product = await _productRepository.GetByAsync(
+                predicate: p => p.Slug == slug,
+                include: query => query.Include(p => p.ProductTags),
+                cancellationToken: cancellationToken)
+                ?? throw new NotFoundException($"Product '{slug}' not found.");
+
+            if (request.CategoryId != product.CategoryId)
+            {
+                var categoryExists = await _categoryRepository.ExistByAsync(
+                    c => c.Id == request.CategoryId, cancellationToken);
+                if (!categoryExists)
+                {
+                    throw new NotFoundException($"Category with ID {request.CategoryId} not found.");
+                }
+                product.CategoryId = request.CategoryId;
+            }
+
+            if (!string.Equals(request.Name, product.Name, StringComparison.Ordinal))
+            {
+                var newSlug = request.Name.ToLowerInvariant().Replace(" ", "-");
+                var slugTaken = await _productRepository.ExistByAsync(
+                    p => p.Slug == newSlug && p.Id != product.Id, cancellationToken);
+                if (slugTaken)
+                {
+                    throw new ConflictException("A product with a similar name already exists.");
+                }
+                product.Slug = newSlug;
+                product.Name = request.Name;
+            }
+
+            if (request.Image != null)
+            {
+                product.ProductImage = await _imageService.SaveFileAsync(request.Image, cancellationToken);
+            }
+
+            _productMapper.UpdateProductFromRequest(product, request);
+
+            product.ProductTags.Clear();
+            foreach (var tagId in request.TagIds.Distinct())
+            {
+                product.ProductTags.Add(new ProductTag { ProductId = product.Id, TagId = tagId });
+            }
+
+            _productRepository.Update(product);
+
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }, cancellationToken);
+
+            return _productMapper.ToProductResponse(product);
+        }
+
+        public async Task DeleteProductAsync(string slug, CancellationToken cancellationToken)
+        {
+            var product = await _productRepository.GetByAsync(
+                p => p.Slug == slug, cancellationToken)
+                ?? throw new NotFoundException($"Product '{slug}' not found.");
+
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                _productRepository.Delete(product);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }, cancellationToken);
         }
     }
 }

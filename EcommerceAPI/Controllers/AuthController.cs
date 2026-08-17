@@ -97,9 +97,9 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> ResetPasswordFromOTP([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
         {
-            await _authService.ResetPasswordAsync(request, cancellationToken);
+            await _authService.ResetPasswordFromOTPAsync(request, cancellationToken);
             return Ok(ApiResponse<string>.SuccessResponse(
                 message: "Password reset successfully.",
                 statusCode: 200));

@@ -337,7 +337,7 @@ namespace EcommerceAPI.Application.Services.Auth
         }
 
         /// <inheritdoc />
-        public async Task ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default)
+        public async Task ResetPasswordFromOTPAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default)
         {
             var hashedToken = _tokenService.Hash(request.ResetToken);
 

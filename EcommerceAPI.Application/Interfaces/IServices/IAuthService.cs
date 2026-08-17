@@ -69,7 +69,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// </summary>
         /// <param name="request">The logout request.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <returns></returns>
         public Task Logout(
             LogoutRequest request, CancellationToken cancellationToken = default);
 
@@ -78,7 +78,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// </summary>
         /// <param name="request">The request containing the user's email address.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <returns></returns>
         public Task ForgotPasswordAsync(
             ForgotPasswordRequest request, CancellationToken cancellationToken = default);
 
@@ -87,7 +87,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// </summary>
         /// <param name="request">The request containing the reset code.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <returns> A response containing the high entropy code</returns>
         public Task<VerifyResetCodeResponse> VerifyResetCodeAsync(
             VerifyResetCodeRequest request, CancellationToken cancellationToken = default);
 
@@ -96,8 +96,8 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// </summary>
         /// <param name="request">The request containing the reset code and new password.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task representing the asynchronous operation.</returns>
-        public Task ResetPasswordAsync(
+        /// <returns></returns>
+        public Task ResetPasswordFromOTPAsync(
             ResetPasswordRequest request, CancellationToken cancellationToken = default);
 
 

@@ -39,6 +39,28 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 CreationDate = DateTime.UtcNow
             };
         }
+        public ProductSummaryResponse ToProductSummaryResponse(Product product)
+        {
+            return new ProductSummaryResponse
+            {
+                Name = product.Name,
+                Slug = product.Slug,
+                Price = product.Price,
+                StockQuantity = product.StockQuantity,
+                AltText = product.AltText,
+                ProductImage = product.ProductImage,
+            };
+        }
+
+        public void UpdateProductFromRequest(Product product, UpdateProductRequest request)
+        {
+            product.Description = request.Description;
+            product.Brand = request.Brand;
+            product.Price = request.Price;
+            product.StockQuantity = request.StockQuantity;
+            product.AltText = request.AltText;
+        }
+
 
 
     }
