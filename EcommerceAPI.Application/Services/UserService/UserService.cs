@@ -10,6 +10,7 @@ using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace EcommerceAPI.Application.Services.UserService
 {
@@ -80,45 +81,36 @@ namespace EcommerceAPI.Application.Services.UserService
             }
         }
 
-        public Task<PagedResult<UserResponse>> GetAllUsersAsync(
-            GetUsersRequest request,
-            CancellationToken cancellationToken = default)
+        public async Task<PagedResult<UserResponse>> GetAllUsersAsync(
+    GetUsersRequest request,
+    CancellationToken cancellationToken = default)
         {
-            return CursorPaginator.PaginateAsync(
-                repository: _userRepository,
+            int page = Math.Max(request.PageNumber, 1);
+            int pageSize = Math.Clamp(request.PageSize, 1, 100);
 
-                after: request.After,
-                before: request.Before,
-
-                pageSize: request.PageSize,
-
-                defaultCursor: new UserCursor(
-                    DateTime.MinValue,
-                    int.MinValue),
-
-                forwardPredicate: c =>
-                    u =>
-                        u.CreatedAt > c.CreatedAt ||
-                        (u.CreatedAt == c.CreatedAt &&
-                         u.Id > c.Id),
-
-                backwardPredicate: c =>
-                    u =>
-                        u.CreatedAt < c.CreatedAt ||
-                        (u.CreatedAt == c.CreatedAt &&
-                         u.Id < c.Id),
-
-                orderBy: u => u.CreatedAt,
-                thenBy: u => u.Id,
-
-                selectCursor: u =>
-                    new UserCursor(
-                        u.CreatedAt,
-                        u.Id),
-
-                map: _userMapper.ToUserResponse,
-
+            var users = await _userRepository.GetPageOffSetAsync(
+                orderBy: u => u.Id,
+                skip: (page - 1) * pageSize,
+                take: pageSize,
                 cancellationToken: cancellationToken);
+
+            var totalCount = await _userRepository.GetCountAsync(cancellationToken);
+
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            return new PagedResult<UserResponse>
+            {
+                Data = users.Select(u => _userMapper.ToUserResponse(u)).ToList(),
+                Pagination = new PageInfo
+                {
+                    CurrentPage = page,
+                    PageSize = pageSize,
+                    TotalCount = totalCount,
+                    TotalPages = totalPages,
+                    HasNext = page < totalPages,
+                    HasPrevious = page > 1
+                }
+            };
         }
     }
 }

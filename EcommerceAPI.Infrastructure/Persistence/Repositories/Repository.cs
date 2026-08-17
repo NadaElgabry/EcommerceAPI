@@ -49,36 +49,35 @@ namespace EcommerceAPI.Infrastructure.Persistence.Repositories
             _dbSet.RemoveRange(entities);
         }
 
-        public async Task<List<T>> GetPagedAsync<TKey1, TKey2>(
-    Expression<Func<T, bool>> predicate,
-    Expression<Func<T, TKey1>> orderBy,
-    Expression<Func<T, TKey2>> thenBy,
-    int take,
+        public async Task<List<T>> GetPagedAsync<TKey>(
+        Expression<Func<T, bool>> predicate,
+        Expression<Func<T, TKey>> orderBy,
+        int take,
     CancellationToken cancellationToken = default)
         {
-            return await _context.Set<T>()
+            return await _dbSet
                 .Where(predicate)
                 .OrderBy(orderBy)
-                .ThenBy(thenBy)
                 .Take(take)
                 .ToListAsync(cancellationToken);
         }
-
-        public async Task<List<T>> GetPagedDescendingAsync<TKey1, TKey2>(
-            Expression<Func<T, bool>> predicate,
-            Expression<Func<T, TKey1>> orderBy,
-            Expression<Func<T, TKey2>> thenBy,
-            int take,
-            CancellationToken cancellationToken = default)
+        public async Task<List<T>> GetPageOffSetAsync<TKey>(
+            Expression<Func<T, TKey>> orderBy,
+            int take, int skip
+            ,CancellationToken cancellationToken)
         {
-            return await _context.Set<T>()
-                .Where(predicate)
-                .OrderByDescending(orderBy)
-                .ThenByDescending(thenBy)
+            return await _dbSet
+                .OrderBy(orderBy)
+                .Skip(skip)
                 .Take(take)
                 .ToListAsync(cancellationToken);
+                
         }
 
+        public async Task<long> GetCountAsync(CancellationToken cancellationToken)
+        {
+            return await _dbSet.LongCountAsync(cancellationToken);
+        }
 
         /// <inheritdoc />
         public void Update(T entity)
