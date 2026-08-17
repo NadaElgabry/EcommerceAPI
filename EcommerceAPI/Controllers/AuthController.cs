@@ -1,7 +1,7 @@
 using EcommerceAPI.Application.DTOs.Auth;
 using EcommerceAPI.Application.Exceptions;
+using EcommerceAPI.Application.Interfaces.Iservices;
 using EcommerceAPI.Application.UseCases.Auth.Login;
-using EcommerceAPI.Application.UseCases.Auth.ResetPassword;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -13,14 +13,14 @@ namespace EcommerceAPI.Controllers
     public class AuthController : ControllerBase
     {
         private readonly ILoginUseCase _loginUseCase;
-        private readonly IResetPasswordUseCase _resetPasswordUseCase;
+        private readonly IAuthService _authService;
 
         public AuthController(
             ILoginUseCase loginUseCase,
-            IResetPasswordUseCase resetPasswordUseCase)
+            IAuthService authService)
         {
             _loginUseCase = loginUseCase;
-            _resetPasswordUseCase = resetPasswordUseCase;
+            _authService = authService;
         }
 
         [HttpPost("login")]
@@ -63,7 +63,7 @@ namespace EcommerceAPI.Controllers
                 );
             }
 
-            await _resetPasswordUseCase.ResetPasswordAsync(
+            await _authService.ResetPasswordAsync(
                 userGuid,
                 request,
                 cancellationToken

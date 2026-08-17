@@ -1,13 +1,16 @@
 using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
+using EcommerceAPI.Application.Interfaces.Iservices;
 using EcommerceAPI.Application.Interfaces.Repositories;
+using EcommerceAPI.Application.Services.Auth;
 using EcommerceAPI.Application.UseCases.Auth.Login;
-using EcommerceAPI.Application.UseCases.Auth.ResetPassword;
+using EcommerceAPI.Application.Validators.Auth;
 using EcommerceAPI.Infrastructure.Contexts;
 using EcommerceAPI.Infrastructure.Persistence;
 using EcommerceAPI.Infrastructure.Persistence.Repositories;
 using EcommerceAPI.Infrastructure.Services.Auth;
 using EcommerceAPI.Middlewares;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -19,6 +22,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddValidatorsFromAssemblyContaining<ResetPasswordRequestValidator>();
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -36,18 +41,22 @@ builder.Host.UseSerilog();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped(
+    typeof(IRepository<>),
+    typeof(Repository<>));
+
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
-builder.Services.AddScoped<IResetPasswordUseCase, ResetPasswordUseCase>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Dev", policy =>
-        policy.WithOrigins("http://localhost:5223", "https://localhost:7xxx")
+        policy.WithOrigins(
+                "http://localhost:5223",
+                "https://localhost:7xxx")
               .AllowAnyHeader()
               .AllowAnyMethod());
 });
@@ -57,14 +66,15 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
+
 var key = jwtSettings["Key"]
     ?? throw new InvalidOperationException(
-        "JWT key is missing from configuration."
-    );
+        "JWT key is missing from configuration.");
 
 builder.Services.Configure<JwtSettings>(jwtSettings);
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -97,7 +107,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
 app.UseCors("Dev");
+
 app.UseAuthentication();
 app.UseAuthorization();
 

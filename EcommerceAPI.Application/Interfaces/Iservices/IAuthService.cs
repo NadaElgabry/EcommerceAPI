@@ -1,8 +1,8 @@
 using EcommerceAPI.Application.DTOs.Auth;
 
-namespace EcommerceAPI.Application.UseCases.Auth.ResetPassword
+namespace EcommerceAPI.Application.Interfaces.Iservices
 {
-    public interface IResetPasswordUseCase
+    public interface IAuthService
     {
         Task ResetPasswordAsync(
             Guid userGuid,

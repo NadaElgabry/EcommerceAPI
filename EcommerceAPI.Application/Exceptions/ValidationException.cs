@@ -11,7 +11,7 @@ namespace EcommerceAPI.Application.Exceptions
 
         public ValidationException()
             : base("One or more validation failures occurred.")
-        {}
+        { }
 
         public ValidationException(IDictionary<string, string[]> errorsDict) : this()
         {
