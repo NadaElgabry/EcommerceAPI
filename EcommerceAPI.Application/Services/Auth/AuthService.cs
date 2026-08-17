@@ -157,7 +157,7 @@ namespace EcommerceAPI.Application.Services.Auth
                 ?? throw new NotFoundException("Invalid activation token.");
 
 
-            token.User.IsActive = true;
+            token.User.isActive = true;
             token.ConsumedAt = DateTime.UtcNow;
 
             var accesstoken = _tokenService.GenerateAccessToken(token.User);
@@ -188,7 +188,7 @@ namespace EcommerceAPI.Application.Services.Auth
             var user = await _userRepository.GetByAsync(u => u.Email == request.Email.Trim().ToLower(), cancellationToken)
                 ?? throw new UnauthorizedException("Invalid credentials");
 
-            if(!user.IsActive)
+            if(!user.isActive)
                 throw new UnauthorizedException("User is not Activated");
 
             if (!_passwordHasher.Verify(request.Password, user.HashedPassword))

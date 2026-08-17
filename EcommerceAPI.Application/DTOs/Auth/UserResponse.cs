@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace EcommerceAPI.Application.DTOs.User
+namespace EcommerceAPI.Application.DTOs.Auth
 {
     public class UserResponse
     {

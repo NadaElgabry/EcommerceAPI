@@ -1,6 +1,6 @@
 ﻿using EcommerceAPI.Application.Common;
 using EcommerceAPI.Application.DTOs.Category;
-using EcommerceAPI.Application.Interfaces.IServices;
+using EcommerceAPI.Application.Interfaces.Iservices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
