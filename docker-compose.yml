@@ -20,9 +20,7 @@ services:
       - ecommerce-network
 
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${IMAGE}
     container_name: ecommerce-api
     depends_on:
       sqlserver:
