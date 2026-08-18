@@ -1,0 +1,20 @@
+﻿using Microsoft.AspNetCore.Http;
+using System.Collections.Generic;
+
+namespace EcommerceAPI.Application.DTOs.Product
+{
+    public class CreateProductRequest
+    {
+        public required string Name { get; set; }
+        public required string Description { get; set; }
+        public required string Brand { get; set; }
+        public decimal Price { get; set; }
+        public int StockQuantity { get; set; }
+        public string? AltText { get; set; }
+        public int CategoryId { get; set; }
+        public IFormFile? Image { get; set; }
+
+        // Optional: To link existing tags during creation
+        public List<int> TagIds { get; set; } = new();
+    }
+}

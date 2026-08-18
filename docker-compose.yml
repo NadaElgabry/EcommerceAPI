@@ -1,0 +1,58 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ecommerce-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${DB_SA_PASSWORD}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 300s
+    networks:
+      - ecommerce-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce-api
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=EcommerceDb;User Id=sa;Password=${DB_SA_PASSWORD};TrustServerCertificate=True"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "${JWT_ISSUER}"
+      Jwt__Audience: "${JWT_AUDIENCE}"
+      Jwt__ExpiryMinutes: "${JWT_EXPIRY_MINUTES}"
+      Jwt__RefreshTokenExpiryDays: "${JWT_REFRESH_TOKEN_EXPIRY_DAYS}"
+
+      EmailSettings__Host: "${MAIL_HOST}"
+      EmailSettings__Port: "${MAIL_PORT}"
+      EmailSettings__Username: "${MAIL_USERNAME}"
+      EmailSettings__Password: "${MAIL_PASSWORD}"
+      EmailSettings__SenderName: "${MAIL_SENDER_NAME}"
+      EmailSettings__SenderEmail: "${MAIL_SENDER_EMAIL}"
+    ports:
+      - "5223:8080"
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - ecommerce-network
+
+volumes:
+  sqlserver-data:
+
+networks:
+  ecommerce-network:
+    driver: bridge
