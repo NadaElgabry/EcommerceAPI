@@ -6,10 +6,12 @@ using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Image;
 using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Repositories;
+using EcommerceAPI.Application.Interfaces.Slug;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using EcommerceAPI.Domain.Enums;
 
 namespace EcommerceAPI.Application.Services.ProductService
 {
@@ -21,18 +23,21 @@ namespace EcommerceAPI.Application.Services.ProductService
         private readonly IImageService _imageService;
         private readonly IUnitOfWork _unitOfWork;
 
+        private readonly ISlugGenerator _slugGenerator;
         public ProductService(
             IRepository<Product> productRepository,
             IRepository<Category> categoryRepository,
             IProductMapper productMapper,
             IImageService imageService,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            ISlugGenerator slugGenerator)
         {
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
             _productMapper = productMapper;
             _imageService = imageService;
             _unitOfWork = unitOfWork;
+            _slugGenerator = slugGenerator;
         }
         public async Task<ProductResponse> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken)
         {
@@ -42,9 +47,9 @@ namespace EcommerceAPI.Application.Services.ProductService
                 throw new NotFoundException($"Category with ID {request.CategoryId} not found.");
             }
 
-            var slug = request.Name.ToLowerInvariant().Replace(" ", "-");
-            var existingProduct = await _productRepository.GetByAsync(p => p.Slug == slug, cancellationToken);
-            if (existingProduct != null)
+            // 2. Generate and validate Slug
+            var slug = _slugGenerator.GenerateSlug(request.Name);
+            if (await _productRepository.ExistByAsync(p => p.Slug == slug,cancellationToken))
             {
                 throw new ConflictException("A product with a similar name already exists.");
             }
@@ -52,7 +57,8 @@ namespace EcommerceAPI.Application.Services.ProductService
             string? imageUrl = null;
             if (request.Image != null)
             {
-                imageUrl = await _imageService.SaveFileAsync(request.Image, cancellationToken);
+                // SaveFileAsync takes an IFormFile and CancellationToken
+                imageUrl = await _imageService.SaveFileAsync(request.Image,slug,ImageOwnerType.Product, cancellationToken);
             }
 
             var newProduct = _productMapper.ToProduct(request, slug, imageUrl);
@@ -178,5 +184,7 @@ namespace EcommerceAPI.Application.Services.ProductService
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
         }
+
+
     }
 }

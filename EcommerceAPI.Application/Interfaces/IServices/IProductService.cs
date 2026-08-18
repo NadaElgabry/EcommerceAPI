@@ -5,6 +5,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
 {
     public interface IProductService
     {
+        //public Task<CursorPagedResult<ProductListItemDto>> SearchProductsAsync(ProductQueryParams queryParams);
         public Task<ProductResponse> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken);
         public Task<CursorPagedResponse<ProductSummaryResponse>> GetProductsPagedAsync(
             string? cursor,

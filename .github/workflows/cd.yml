@@ -1,0 +1,90 @@
+name: cd
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+
+jobs:
+  docker-build-and-push:
+    runs-on: self-hosted
+
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image: ${{ steps.image.outputs.name }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set image name
+        id: image
+        run: |
+          REPO=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
+          SHA=sha-$(echo '${{ github.sha }}' | cut -c1-7)
+
+          echo "name=ghcr.io/${REPO}:${SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          dockerfile: Dockerfile
+          push: true
+          tags: ${{ steps.image.outputs.name }}
+
+  deploy:
+    runs-on: self-hosted
+    needs: docker-build-and-push
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fix logs permissions
+        run: sudo chown -R $USER:$USER ./logs || true
+ 
+      - name: Write .env file
+        run: |
+          cat > .env <<EOF
+          IMAGE=${{ needs.docker-build-and-push.outputs.image }}
+          DB_SA_PASSWORD=${{ secrets.DB_SA_PASSWORD }}
+          JWT_KEY=${{ secrets.JWT_KEY }}
+          JWT_ISSUER=${{ secrets.JWT_ISSUER }}
+          JWT_AUDIENCE=${{ secrets.JWT_AUDIENCE }}
+          JWT_EXPIRY_MINUTES=${{ secrets.JWT_EXPIRY_MINUTES }}
+          JWT_REFRESH_TOKEN_EXPIRY_DAYS=${{ secrets.JWT_REFRESH_TOKEN_EXPIRY_DAYS }}
+          MAIL_HOST=${{ secrets.MAIL_HOST }}
+          MAIL_PORT=${{ secrets.MAIL_PORT }}
+          MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+          MAIL_SENDER_NAME=${{ secrets.MAIL_SENDER_NAME }}
+          MAIL_SENDER_EMAIL=${{ secrets.MAIL_SENDER_EMAIL }}
+          EOF
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+            docker login ghcr.io \
+            -u "${{ github.actor }}" \
+            --password-stdin
+
+      - name: Pull image
+        run: |
+          docker pull "${{ needs.docker-build-and-push.outputs.image }}"
+
+      - name: Deploy with Docker Compose
+        run: |
+            docker compose up -d --pull always --remove-orphans
