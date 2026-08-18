@@ -51,6 +51,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Fix logs permissions
+        run: sudo chown -R $USER:$USER ./logs || true
+ 
       - name: Write .env file
         run: |
           cat > .env <<EOF
