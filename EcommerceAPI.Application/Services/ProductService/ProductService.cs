@@ -3,11 +3,13 @@ using EcommerceAPI.Application.DTOs.Common;
 using EcommerceAPI.Application.DTOs.Product;
 using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces;
+using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Image;
 using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
+using EcommerceAPI.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -17,21 +19,30 @@ namespace EcommerceAPI.Application.Services.ProductService
     {
         private readonly IRepository<Product> _productRepository;
         private readonly IRepository<Category> _categoryRepository;
+        private readonly IRepository<Tag> _tagRepository;
         private readonly IProductMapper _productMapper;
         private readonly IImageService _imageService;
+        private readonly IUserActivityService _userActivityService;
+        private readonly ICurrentUserService _currentUserService;
         private readonly IUnitOfWork _unitOfWork;
 
         public ProductService(
             IRepository<Product> productRepository,
             IRepository<Category> categoryRepository,
+            IRepository<Tag> tagRepository,
             IProductMapper productMapper,
             IImageService imageService,
+            IUserActivityService userActivityService,
+            ICurrentUserService currentUserService,
             IUnitOfWork unitOfWork)
         {
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
+            _tagRepository = tagRepository;
             _productMapper = productMapper;
             _imageService = imageService;
+            _userActivityService = userActivityService;
+            _currentUserService = currentUserService;
             _unitOfWork = unitOfWork;
         }
         public async Task<ProductResponse> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken)
@@ -55,18 +66,21 @@ namespace EcommerceAPI.Application.Services.ProductService
                 imageUrl = await _imageService.SaveFileAsync(request.Image, cancellationToken);
             }
 
-            var newProduct = _productMapper.ToProduct(request, slug, imageUrl);
-
+            var validTags = new List<Tag>();
             if (request.TagIds != null && request.TagIds.Any())
             {
-                foreach (var tagId in request.TagIds)
+                foreach (var tagId in request.TagIds.Distinct())
                 {
-                    newProduct.ProductTags.Add(new ProductTag
+                    var tag = await _tagRepository.GetByAsync(t => t.Id == tagId, cancellationToken);
+                    if (tag != null)
                     {
-                        TagId = tagId
-                    });
+                        validTags.Add(tag);
+                    }
                 }
             }
+
+            var newProduct = _productMapper.ToProduct(request, slug, imageUrl, validTags);
+
 
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
@@ -79,35 +93,25 @@ namespace EcommerceAPI.Application.Services.ProductService
 
         }
 
-        public async Task<CursorPagedResponse<ProductSummaryResponse>> GetProductsPagedAsync(
-     string? cursor,
-     int pageSize,
-     CancellationToken cancellationToken)
+        public async Task<ProductResponse> GetProductDetailsAsync(string slug, CancellationToken cancellationToken)
         {
-            if (pageSize <= 0) pageSize = 10;
-            if (pageSize > 50) pageSize = 50;
+            var product = await _productRepository.GetByAsync(
+                predicate: p => p.Slug == slug,
+                include: query => query.Include(p => p.ProductTags).ThenInclude(pt => pt.Tag),
+                cancellationToken: cancellationToken)
+                ?? throw new NotFoundException($"Product '{slug}' not found.");
 
-            var products = await _productRepository.GetPagedDescendingAsync(
-                predicate: string.IsNullOrWhiteSpace(cursor)
-                    ? p => true
-                    : p => p.Id < CursorHelper.Decode<int>(cursor),
-                orderBy: p => p.Id,
-                take: pageSize + 1,
-                cancellationToken: cancellationToken);
-
-            bool hasNextPage = products.Count > pageSize;
-            if (hasNextPage) products = products.Take(pageSize).ToList();
-
-            string? nextCursor = hasNextPage && products.Count > 0
-                ? CursorHelper.Encode(products[^1].Id)
-                : null;
-
-            return new CursorPagedResponse<ProductSummaryResponse>
+            if (_currentUserService.IsAuthenticated && _currentUserService.Role == "Customer")
             {
-                Data = products.Select(_productMapper.ToProductSummaryResponse).ToList(),
-                NextCursor = nextCursor,
-                HasNext = hasNextPage
-            };
+                await _userActivityService.LogActivityAsync(
+                    _currentUserService.UserGuid,
+                    product.Id,
+                    UserActionType.ViewProduct,
+                    cancellationToken
+                );
+            }
+
+            return _productMapper.ToProductResponse(product);
         }
 
         public async Task<ProductResponse> UpdateProductAsync(

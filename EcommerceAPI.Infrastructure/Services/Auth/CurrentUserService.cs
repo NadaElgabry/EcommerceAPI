@@ -21,6 +21,8 @@ public class CurrentUserService : ICurrentUserService
         get
         {
             var subClaim = _httpContextAccessor.HttpContext?.User
+                .FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? _httpContextAccessor.HttpContext?.User
                 .FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
 
             if (!Guid.TryParse(subClaim, out var guid))

@@ -24,7 +24,7 @@ namespace EcommerceAPI.Controllers
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [RequestSizeLimit(6 * 1024 * 1024)]
-        public async Task<IActionResult> CreateCategory([FromForm] CreateProductRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> CreateProduct([FromForm] CreateProductRequest request, CancellationToken cancellationToken)
         {
             var productResponse = await _productService.CreateProductAsync(request, cancellationToken);
             return Created(
@@ -35,25 +35,23 @@ namespace EcommerceAPI.Controllers
                     data: productResponse));
         }
 
-        [HttpGet]
-        [Authorize]
-        public async Task<IActionResult> GetProducts(
-            [FromQuery] string? cursor,
-            [FromQuery] int pageSize = 10,
-            CancellationToken cancellationToken = default)
+        [HttpGet("{slug}")]
+        public async Task<IActionResult> GetProductDetails([FromRoute] string slug, CancellationToken cancellationToken)
         {
-            var result = await _productService.GetProductsPagedAsync(cursor, pageSize, cancellationToken);
 
-            return Ok(ApiResponse<CursorPagedResponse<ProductSummaryResponse>>.SuccessResponse(
-                statusCode: 200,
-                message: "Products fetched successfully.",
-                data: result));
+            var productResponse = await _productService.GetProductDetailsAsync(slug, cancellationToken);
+
+            return Ok(
+                ApiResponse<ProductResponse>.SuccessResponse(
+                    statusCode: 200,
+                    message: "Product retrieved successfully.",
+                    data: productResponse));
         }
 
         [HttpPut("{slug}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateProduct(
-    [FromRoute] string slug, [FromForm] UpdateProductRequest request, CancellationToken cancellationToken)
+            [FromRoute] string slug, [FromForm] UpdateProductRequest request, CancellationToken cancellationToken)
         {
             var result = await _productService.UpdateProductAsync(
                 slug,
@@ -73,10 +71,10 @@ namespace EcommerceAPI.Controllers
             [FromRoute] string slug, CancellationToken cancellationToken)
         {
             await _productService.DeleteProductAsync(slug, cancellationToken);
-            return Ok(
-                ApiResponse<string>.SuccessResponse(
-                message: "Product deleted successfully", 
-                statusCode: 200));
+            return StatusCode(
+                204, 
+                ApiResponse<string>.SuccessResponse(message: "Product deleted successfully",
+                statusCode: 204));
         }
     }
 }

@@ -6,9 +6,9 @@ namespace EcommerceAPI.Application.Mappers.Mappings
 {
     public class ProductMapper : IProductMapper
     {
-        public Product ToProduct(CreateProductRequest request ,string slug, string imageUrl) 
+        public Product ToProduct(CreateProductRequest request ,string slug, string imageUrl, List<Tag> validTags) 
         {
-            return new Product
+            var product = new Product
             {
                 Name = request.Name,
                 Slug = slug,
@@ -21,6 +21,17 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 ProductImage = imageUrl,
                 CreationDate = DateTime.UtcNow
             };
+
+            foreach (var tag in validTags)
+            {
+                product.ProductTags.Add(new ProductTag
+                {
+                    TagId = tag.Id,
+                    Tag = tag
+                });
+            }
+
+            return product;
         }
 
         public ProductResponse ToProductResponse(Product product)
@@ -36,7 +47,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 AltText = product.AltText,
                 CategoryId = product.CategoryId,
                 ProductImage = product.ProductImage,
-                CreationDate = DateTime.UtcNow
+                CreationDate = product.CreationDate,
             };
         }
         public ProductSummaryResponse ToProductSummaryResponse(Product product)
