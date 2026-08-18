@@ -7,7 +7,7 @@ services:
       MSSQL_SA_PASSWORD: "${DB_SA_PASSWORD}"
       MSSQL_PID: "Developer"
     ports:
-      - "1433:1433" 
+      - "1433:1433"
     volumes:
       - sqlserver-data:/var/opt/mssql
     healthcheck:
@@ -18,11 +18,9 @@ services:
       start_period: 300s
     networks:
       - ecommerce-network
-
+ 
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${IMAGE:-ghcr.io/NadaElgabry/EcommerceAPI:latest}
     container_name: ecommerce-api
     depends_on:
       sqlserver:
@@ -37,10 +35,10 @@ services:
       - ./logs:/app/logs
     networks:
       - ecommerce-network
-
+ 
 volumes:
   sqlserver-data:
-
+ 
 networks:
   ecommerce-network:
     driver: bridge

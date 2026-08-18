@@ -1,33 +1,106 @@
-name: CI
-
+name: deploy-EcommerceAPI
+ 
 on:
   push:
     branches: [ main, dev ]
   pull_request:
     branches: [ main, dev ]
-
+ 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
-
+    runs-on: self-hosted
+ 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+ 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-
+ 
       - name: Restore dependencies
         run: dotnet restore EcommerceAPI.slnx
-
+ 
       - name: Build
         run: dotnet build EcommerceAPI.slnx --no-restore --configuration Release
-
+ 
       - name: Check formatting
         run: dotnet format EcommerceAPI.slnx --verify-no-changes --no-restore
-        continue-on-error: true 
-
+        continue-on-error: true
+ 
       - name: Run tests
         run: dotnet test EcommerceAPI.slnx --no-build --configuration Release --verbosity normal
+ 
+  docker-build-and-push:
+    runs-on: self-hosted
+    needs: build-and-test
+    if: github.event_name == 'push'
+ 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+ 
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+ 
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+ 
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          dockerfile: Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+ 
+  deploy:
+    runs-on: self-hosted
+    needs: docker-build-and-push
+    if: github.event_name == 'push'
+ 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+ 
+      - name: Copy docker-compose to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.yml"
+          target: "~/ecommerce-api"
+ 
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/ecommerce-api
+ 
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+ 
+            docker pull ghcr.io/${{ github.repository }}:latest
+ 
+            cat > .env <<EOF
+            DB_SA_PASSWORD=${{ secrets.DB_SA_PASSWORD }}
+            EOF
+ 
+            IMAGE=ghcr.io/${{ github.repository }}:latest \
+            docker compose up -d --pull always --remove-orphans
