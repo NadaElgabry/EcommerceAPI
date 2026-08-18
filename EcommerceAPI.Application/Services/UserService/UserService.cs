@@ -80,7 +80,7 @@ namespace EcommerceAPI.Application.Services.UserService
             }
         }
 
-        public async Task<PagedResult<UserResponse>> GetAllUsersAsync(
+        public async Task<OffsetPagedResult<UserResponse>> GetAllUsersAsync(
     GetUsersRequest request,
     CancellationToken cancellationToken = default)
         {
@@ -97,7 +97,7 @@ namespace EcommerceAPI.Application.Services.UserService
 
             var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
-            return new PagedResult<UserResponse>
+            return new OffsetPagedResult<UserResponse>
             {
                 Data = users.Select(u => _userMapper.ToUserResponse(u)).ToList(),
                 Pagination = new PageInfo

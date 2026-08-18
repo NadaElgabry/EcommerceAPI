@@ -4,9 +4,9 @@ using System.Text;
 
 namespace EcommerceAPI.Application.DTOs.Common
 {
-    public class OffsetPagedResponse<T>
+    public class CursorPagedResult<T>
     {
         public List<T> Data { get; set; } = new();
-        public PageInfo Pagination { get; set; } = new();
+        public CursorPageInfo Pagination { get; set; } = new();
     }
 }

@@ -18,7 +18,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         public Task<UserResponse> GetUserProfileAsync(Guid guid, CancellationToken cancellationToken);
         public Task UpdateProfileAsync(
            Guid userId, UpdateProfileRequest request, CancellationToken cancellationToken = default);
-        public Task<PagedResult<UserResponse>> GetAllUsersAsync(
+        public Task<OffsetPagedResult<UserResponse>> GetAllUsersAsync(
             GetUsersRequest request, CancellationToken cancellationToken = default);
 
     }
