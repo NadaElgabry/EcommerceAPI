@@ -33,14 +33,20 @@ jobs:
       contents: read
       packages: write
 
+    outputs:
+      image: ${{ steps.image.outputs.name }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set lowercase image name
+      - name: Set image name
         id: image
         run: |
-          echo "name=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+          REPO=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
+          SHA=sha-$(echo '${{ github.sha }}' | cut -c1-7)
+
+          echo "name=ghcr.io/${REPO}:${SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -49,24 +55,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ steps.image.outputs.name }}
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix=sha-
-            type=raw,value=latest,enable={{is_default_branch}}
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           dockerfile: Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.image.outputs.name }}
 
   deploy:
     runs-on: self-hosted
@@ -76,11 +71,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set lowercase image name
-        id: image
-        run: |
-          echo "name=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]'):latest" >> "$GITHUB_OUTPUT"
-
       - name: Write .env file
         run: |
           cat > .env <<EOF
@@ -89,15 +79,16 @@ jobs:
 
       - name: Log in to GHCR
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io \
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+            docker login ghcr.io \
             -u "${{ github.actor }}" \
             --password-stdin
 
-      - name: Pull latest image
+      - name: Pull image
         run: |
-          docker pull "${{ steps.image.outputs.name }}"
+          docker pull "${{ needs.docker-build-and-push.outputs.image }}"
 
       - name: Deploy with Docker Compose
         run: |
-          IMAGE="${{ steps.image.outputs.name }}" \
+          IMAGE="${{ needs.docker-build-and-push.outputs.image }}" \
             docker compose up -d --pull always --remove-orphans
