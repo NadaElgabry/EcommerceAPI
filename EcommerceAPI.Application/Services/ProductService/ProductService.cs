@@ -36,7 +36,7 @@ namespace EcommerceAPI.Application.Services.ProductService
             IImageService imageService,
             IUserActivityService userActivityService,
             ICurrentUserService currentUserService,
-            IUnitOfWork unitOfWork
+            IUnitOfWork unitOfWork,
             ISlugGenerator slugGenerator)
         {
             _productRepository = productRepository;
@@ -153,8 +153,8 @@ namespace EcommerceAPI.Application.Services.ProductService
             }
 
             if (request.Image != null)
-            {
-                product.ProductImage = await _imageService.SaveFileAsync(request.Image, cancellationToken);
+            { 
+                product.ProductImage = await _imageService.SaveFileAsync(request.Image, slug, ImageOwnerType.Product, cancellationToken);
             }
 
             _productMapper.UpdateProductFromRequest(product, request);
