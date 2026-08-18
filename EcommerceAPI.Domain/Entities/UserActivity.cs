@@ -8,7 +8,6 @@ namespace EcommerceAPI.Domain.Entities
         public int UserId { get; set; }
         public User User { get; set; } = null!;
 
-        public Guid UserGuid { get; set; }
         public int? ProductId { get; set; }
         public Product? Product { get; set; }
         public UserActionType ActionType { get; set; }

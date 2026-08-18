@@ -20,6 +20,7 @@ namespace EcommerceAPI.Application.Services.ProductService
     {
         private readonly IRepository<Product> _productRepository;
         private readonly IRepository<Category> _categoryRepository;
+        private readonly IRepository<User> _userRepository;>
         private readonly IRepository<Tag> _tagRepository;
         private readonly IProductMapper _productMapper;
         private readonly IImageService _imageService;
@@ -31,6 +32,7 @@ namespace EcommerceAPI.Application.Services.ProductService
         public ProductService(
             IRepository<Product> productRepository,
             IRepository<Category> categoryRepository,
+            IRepository<User> userRepository,
             IRepository<Tag> tagRepository,
             IProductMapper productMapper,
             IImageService imageService,
@@ -41,6 +43,7 @@ namespace EcommerceAPI.Application.Services.ProductService
         {
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
+            _userRepository = userRepository;
             _tagRepository = tagRepository;
             _productMapper = productMapper;
             _imageService = imageService;
@@ -106,10 +109,13 @@ namespace EcommerceAPI.Application.Services.ProductService
                 cancellationToken: cancellationToken)
                 ?? throw new NotFoundException($"Product '{slug}' not found.");
 
+            var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid, cancellationToken)
+                ?? throw new NotFoundException("User not found.");
+
             if (_currentUserService.IsAuthenticated && _currentUserService.Role == "Customer")
             {
                 await _userActivityService.LogActivityAsync(
-                    _currentUserService.UserGuid,
+                    user.Id,
                     product.Id,
                     UserActionType.ViewProduct,
                     cancellationToken
