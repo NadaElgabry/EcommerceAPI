@@ -71,31 +71,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
  
-      - name: Copy docker-compose to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "docker-compose.yml"
-          target: "~/ecommerce-api"
+      - name: Write .env file
+        run: |
+          cat > .env <<EOF
+          DB_SA_PASSWORD=${{ secrets.DB_SA_PASSWORD }}
+          EOF
  
-      - name: Deploy on EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd ~/ecommerce-api
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
  
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Pull latest image
+        run: docker pull ghcr.io/${{ github.repository }}:latest
  
-            docker pull ghcr.io/${{ github.repository }}:latest
- 
-            cat > .env <<EOF
-            DB_SA_PASSWORD=${{ secrets.DB_SA_PASSWORD }}
-            EOF
- 
-            IMAGE=ghcr.io/${{ github.repository }}:latest \
-            docker compose up -d --pull always --remove-orphans
+      - name: Deploy with docker compose
+        run: |
+          IMAGE=ghcr.io/${{ github.repository }}:latest \
+          docker compose up -d --pull always --remove-orphans
