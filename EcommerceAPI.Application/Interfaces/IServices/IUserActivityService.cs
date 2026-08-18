@@ -4,6 +4,6 @@ namespace EcommerceAPI.Application.Interfaces.IServices
 {
     public interface IUserActivityService
     {
-        Task LogActivityAsync(Guid userGuid, int? productId, UserActionType actionType, CancellationToken cancellationToken);
+        Task LogActivityAsync(int userId, int? productId, UserActionType actionType, CancellationToken cancellationToken);
     }
 }

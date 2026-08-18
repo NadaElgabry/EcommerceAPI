@@ -20,14 +20,13 @@ namespace EcommerceAPI.Application.Services.ProductService
     {
         private readonly IRepository<Product> _productRepository;
         private readonly IRepository<Category> _categoryRepository;
-        private readonly IRepository<User> _userRepository;>
+        private readonly IRepository<User> _userRepository;
         private readonly IRepository<Tag> _tagRepository;
         private readonly IProductMapper _productMapper;
         private readonly IImageService _imageService;
         private readonly IUserActivityService _userActivityService;
         private readonly ICurrentUserService _currentUserService;
         private readonly IUnitOfWork _unitOfWork;
-
         private readonly ISlugGenerator _slugGenerator;
         public ProductService(
             IRepository<Product> productRepository,

@@ -19,8 +19,6 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
                 .HasForeignKey(ua => ua.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            builder.HasIndex(ua => ua.UserGuid);
-
             builder.HasOne(ua => ua.Product)
                 .WithMany()
                 .HasForeignKey(ua => ua.ProductId)
