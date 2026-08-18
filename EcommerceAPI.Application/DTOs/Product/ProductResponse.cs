@@ -1,4 +1,6 @@
-﻿namespace EcommerceAPI.Application.DTOs.Product
+﻿using EcommerceAPI.Domain.Entities;
+
+namespace EcommerceAPI.Application.DTOs.Product
 {
     public class ProductResponse
     {

@@ -15,11 +15,6 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
             builder.Property(u => u.Email)
                 .HasMaxLength(256);
 
-            builder.Property(u => u.IsActive)
-                .HasConversion(
-                    v => v.ToString(),
-                    v => bool.Parse(v))
-                .HasColumnType("nvarchar(10)");
 
             builder.HasIndex(u => u.Email)
                 .IsUnique();

@@ -3,13 +3,14 @@ using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Email;
 using EcommerceAPI.Application.Interfaces.Image;
 using EcommerceAPI.Application.Interfaces.Repositories;
+using EcommerceAPI.Application.Interfaces.Slug;
 using EcommerceAPI.Infrastructure.Contexts;
 using EcommerceAPI.Infrastructure.Persistence;
 using EcommerceAPI.Infrastructure.Persistence.Repositories;
 using EcommerceAPI.Infrastructure.Services.Auth;
 using EcommerceAPI.Infrastructure.Services.Email;
-using EcommerceAPI.Infrastructure.Services.Image;
 using EcommerceAPI.Infrastructure.Services.Mail;
+using EcommerceAPI.Infrastructure.Services.Slug;
 using EcommerceAPI.Infrastructure.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IImageService, ImageService>();
+        services.AddScoped<ISlugGenerator, SlugifySlugGenerator>();
 
         services.Configure<EmailSettings>(
            configuration.GetSection("EmailSettings"));

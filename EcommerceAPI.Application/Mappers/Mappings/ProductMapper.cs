@@ -46,7 +46,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 StockQuantity = product.StockQuantity,
                 AltText = product.AltText,
                 CategoryId = product.CategoryId,
-                ProductImage = product.ProductImage,
+                ProductImageUrl = product.ProductImage,
                 CreationDate = product.CreationDate,
             };
         }
