@@ -75,6 +75,17 @@ jobs:
         run: |
           cat > .env <<EOF
           DB_SA_PASSWORD=${{ secrets.DB_SA_PASSWORD }}
+          JWT_KEY=${{ secrets.JWT_KEY }}
+          JWT_ISSUER=${{ secrets.JWT_ISSUER }}
+          JWT_AUDIENCE=${{ secrets.JWT_AUDIENCE }}
+          JWT_EXPIRY_MINUTES=${{ secrets.JWT_EXPIRY_MINUTES }}
+          JWT_REFRESH_TOKEN_EXPIRY_DAYS=${{ secrets.JWT_REFRESH_TOKEN_EXPIRY_DAYS }}
+          MAIL_HOST=${{ secrets.MAIL_HOST }}
+          MAIL_PORT=${{ secrets.MAIL_PORT }}
+          MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+          MAIL_SENDER_NAME=${{ secrets.MAIL_SENDER_NAME }}
+          MAIL_SENDER_EMAIL=${{ secrets.MAIL_SENDER_EMAIL }}
           EOF
 
       - name: Log in to GHCR
