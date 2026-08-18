@@ -3,6 +3,8 @@ name: cd
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 
 jobs:
@@ -57,6 +59,7 @@ jobs:
       - name: Write .env file
         run: |
           cat > .env <<EOF
+          IMAGE=${{ needs.docker-build-and-push.outputs.image }}
           DB_SA_PASSWORD=${{ secrets.DB_SA_PASSWORD }}
           JWT_KEY=${{ secrets.JWT_KEY }}
           JWT_ISSUER=${{ secrets.JWT_ISSUER }}
@@ -84,5 +87,4 @@ jobs:
 
       - name: Deploy with Docker Compose
         run: |
-          IMAGE="${{ needs.docker-build-and-push.outputs.image }}" \
             docker compose up -d --pull always --remove-orphans
