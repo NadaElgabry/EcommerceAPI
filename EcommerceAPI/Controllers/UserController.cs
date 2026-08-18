@@ -51,7 +51,7 @@ namespace EcommerceAPI.Controllers
         public async Task<IActionResult> GetAllUsers([FromQuery] GetUsersRequest request, CancellationToken cancellationToken)
         {
             var result = await _userService.GetAllUsersAsync(request, cancellationToken);
-            return Ok(ApiResponse<PagedResult<UserResponse>>.SuccessResponse(
+            return Ok(ApiResponse<OffsetPagedResult<UserResponse>>.SuccessResponse(
                 message: "Users retrieved successfully", statusCode: 200, data: result));
         }
     }

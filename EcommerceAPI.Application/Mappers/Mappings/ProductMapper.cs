@@ -30,7 +30,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 Slug = product.Slug,
                 Name = product.Name,
                 Price = product.Price,
-                ProductImage = product.ProductImage,
+                ProductImageUrl = product.ProductImage,
                 CreationDate = product.CreationDate
             };
         }
