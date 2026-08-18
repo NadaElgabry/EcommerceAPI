@@ -23,21 +23,6 @@ namespace EcommerceAPI.Application.Validators.Product
                 .GreaterThan(0)
                 .WithMessage("Price must be greater than 0.");
 
-            RuleFor(request => request.SalePrice)
-                .GreaterThan(0)
-                .When(request => request.SalePrice.HasValue)
-                .WithMessage("Sale price must be greater than 0.");
-
-            RuleFor(request => request.SalePrice)
-                .LessThan(request => request.Price)
-                .When(request => request.SalePrice.HasValue)
-                .WithMessage("Sale price must be less than the original price.");
-
-            RuleFor(request => request.DiscountPercentage)
-                .InclusiveBetween(0, 100)
-                .When(request => request.DiscountPercentage.HasValue)
-                .WithMessage("Discount percentage must be between 0 and 100.");
-
             RuleFor(request => request.StockQuantity)
                 .GreaterThanOrEqualTo(0)
                 .WithMessage("Stock quantity cannot be negative.");

@@ -16,6 +16,12 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(t => t.Name)
                 .IsUnique();
+
+            builder.HasData(
+                new Tag { Id = 1, Name = "New Arrival" },
+                new Tag { Id = 2, Name = "Bestseller" },
+                new Tag { Id = 3, Name = "Sale" }
+                );
         }
     }
 }

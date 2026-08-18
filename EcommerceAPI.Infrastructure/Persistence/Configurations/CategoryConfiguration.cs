@@ -20,9 +20,26 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(c => c.Slug)
                 .IsUnique();
+                
+        builder.Property(c => c.ImageUrl)
+            .IsRequired();
 
-            builder.Property(c => c.ImageUrl)
-                .IsRequired();
-        }
+        builder.HasData(
+            new Category
+            {
+                Id = 1,
+                Name = "Electronics",
+                ImageUrl= "https://www.flaticon.com/free-icon/electronics_1555401",
+                CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new Category
+            {
+                Id = 2,
+                Name = "Groceries",
+                ImageUrl= "https://www.flaticon.com/free-icon/electronics_1555401",
+                CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            }
+        );
     }
+
 }

@@ -14,10 +14,6 @@
 
         public decimal Price { get; set; }
 
-        public decimal? SalePrice { get; set; }
-
-        public decimal? DiscountPercentage { get; set; }
-
         public int StockQuantity { get; set; }
 
         public string? ProductImage { get; set; }

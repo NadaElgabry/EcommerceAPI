@@ -15,8 +15,6 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 Description = request.Description,
                 Brand = request.Brand,
                 Price = request.Price,
-                SalePrice = request.SalePrice,
-                DiscountPercentage = request.DiscountPercentage,
                 StockQuantity = request.StockQuantity,
                 AltText = request.AltText,
                 CategoryId = request.CategoryId,
