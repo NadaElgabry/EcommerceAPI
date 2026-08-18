@@ -60,14 +60,16 @@ namespace EcommerceAPI.Infrastructure.Migrations
                             Id = 1,
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             ImageUrl = "https://www.flaticon.com/free-icon/electronics_1555401",
-                            Name = "Electronics"
+                            Name = "Electronics",
+                            Slug = "electronics"
                         },
                         new
                         {
                             Id = 2,
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             ImageUrl = "https://www.flaticon.com/free-icon/electronics_1555401",
-                            Name = "Groceries"
+                            Name = "Groceries",
+                            Slug = "groceries"
                         });
                 });
 
@@ -322,7 +324,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                             FirstName = "admin",
                             Guid = new Guid("f47ac10b-58cc-4372-a567-0e02b2c3d479"),
                             HashedPassword = "$2y$10$7rLSvRVyTQORapkDOqmkhetjF6H9lJHngr4hJMSM2lHObJbW5EQh6",
-                            IsActive = "True",
+                            IsActive = true,
                             LastName = "user",
                             PhoneNumber = "01200032134",
                             Role = "Admin"
@@ -485,13 +487,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("EcommerceAPI.Domain.Entities.User", b =>
-                {
-                    b.HasOne("EcommerceAPI.Domain.Entities.Category", null)
-                        .WithMany("Users")
-                        .HasForeignKey("CategoryId");
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.UserActivity", b =>

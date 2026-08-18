@@ -6,11 +6,17 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace EcommerceAPI.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddedUserActivity : Migration
+    public partial class FixConfig : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<int>(
+                name: "CategoryId1",
+                table: "Products",
+                type: "int",
+                nullable: true);
+
             migrationBuilder.CreateTable(
                 name: "UserActivities",
                 columns: table => new
@@ -40,6 +46,25 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.UpdateData(
+                table: "Products",
+                keyColumn: "Id",
+                keyValue: 1,
+                column: "CategoryId1",
+                value: null);
+
+            migrationBuilder.UpdateData(
+                table: "Products",
+                keyColumn: "Id",
+                keyValue: 2,
+                column: "CategoryId1",
+                value: null);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Products_CategoryId1",
+                table: "Products",
+                column: "CategoryId1");
+
             migrationBuilder.CreateIndex(
                 name: "IX_UserActivities_ProductId",
                 table: "UserActivities",
@@ -54,13 +79,32 @@ namespace EcommerceAPI.Infrastructure.Migrations
                 name: "IX_UserActivities_UserId",
                 table: "UserActivities",
                 column: "UserId");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Products_Categories_CategoryId1",
+                table: "Products",
+                column: "CategoryId1",
+                principalTable: "Categories",
+                principalColumn: "Id");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_Products_Categories_CategoryId1",
+                table: "Products");
+
             migrationBuilder.DropTable(
                 name: "UserActivities");
+
+            migrationBuilder.DropIndex(
+                name: "IX_Products_CategoryId1",
+                table: "Products");
+
+            migrationBuilder.DropColumn(
+                name: "CategoryId1",
+                table: "Products");
         }
     }
 }
