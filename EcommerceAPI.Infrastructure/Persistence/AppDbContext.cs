@@ -20,7 +20,7 @@ namespace EcommerceAPI.Infrastructure.Contexts
         public DbSet<Tag> Tags { get; set; }
         public DbSet<ProductTag> ProductTags { get; set; }
         public DbSet<UserCategory> UserCategories { get; set; }
-
+        public DbSet<UserActivity> UserActivities { get; set; }
         protected override void OnModelCreating(
             ModelBuilder modelBuilder)
         {

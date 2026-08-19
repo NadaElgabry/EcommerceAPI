@@ -24,6 +24,7 @@ public static class DependencyInjection
         services.AddScoped<IProductMapper,ProductMapper>();
         services.AddScoped<ICategoryMapper, CategoryMapper>();
         services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<IUserActivityService, UserActivityService>();
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateProfileRequestValidator>();

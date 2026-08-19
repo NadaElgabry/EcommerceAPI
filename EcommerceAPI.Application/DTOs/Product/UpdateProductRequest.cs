@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace EcommerceAPI.Application.DTOs.Product
 {
-    public class CreateProductRequest
+    public class UpdateProductRequest
     {
         public required string Name { get; set; }
         public required string Description { get; set; }

@@ -48,12 +48,24 @@ namespace EcommerceAPI.Infrastructure.Persistence.Repositories
             var entities = await _dbSet.Where(predicate).ToListAsync(cancellationToken);
             _dbSet.RemoveRange(entities);
         }
+        public async Task<List<T>> GetPagedDescendingAsync<TKey>(
+            Expression<Func<T, bool>> predicate,
+            Expression<Func<T, TKey>> orderBy,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            return await _dbSet
+                .Where(predicate)
+                .OrderByDescending(orderBy)
+                .Take(take)
+                .ToListAsync(cancellationToken);
+        }
 
         public async Task<List<T>> GetPagedAsync<TKey>(
-        Expression<Func<T, bool>> predicate,
-        Expression<Func<T, TKey>> orderBy,
-        int take,
-    CancellationToken cancellationToken = default)
+            Expression<Func<T, bool>> predicate,
+            Expression<Func<T, TKey>> orderBy,
+            int take,
+            CancellationToken cancellationToken = default)
         {
             return await _dbSet
                 .Where(predicate)

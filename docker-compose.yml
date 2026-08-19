@@ -44,7 +44,17 @@ services:
     ports:
       - "5223:8080"
     volumes:
-      - ./logs:/app/logs
+      - /var/log/ecommerce-api:/app/logs
+    networks:
+      - ecommerce-network
+
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: ecommerce-dozzle
+    ports:
+      - "9000:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - ecommerce-network
 

@@ -1,6 +1,5 @@
 ﻿using EcommerceAPI.Application.Exceptions;
 using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 
@@ -8,7 +7,6 @@ namespace EcommerceAPI.Application.Common
 {
     public static class CursorHelper
     {
-        private record CursorPayload(DateTime CreatedAt, int Id);
         public static string Encode<T>(T payload)
         {
             var json = JsonSerializer.Serialize(payload);
@@ -36,6 +34,5 @@ namespace EcommerceAPI.Application.Common
                 throw new BadRequestException("Invalid cursor.");
             }
         }
-
     }
 }
