@@ -19,10 +19,10 @@ public static class WebApplicationExtensions
             app.UseSwagger();
             app.UseSwaggerUI();
         }
-        else
+/*        else
         {
             app.UseHttpsRedirection();
-        }
+        }*/
         app.UseCors("Dev");
         app.UseAuthentication();
         app.UseAuthorization();
