@@ -44,7 +44,7 @@ services:
     ports:
       - "5223:8080"
     volumes:
-      - ./logs:/app/logs
+      - /var/log/ecommerce-api:/app/logs
     networks:
       - ecommerce-network
 
