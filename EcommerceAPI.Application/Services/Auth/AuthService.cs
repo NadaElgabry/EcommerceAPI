@@ -117,18 +117,17 @@ namespace EcommerceAPI.Application.Services.Auth
                 cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("User not found.");
 
-            var activeToken = user.VerificationTokens
+            var existingToken = user.VerificationTokens
                 .Where(vt => vt.Purpose == request.Purpose
-                          && !vt.ConsumedAt.HasValue
-                          && vt.ExpiresAt > DateTime.UtcNow)
+                          && !vt.ConsumedAt.HasValue)
                 .FirstOrDefault()
-                ?? throw new NotFoundException("No active verification token found.");
+                ?? throw new NotFoundException("No existing verification tokens found.");
 
             var newToken = _tokenService.GenerateVerificationToken(user, request.Purpose);
 
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                _verificationTokenRepository.Delete(activeToken);
+                _verificationTokenRepository.Delete(existingToken);
                 await _verificationTokenRepository.AddAsync(newToken.Entity, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
