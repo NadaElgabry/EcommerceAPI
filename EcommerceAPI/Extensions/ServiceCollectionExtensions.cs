@@ -33,18 +33,22 @@ public static class ServiceCollectionExtensions
         });
         services.AddDistributedMemoryCache();
 
-        services.AddIdempotentAPIUsingDistributedCache(); ;
+        services.AddIdempotentAPIUsingDistributedCache();
 
         services.AddCors(options =>
         {
             options.AddPolicy("Dev", policy =>
-                policy.WithOrigins("http://localhost:5223", "https://localhost:7xxx")
+                policy.WithOrigins("http://localhost:5223",
+                "https://localhost:7xxx",
+                "http://localhost:3000",
+                "http://localhost:4200")
                       .AllowAnyHeader()
                       .AllowAnyMethod());
         });
 
         return services;
     }
+
     private static IServiceCollection AddSwagger(this IServiceCollection services)
     {
         services.AddSwaggerGen(options =>
@@ -61,8 +65,13 @@ public static class ServiceCollectionExtensions
                 In = ParameterLocation.Header,
                 Description = "Enter your JWT token below.\n\nExample: \"12345abcdef\""
             });
+
+            // Register the custom Idempotency Header Filter
+            options.OperationFilter<IdempotencyHeaderFilter>();
         });
+
         services.AddFluentValidationRulesToSwagger();
+
         return services;
     }
 }
