@@ -48,7 +48,7 @@ namespace EcommerceAPI.Application.Services.TagService
         }
 
         public async Task<OffsetPagedResult<TagResponse>> GetAllTagsAsync(
-GetTagsRequest request,
+OffsetPageRequest request,
 CancellationToken cancellationToken = default)
         {
             int page = Math.Max(request.PageNumber, 1);

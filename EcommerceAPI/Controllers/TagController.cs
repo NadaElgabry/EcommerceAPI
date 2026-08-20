@@ -30,7 +30,7 @@ namespace EcommerceAPI.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> GetAllTags([FromQuery] GetTagsRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetAllTags([FromQuery] OffsetPageRequest request, CancellationToken cancellationToken)
         {
             var result = await _tagService.GetAllTagsAsync(request, cancellationToken);
             return Ok(ApiResponse<OffsetPagedResult<TagResponse>>.SuccessResponse(
