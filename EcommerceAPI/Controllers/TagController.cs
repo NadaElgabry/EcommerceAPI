@@ -36,20 +36,20 @@ namespace EcommerceAPI.Controllers
             return Ok(ApiResponse<OffsetPagedResult<TagResponse>>.SuccessResponse(
                 statusCode: 200, message: "Tags retrieved successfully.", data: result));
         }
-        [HttpPut("{id}")]
+        [HttpPut("{slug}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateTag([FromRoute] int id, [FromBody] UpdateTagRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> UpdateTag([FromRoute] string slug, [FromBody] UpdateTagRequest request, CancellationToken cancellationToken)
         {
-            await _tagService.UpdateTagAsync(id, request, cancellationToken);
+            await _tagService.UpdateTagAsync(slug, request, cancellationToken);
             return Ok(ApiResponse<TagResponse>.SuccessResponse(
                 statusCode: 200, message: "Tag updated successfully."));
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{slug}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteTag([FromRoute] int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> DeleteTag([FromRoute] string slug, CancellationToken cancellationToken)
         {
-            await _tagService.DeleteTagAsync(id, cancellationToken);
+            await _tagService.DeleteTagAsync(slug, cancellationToken);
             return StatusCode(
                 204,
                 ApiResponse<string>.SuccessResponse(message: "Product deleted successfully",

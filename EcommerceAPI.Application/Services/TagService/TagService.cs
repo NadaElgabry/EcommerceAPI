@@ -29,12 +29,13 @@ namespace EcommerceAPI.Application.Services.TagService
 
         public async Task<TagResponse> CreateTagAsync(CreateTagRequest request, CancellationToken cancellationToken)
         {
-            if (await _tagRepository.ExistByAsync(t => t.Name == request.Name, cancellationToken))
+            var slug = _slugGenerator.GenerateSlug(request.Name);
+
+            if (await _tagRepository.ExistByAsync(t => t.Slug == slug, cancellationToken))
             {
                 throw new ConflictException("A tag with this name already exists.");
             }
 
-            var slug = _slugGenerator.GenerateSlug(request.Name);
 
             var tag = _tagMapper.toTag(request, slug);
 
@@ -78,11 +79,11 @@ CancellationToken cancellationToken = default)
                 }
             };
         }
-        public async Task UpdateTagAsync(int id, UpdateTagRequest request, CancellationToken cancellationToken)
+        public async Task UpdateTagAsync(string newSlug, UpdateTagRequest request, CancellationToken cancellationToken)
         {
-            var tag = await _tagRepository.GetByAsync(t => t.Id == id, cancellationToken)
-                ?? throw new NotFoundException($"Tag with ID {id} not found.");
-            if (await _tagRepository.ExistByAsync(t => t.Name == request.Name && t.Id != id, cancellationToken))
+            var tag = await _tagRepository.GetByAsync(t => t.Slug == newSlug, cancellationToken)
+                ?? throw new NotFoundException($"Tag with Slug: {newSlug} not found.");
+            if (await _tagRepository.ExistByAsync(t => t.Name == request.Name && t.Slug != newSlug, cancellationToken))
             {
                 throw new ConflictException("A tag with this name already exists.");
             }
@@ -95,10 +96,10 @@ CancellationToken cancellationToken = default)
             }, cancellationToken);
         }
 
-        public async Task DeleteTagAsync(int id, CancellationToken cancellationToken)
+        public async Task DeleteTagAsync(string slug, CancellationToken cancellationToken)
         {
-            var tag = await _tagRepository.GetByAsync(t => t.Id == id, cancellationToken)
-                ?? throw new NotFoundException($"Tag with ID {id} not found.");
+            var tag = await _tagRepository.GetByAsync(t => t.Slug == slug, cancellationToken)
+                ?? throw new NotFoundException($"Tag with slug: {slug} not found.");
 
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {

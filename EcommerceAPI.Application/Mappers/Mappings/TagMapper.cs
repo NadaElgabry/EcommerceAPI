@@ -13,7 +13,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
 
         public TagResponse toTagResponse(Tag tag)
         {
-            return new TagResponse { Id = tag.Id, Name = tag.Name, Slug = tag.Slug };
+            return new TagResponse { Name = tag.Name, Slug = tag.Slug };
         }
 
         public void updateTagFromRequest(Tag tag, UpdateTagRequest request, string slug)

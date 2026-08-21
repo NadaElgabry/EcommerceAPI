@@ -7,8 +7,8 @@ namespace EcommerceAPI.Application.Interfaces.IServices
     {
         Task<TagResponse> CreateTagAsync(CreateTagRequest request, CancellationToken cancellationToken);
         public Task<OffsetPagedResult<TagResponse>> GetAllTagsAsync(OffsetPageRequest request,CancellationToken cancellationToken = default);        
-        Task UpdateTagAsync(int id, UpdateTagRequest request, CancellationToken cancellationToken);
-        Task DeleteTagAsync(int id, CancellationToken cancellationToken);
+        Task UpdateTagAsync(string slug, UpdateTagRequest request, CancellationToken cancellationToken);
+        Task DeleteTagAsync(string slug, CancellationToken cancellationToken);
     }
 
 }
