@@ -1,5 +1,6 @@
 ﻿using EcommerceAPI.Application.DTOs.Common;
 using EcommerceAPI.Application.DTOs.Product;
+using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces.Search;
 using EcommerceAPI.Infrastructure.Services.Search.Documents;
 using EcommerceAPI.Infrastructure.Settings;
@@ -30,13 +31,11 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             {
                 SearchText = queryParams.Search,
                 SearchFields = new[] { "name^3", "name.ngram^1", "brand^2", "tags^1.5", "description" },
-                SortField = string.IsNullOrWhiteSpace(queryParams.SortBy)
-                    ? (hasSearchText ? "_score" : "creationDate")
-                    : queryParams.SortBy,
+                SortField = ResolveSortField(queryParams.SortBy, hasSearchText),
                 SortDir = string.Equals(queryParams.SortDir, "asc", StringComparison.OrdinalIgnoreCase)
                     ? SearchSortDirection.Asc
                     : SearchSortDirection.Desc,
-                Limit = queryParams.Limit,
+                Limit = Math.Clamp(queryParams.Limit <= 0 ? 20 : queryParams.Limit, 1, 100),
                 Cursor = queryParams.Cursor,
                 Filters = BuildFilters(queryParams)
             };
@@ -57,6 +56,30 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                 Data = items,
                 Pagination = result.Pagination
             };
+        }
+
+        private static readonly Dictionary<string, string> SortFieldMap = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["name"] = "name.keyword",
+            ["price"] = "price",
+            ["newest"] = "creationDate",
+            ["stock"] = "stockQuantity"
+        };
+
+        private static string? ResolveSortField(string? requestedSortBy, bool hasSearchText)
+        {
+            if (string.IsNullOrWhiteSpace(requestedSortBy))
+            {
+                return hasSearchText ? null : "creationDate";
+            }
+
+            if (SortFieldMap.TryGetValue(requestedSortBy, out var mapped))
+            {
+                return mapped;
+            }
+
+            throw new BadRequestException(
+                $"Invalid sortBy value '{requestedSortBy}'. Allowed values: {string.Join(", ", SortFieldMap.Keys)}.");
         }
 
         private static List<SearchFilter> BuildFilters(ProductQueryParamsRequest queryParams)

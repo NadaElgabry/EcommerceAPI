@@ -116,11 +116,11 @@ namespace EcommerceAPI.Application.Services.ProductService
                 cancellationToken: cancellationToken)
                 ?? throw new NotFoundException($"Product '{slug}' not found.");
 
-            var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid, cancellationToken)
-                ?? throw new NotFoundException("User not found.");
-
             if (_currentUserService.IsAuthenticated && _currentUserService.Role == "Customer")
             {
+                var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid, cancellationToken)
+                    ?? throw new NotFoundException("User not found.");
+
                 await _userActivityService.LogActivityAsync(
                     user.Id,
                     product.Id,
@@ -154,7 +154,7 @@ namespace EcommerceAPI.Application.Services.ProductService
 
             if (!string.Equals(request.Name, product.Name, StringComparison.Ordinal))
             {
-                var newSlug = request.Name.ToLowerInvariant().Replace(" ", "-");
+                var newSlug = _slugGenerator.GenerateSlug(request.Name);
                 var slugTaken = await _productRepository.ExistByAsync(
                     p => p.Slug == newSlug && p.Id != product.Id, cancellationToken);
                 if (slugTaken)

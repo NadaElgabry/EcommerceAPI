@@ -27,7 +27,7 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             var searchText = request.SearchText ?? string.Empty;
 
             var sortField = string.IsNullOrWhiteSpace(request.SortField)
-                ? (hasSearchText ? "_score" : null)
+                ? (hasSearchText ? "_score" : "id")
                 : request.SortField;
 
             var sortOrder = request.SortDir == SearchSortDirection.Asc ? SortOrder.Asc : SortOrder.Desc;
@@ -48,7 +48,7 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             var response = await _client.SearchAsync<TDocument>(s =>
             {
                 s.Indices(indexName)
-                    .Size(request.Limit + 1) 
+                    .Size(request.Limit + 1)
                     .Query(q => q.Bool(b =>
                     {
                         var filterActions = BuildFilters(request.Filters);
@@ -70,7 +70,7 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                     .Sort(
                         so =>
                         {
-                            if (sortField == "_score" || sortField == null)
+                            if (sortField == "_score")
                             {
                                 so.Score(sc => sc.Order(SortOrder.Desc));
                             }
@@ -165,7 +165,6 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             }
         }
 
-        // Translates Application-layer SearchFilter list into Elastic query descriptor actions.
         private static List<Action<QueryDescriptor<TDocument>>> BuildFilters(List<SearchFilter> filters)
         {
             var actions = new List<Action<QueryDescriptor<TDocument>>>();
