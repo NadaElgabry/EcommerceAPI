@@ -7,6 +7,7 @@ using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Image;
 using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Repositories;
+using EcommerceAPI.Application.Interfaces.Search;
 using EcommerceAPI.Application.Interfaces.Slug;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
@@ -28,6 +29,9 @@ namespace EcommerceAPI.Application.Services.ProductService
         private readonly ICurrentUserService _currentUserService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ISlugGenerator _slugGenerator;
+
+        private readonly IProductSearchService _searchService;
+        private readonly IProductIndexingService _indexingService;
         public ProductService(
             IRepository<Product> productRepository,
             IRepository<Category> categoryRepository,
@@ -38,7 +42,9 @@ namespace EcommerceAPI.Application.Services.ProductService
             IUserActivityService userActivityService,
             ICurrentUserService currentUserService,
             IUnitOfWork unitOfWork,
-            ISlugGenerator slugGenerator)
+            ISlugGenerator slugGenerator,
+            IProductSearchService searchService,
+            IProductIndexingService indexingService)
         {
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
@@ -50,6 +56,8 @@ namespace EcommerceAPI.Application.Services.ProductService
             _currentUserService = currentUserService;
             _unitOfWork = unitOfWork;
             _slugGenerator = slugGenerator;
+            _searchService = searchService;
+            _indexingService = indexingService;
         }
         public async Task<ProductResponse> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken)
         {
@@ -94,7 +102,7 @@ namespace EcommerceAPI.Application.Services.ProductService
                 await _productRepository.AddAsync(newProduct, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
-
+            await _indexingService.IndexProductAsync(newProduct, cancellationToken);
 
             return _productMapper.ToProductResponse(newProduct);
 
@@ -108,11 +116,11 @@ namespace EcommerceAPI.Application.Services.ProductService
                 cancellationToken: cancellationToken)
                 ?? throw new NotFoundException($"Product '{slug}' not found.");
 
-            var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid, cancellationToken)
-                ?? throw new NotFoundException("User not found.");
-
             if (_currentUserService.IsAuthenticated && _currentUserService.Role == "Customer")
             {
+                var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid, cancellationToken)
+                    ?? throw new NotFoundException("User not found.");
+
                 await _userActivityService.LogActivityAsync(
                     user.Id,
                     product.Id,
@@ -146,7 +154,7 @@ namespace EcommerceAPI.Application.Services.ProductService
 
             if (!string.Equals(request.Name, product.Name, StringComparison.Ordinal))
             {
-                var newSlug = request.Name.ToLowerInvariant().Replace(" ", "-");
+                var newSlug = _slugGenerator.GenerateSlug(request.Name);
                 var slugTaken = await _productRepository.ExistByAsync(
                     p => p.Slug == newSlug && p.Id != product.Id, cancellationToken);
                 if (slugTaken)
@@ -177,9 +185,16 @@ namespace EcommerceAPI.Application.Services.ProductService
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
 
+            await _indexingService.IndexProductAsync(product, cancellationToken);
+
             return _productMapper.ToProductResponse(product);
         }
-
+        public async Task<CursorPagedResult<ProductSummaryResponse>> SearchProductsAsync(
+        ProductQueryParamsRequest queryParams, CancellationToken cancellationToken)
+        {
+            return await _searchService.SearchProductsAsync(queryParams, cancellationToken);
+        }
+       
         public async Task DeleteProductAsync(string slug, CancellationToken cancellationToken)
         {
             var product = await _productRepository.GetByAsync(
@@ -191,6 +206,7 @@ namespace EcommerceAPI.Application.Services.ProductService
                 _productRepository.Delete(product);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
+            await _indexingService.DeleteProductAsync(product.Id, cancellationToken);
         }
 
 

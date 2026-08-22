@@ -5,10 +5,12 @@ using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Repositories;
+using EcommerceAPI.Application.Interfaces.Search;
 using EcommerceAPI.Application.Interfaces.Slug;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Application.Mappers.Mappings;
 using EcommerceAPI.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace EcommerceAPI.Application.Services.TagService
 {
@@ -19,12 +21,20 @@ namespace EcommerceAPI.Application.Services.TagService
         private readonly ISlugGenerator _slugGenerator;
         private readonly IUnitOfWork _unitOfWork;
 
-        public TagService(IRepository<Tag> tagRepository, ITagMapper tagMapper, ISlugGenerator slugGenerator, IUnitOfWork unitOfWork)
+        private readonly IProductIndexingService _indexingService;
+
+        private readonly IRepository<Product> _productRepository;
+
+        public TagService(IRepository<Tag> tagRepository, ITagMapper tagMapper,
+            ISlugGenerator slugGenerator, IUnitOfWork unitOfWork,
+            IProductIndexingService indexingService, IRepository<Product> productRepository)
         {
             _tagRepository = tagRepository;
             _tagMapper = tagMapper;
             _slugGenerator = slugGenerator;
             _unitOfWork = unitOfWork;
+            _indexingService = indexingService;
+            _productRepository = productRepository;
         }
 
         public async Task<TagResponse> CreateTagAsync(CreateTagRequest request, CancellationToken cancellationToken)
@@ -94,6 +104,15 @@ CancellationToken cancellationToken = default)
                 _tagRepository.Update(tag);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
+            var affectedProducts = await _productRepository.GetAllAsync(
+             predicate: p => p.ProductTags.Any(pt => pt.TagId == tag.Id),
+             include: q => q.Include(p => p.Category).Include(p => p.ProductTags).ThenInclude(pt => pt.Tag),
+             cancellationToken: cancellationToken);
+
+            foreach (var product in affectedProducts)
+            {
+                await _indexingService.IndexProductAsync(product, cancellationToken);
+            }
         }
 
         public async Task DeleteTagAsync(string slug, CancellationToken cancellationToken)
