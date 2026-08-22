@@ -42,7 +42,10 @@ namespace EcommerceAPI.Application.Interfaces.Repositories
         /// </summary>
         /// <param name="entity">The entity to update.</param>
         /// 
-
+        Task<List<T>> GetAllAsync(
+        Expression<Func<T, bool>>? predicate = null,
+        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
+        CancellationToken cancellationToken = default);
         public Task<List<T>> GetPagedAsync<TKey>(
             Expression<Func<T, bool>> predicate,
             Expression<Func<T, TKey>> orderBy,
@@ -59,7 +62,12 @@ namespace EcommerceAPI.Application.Interfaces.Repositories
             Expression<Func<T, TKey>> orderBy,
             int take, int skip
             , CancellationToken cancellationToken = default);
-
+        Task<List<T>> GetPageOffSetAsync<TKey>(
+            Expression<Func<T, TKey>> orderBy,
+            int take,
+            int skip,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>>? include,
+            CancellationToken cancellationToken = default);
         public Task<long> GetCountAsync(CancellationToken cancellationToken = default);
 
         public void Update(T entity);

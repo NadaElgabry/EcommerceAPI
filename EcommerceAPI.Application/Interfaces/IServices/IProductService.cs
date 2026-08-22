@@ -9,6 +9,8 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         public Task<ProductResponse> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken);
         Task<ProductResponse> GetProductDetailsAsync(string slug, CancellationToken cancellationToken);
         public Task<ProductResponse> UpdateProductAsync(string slug,UpdateProductRequest request, CancellationToken cancellationToken);
+        public Task<CursorPagedResult<ProductSummaryResponse>> SearchProductsAsync(
+        ProductQueryParamsRequest queryParams, CancellationToken cancellationToken);
         public Task DeleteProductAsync(string slug, CancellationToken cancellationToken);
     }
 }
