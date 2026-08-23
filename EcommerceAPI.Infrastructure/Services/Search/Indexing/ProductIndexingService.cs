@@ -5,6 +5,7 @@ using EcommerceAPI.Infrastructure.Services.Search.Documents;
 using EcommerceAPI.Infrastructure.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Linq.Expressions;
 
 namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
 {
@@ -28,15 +29,16 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
 
         public async Task ReindexAllProductsAsync(CancellationToken cancellationToken = default)
         {
-            var totalCount = await _productRepository.GetCountAsync(cancellationToken);
-            var processed = 0;
+            int? lastId = null;
 
-            while (processed < totalCount)
+            while (true)
             {
-                var batch = await _productRepository.GetPageOffSetAsync(
+                var batch = await _productRepository.GetPagedAsync(
+                    predicate: lastId == null
+                        ? (Expression<Func<Product, bool>>)(p => true)
+                        : p => p.Id > lastId,
                     orderBy: p => p.Id,
                     take: BatchSize,
-                    skip: processed,
                     include: q => q
                         .Include(p => p.Category)
                         .Include(p => p.ProductTags)
@@ -52,7 +54,12 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
 
                 await _search.IndexManyAsync(_settings.ProductsIndex, documents, cancellationToken);
 
-                processed += batch.Count;
+                lastId = batch[^1].Id;
+
+                if (batch.Count < BatchSize)
+                {
+                    break; 
+                }
             }
         }
 

@@ -48,8 +48,9 @@ namespace EcommerceAPI.Application.Interfaces.Repositories
         CancellationToken cancellationToken = default);
         public Task<List<T>> GetPagedAsync<TKey>(
             Expression<Func<T, bool>> predicate,
-            Expression<Func<T, TKey>> orderBy,
+            Expression<Func<T, TKey>> orderBy,           
             int take,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
             CancellationToken cancellationToken = default);
 
         public Task<List<T>> GetPagedDescendingAsync<TKey>(
@@ -58,15 +59,11 @@ namespace EcommerceAPI.Application.Interfaces.Repositories
             int take,
             CancellationToken cancellationToken = default);
 
-        public Task<List<T>> GetPageOffSetAsync<TKey>(
-            Expression<Func<T, TKey>> orderBy,
-            int take, int skip
-            , CancellationToken cancellationToken = default);
         Task<List<T>> GetPageOffSetAsync<TKey>(
             Expression<Func<T, TKey>> orderBy,
             int take,
             int skip,
-            Func<IQueryable<T>, IIncludableQueryable<T, object>>? include,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>>? include=null,
             CancellationToken cancellationToken = default);
         public Task<long> GetCountAsync(CancellationToken cancellationToken = default);
 

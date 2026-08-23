@@ -54,6 +54,8 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException("Elasticsearch settings are not configured.");
 
         var esClientSettings = new ElasticsearchClientSettings(new Uri(esSettings.Url))
+            .MaximumRetries(3)
+            .RequestTimeout(TimeSpan.FromMinutes(2))
             .DefaultIndex(esSettings.ProductsIndex);
 
         services.AddSingleton(new ElasticsearchClient(esClientSettings));

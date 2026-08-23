@@ -8,5 +8,6 @@ namespace EcommerceAPI.Application.DTOs.Common
     {
         public string SortBy { get; set; } = null!;
         public string[] Values { get; set; } = Array.Empty<string>();
+        public string QueryFingerprint { get; set; } = string.Empty;
     }
 }

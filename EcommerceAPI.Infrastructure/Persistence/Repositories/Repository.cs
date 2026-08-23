@@ -83,32 +83,28 @@ namespace EcommerceAPI.Infrastructure.Persistence.Repositories
             Expression<Func<T, bool>> predicate,
             Expression<Func<T, TKey>> orderBy,
             int take,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>>? include,
             CancellationToken cancellationToken = default)
         {
-            return await _dbSet
+            IQueryable<T> query = _context.Set<T>();
+
+            if (include != null)
+            {
+                query = include(query);
+            }
+
+            return await query
                 .Where(predicate)
                 .OrderBy(orderBy)
                 .Take(take)
                 .ToListAsync(cancellationToken);
-        }
-        public async Task<List<T>> GetPageOffSetAsync<TKey>(
-            Expression<Func<T, TKey>> orderBy,
-            int take, int skip
-            ,CancellationToken cancellationToken)
-        {
-            return await _dbSet
-                .OrderBy(orderBy)
-                .Skip(skip)
-                .Take(take)
-                .ToListAsync(cancellationToken);
-                
         }
 
         public async Task<List<T>> GetPageOffSetAsync<TKey>(
         Expression<Func<T, TKey>> orderBy,
         int take,
         int skip,
-        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include,
+        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include=null,
         CancellationToken cancellationToken = default)
         {
             IQueryable<T> query = _context.Set<T>();

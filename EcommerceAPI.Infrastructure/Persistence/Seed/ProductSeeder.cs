@@ -38,6 +38,7 @@ namespace EcommerceAPI.Infrastructure.Persistence.Seed
 
             // Ensure unique slugs (Commerce.ProductName() can repeat)
             var usedSlugs = new HashSet<string>();
+            var random = Random.Shared;
             foreach (var product in products)
             {
                 var baseSlug = product.Name
@@ -57,12 +58,9 @@ namespace EcommerceAPI.Infrastructure.Persistence.Seed
                 // Randomly attach 0-3 tags per product, if tags exist
                 if (tags.Count > 0)
                 {
-                    var tagCount = new Random().Next(0, Math.Min(4, tags.Count));
+                    var tagCount = random.Next(0, Math.Min(4, tags.Count));
                     var pickedTags = tags.OrderBy(_ => Guid.NewGuid()).Take(tagCount);
-
-                    product.ProductTags = pickedTags
-                        .Select(t => new ProductTag { TagId = t.Id })
-                        .ToList();
+                    product.ProductTags = pickedTags.Select(t => new ProductTag { TagId = t.Id }).ToList();
                 }
             }
 

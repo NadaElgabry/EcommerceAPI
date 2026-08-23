@@ -4,6 +4,8 @@ using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces.Search;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
+using System.Security.Cryptography;
+using System.Text;
 using SearchRequest = EcommerceAPI.Application.Interfaces.Search.SearchRequest;
 
 namespace EcommerceAPI.Infrastructure.Services.Search
@@ -32,6 +34,8 @@ namespace EcommerceAPI.Infrastructure.Services.Search
 
             var sortOrder = request.SortDir == SearchSortDirection.Asc ? SortOrder.Asc : SortOrder.Desc;
 
+            var fingerprint = ComputeQueryFingerprint(request);
+
             SearchCursorPayload? cursor = null;
             if (!string.IsNullOrWhiteSpace(request.Cursor))
             {
@@ -42,6 +46,12 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                 {
                     throw new BadRequestException(
                         "Cursor does not match the current sort. Restart pagination from the first page.");
+                }
+
+                if (!string.Equals(cursor.QueryFingerprint, fingerprint, StringComparison.Ordinal))
+                {
+                    throw new BadRequestException(
+                        "Cursor does not match the current search text or filters. Restart pagination from the first page.");
                 }
             }
 
@@ -59,12 +69,36 @@ namespace EcommerceAPI.Infrastructure.Services.Search
 
                         if (hasSearchText && request.SearchFields is { Length: > 0 })
                         {
-                            b.Must(m => m.MultiMatch(mm => mm
-                                .Query(searchText)
-                                .Fields(request.SearchFields)
-                                .Type(TextQueryType.BestFields)
-                                .Fuzziness(new Fuzziness("AUTO"))
-                                .PrefixLength(2)));
+                            var fuzzyFields = request.SearchFields
+                                .Where(f => !f.StartsWith("description", StringComparison.OrdinalIgnoreCase))
+                                .ToArray();
+                            var exactFields = request.SearchFields
+                                .Where(f => f.StartsWith("description", StringComparison.OrdinalIgnoreCase))
+                                .ToArray();
+
+                            b.Must(m => m.Bool(inner =>
+                            {
+                                inner.MinimumShouldMatch(1);
+
+                                if (fuzzyFields.Length > 0)
+                                {
+                                    inner.Should(sh => sh.MultiMatch(mm => mm
+                                        .Query(searchText)
+                                        .Fields(fuzzyFields)
+                                        .Type(TextQueryType.BestFields)
+                                        .Fuzziness(new Fuzziness("AUTO"))
+                                        .PrefixLength(2)
+                                        .MinimumShouldMatch("75%")));
+                                }
+
+                                if (exactFields.Length > 0)
+                                {
+                                    inner.Should(sh => sh.MultiMatch(mm => mm
+                                        .Query(searchText)
+                                        .Fields(exactFields)
+                                        .Type(TextQueryType.BestFields)));
+                                }
+                            }));
                         }
                     }))
                     .Sort(
@@ -109,7 +143,8 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                 nextCursor = CursorHelper.Encode(new SearchCursorPayload
                 {
                     SortBy = sortField ?? "_score",
-                    Values = lastSortValues
+                    Values = lastSortValues,
+                    QueryFingerprint = fingerprint
                 });
             }
 
@@ -150,10 +185,16 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             IEnumerable<(string Id, TDocument Document)> documents,
             CancellationToken cancellationToken = default)
         {
+            var docsList = documents.ToList();
+            if (docsList.Count == 0)
+            {
+                return;
+            }
+
             var response = await _client.BulkAsync(b =>
             {
                 b.Index(indexName);
-                foreach (var (id, document) in documents)
+                foreach (var (id, document) in docsList)
                 {
                     b.Index<TDocument>(document, idx => idx.Id(id));
                 }
@@ -162,6 +203,18 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             if (!response.IsValidResponse)
             {
                 throw new InvalidOperationException($"Bulk indexing into '{indexName}' failed: {response.DebugInformation}");
+            }
+
+            if (response.Errors)
+            {
+                var failedItems = response.ItemsWithErrors.ToList();
+
+                var errorDetails = string.Join("; ", failedItems.Select(i =>
+                    $"id={i.Id}, status={i.Status}, error={i.Error?.Reason ?? "unknown"}"));
+
+                throw new InvalidOperationException(
+                    $"Bulk indexing into '{indexName}' failed for {failedItems.Count} of {docsList.Count} " +
+                    $"document(s): {errorDetails}");
             }
         }
 
@@ -233,5 +286,35 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             decimal dec => (double)dec,
             _ => Convert.ToDouble(value)
         };
+
+        private static string ComputeQueryFingerprint(SearchRequest request)
+        {
+            var sb = new StringBuilder();
+            sb.Append(request.SearchText?.Trim().ToLowerInvariant());
+            sb.Append('|');
+
+            foreach (var f in request.Filters.OrderBy(f => f.Field, StringComparer.Ordinal)
+                                              .ThenBy(f => f.Type))
+            {
+                sb.Append(f.Field).Append(':').Append(f.Type).Append('=');
+
+                if (f.Values != null)
+                {
+                    var sortedValues = f.Values.Select(v => v?.ToString() ?? string.Empty)
+                                                .OrderBy(v => v, StringComparer.Ordinal);
+                    sb.Append(string.Join(",", sortedValues));
+                }
+                else
+                {
+                    sb.Append(f.Value?.ToString() ?? string.Empty);
+                }
+
+                sb.Append(';');
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+            var hash = SHA256.HashData(bytes);
+            return Convert.ToHexString(hash)[..16];
+        }
     }
 }

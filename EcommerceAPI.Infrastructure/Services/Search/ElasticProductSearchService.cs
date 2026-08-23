@@ -39,7 +39,6 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                 Cursor = queryParams.Cursor,
                 Filters = BuildFilters(queryParams)
             };
-
             var result = await _search.SearchAsync(_settings.ProductsIndex, request, cancellationToken);
 
             var items = result.Data.Select(doc => new ProductSummaryResponse
