@@ -19,7 +19,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         public Task UpdateProfileAsync(
            Guid userId, UpdateProfileRequest request, CancellationToken cancellationToken = default);
         public Task<OffsetPagedResult<UserResponse>> GetAllUsersAsync(
-            GetUsersRequest request, CancellationToken cancellationToken = default);
+            OffsetPageRequest request, CancellationToken cancellationToken = default);
 
     }
 }

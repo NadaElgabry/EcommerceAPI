@@ -81,7 +81,7 @@ namespace EcommerceAPI.Application.Services.UserService
         }
 
         public async Task<OffsetPagedResult<UserResponse>> GetAllUsersAsync(
-    GetUsersRequest request,
+    OffsetPageRequest request,
     CancellationToken cancellationToken = default)
         {
             int page = Math.Max(request.PageNumber, 1);
