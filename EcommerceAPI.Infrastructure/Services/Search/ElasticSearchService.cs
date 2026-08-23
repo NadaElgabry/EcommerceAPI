@@ -20,6 +20,7 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             _client = client;
         }
 
+        ///<inheritdoc/>
         public async Task<CursorPagedResult<TDocument>> SearchAsync(
             string indexName,
             SearchRequest request,
@@ -160,6 +161,7 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             };
         }
 
+        ///<inheritdoc/>
         public async Task IndexOneAsync(string indexName, string id, TDocument document, CancellationToken cancellationToken = default)
         {
             var response = await _client.IndexAsync(document, i => i.Index(indexName).Id(id), cancellationToken);
@@ -169,7 +171,8 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                 throw new InvalidOperationException($"Indexing document '{id}' in '{indexName}' failed: {response.DebugInformation}");
             }
         }
-
+        
+        ///<inheritdoc/>
         public async Task DeleteOneAsync(string indexName, string id, CancellationToken cancellationToken = default)
         {
             var response = await _client.DeleteAsync<TDocument>(id, d => d.Index(indexName), cancellationToken);
@@ -180,6 +183,7 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             }
         }
 
+        ///<inheritdoc/>
         public async Task IndexManyAsync(
             string indexName,
             IEnumerable<(string Id, TDocument Document)> documents,
@@ -218,6 +222,14 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             }
         }
 
+        /// <summary>
+        /// Converts a list of generic <see cref="SearchFilter"/> definitions into a list of
+        /// Elasticsearch query descriptor actions that can be combined into a bool query.
+        /// </summary>
+        /// <param name="filters">The filters to translate into Elasticsearch query clauses.</param>
+        /// <returns>
+        /// A list of actions, each configuring a <see cref="QueryDescriptor{TDocument}"/> for one filter.
+        /// </returns>
         private static List<Action<QueryDescriptor<TDocument>>> BuildFilters(List<SearchFilter> filters)
         {
             var actions = new List<Action<QueryDescriptor<TDocument>>>();
@@ -265,6 +277,15 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             return actions;
         }
 
+        /// <summary>
+        /// Converts a raw filter value into the <see cref="FieldValue"/> type expected by the
+        /// Elasticsearch client, mapping common .NET primitive types to their corresponding
+        /// Elasticsearch representations.
+        /// </summary>
+        /// <param name="value">The raw value to convert. Supported types are string, bool, int, long, double, and decimal.</param>
+        /// <returns>
+        /// The equivalent <see cref="FieldValue"/>. Unsupported types fall back to their string representation.
+        /// </returns>
         private static FieldValue ToFieldValue(object? value) => value switch
         {
             null => FieldValue.Null,
@@ -277,6 +298,14 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             _ => FieldValue.String(value.ToString() ?? string.Empty)
         };
 
+        /// <summary>
+        /// Converts a raw filter value into a <see cref="double"/> for use in numeric range queries.
+        /// </summary>
+        /// <param name="value">The raw value to convert. Supported types are double, int, long, and decimal.</param>
+        /// <returns>
+        /// The value converted to a <see cref="double"/>, or 0 if <paramref name="value"/> is null.
+        /// Unsupported types are converted using <see cref="Convert.ToDouble(object)"/>.
+        /// </returns>
         private static double ToDouble(object? value) => value switch
         {
             null => 0,
@@ -287,6 +316,14 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             _ => Convert.ToDouble(value)
         };
 
+        /// <summary>
+        /// Computes a deterministic fingerprint for a search request by hashing its normalized
+        /// search text and filters. Used to identify identical queries (e.g. for caching), since
+        /// requests with the same effective search criteria produce the same fingerprint regardless
+        /// of filter ordering or value casing.
+        /// </summary>
+        /// <param name="request">The search request to compute a fingerprint for.</param>
+        /// <returns>A 16-character hexadecimal string derived from the SHA-256 hash of the normalized request.</returns>
         private static string ComputeQueryFingerprint(SearchRequest request)
         {
             var sb = new StringBuilder();

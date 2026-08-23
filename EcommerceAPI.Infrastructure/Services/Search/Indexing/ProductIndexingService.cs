@@ -27,6 +27,7 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
             _settings = settings.Value;
         }
 
+        ///<inheritdoc/>
         public async Task ReindexAllProductsAsync(CancellationToken cancellationToken = default)
         {
             int? lastId = null;
@@ -63,17 +64,20 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
             }
         }
 
+        ///<inheritdoc/>
         public async Task IndexProductAsync(Product product, CancellationToken cancellationToken = default)
         {
             var document = MapToDocument(product);
             await _search.IndexOneAsync(_settings.ProductsIndex, product.Id.ToString(), document, cancellationToken);
         }
 
+        ///<inheritdoc/>
         public async Task DeleteProductAsync(int productId, CancellationToken cancellationToken = default)
         {
             await _search.DeleteOneAsync(_settings.ProductsIndex, productId.ToString(), cancellationToken);
         }
 
+        ///<inheritdoc/>
         private static ProductSearchDocument MapToDocument(Product product)
         {
             return new ProductSearchDocument

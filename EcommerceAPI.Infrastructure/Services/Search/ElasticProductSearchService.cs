@@ -21,6 +21,7 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             _settings = settings.Value;
         }
 
+        ///<inheritdoc/>
         public async Task<CursorPagedResult<ProductSummaryResponse>> SearchProductsAsync(
             ProductQueryParamsRequest queryParams,
             CancellationToken cancellationToken = default)
@@ -65,6 +66,21 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             ["stock"] = "stockQuantity"
         };
 
+        /// <summary>
+        /// Resolves the Elasticsearch field name to sort by, based on the requested sort key.
+        /// When no sort key is requested, defaults to sorting by creation date unless a search
+        /// text is present, in which case relevance scoring is used instead (no explicit sort field).
+        /// </summary>
+        /// <param name="requestedSortBy">The sort key requested by the caller, or null/empty to use the default.</param>
+        /// <param name="hasSearchText">Whether the search request includes free-text search terms.</param>
+        /// <returns>
+        /// The mapped Elasticsearch field name to sort by, "creationDate" if no sort was requested and there
+        /// is no search text, or <see langword="null"/> if no sort was requested and a search text is present
+        /// (allowing results to be ordered by relevance score).
+        /// </returns>
+        /// <exception cref="BadRequestException">
+        /// Thrown when <paramref name="requestedSortBy"/> does not match any allowed sort field.
+        /// </exception>
         private static string? ResolveSortField(string? requestedSortBy, bool hasSearchText)
         {
             if (string.IsNullOrWhiteSpace(requestedSortBy))
@@ -81,6 +97,12 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                 $"Invalid sortBy value '{requestedSortBy}'. Allowed values: {string.Join(", ", SortFieldMap.Keys)}.");
         }
 
+        /// <summary>
+        /// Builds the list of Elasticsearch filters to apply based on the provided query parameters.
+        /// Supports filtering by category, tags, brand, price range, and stock availability.
+        /// </summary>
+        /// <param name="queryParams">The query parameters containing the requested filter criteria.</param>
+        /// <returns>A list of <see cref="SearchFilter"/> instances representing the filters to apply.</returns>
         private static List<SearchFilter> BuildFilters(ProductQueryParamsRequest queryParams)
         {
             var filters = new List<SearchFilter>();

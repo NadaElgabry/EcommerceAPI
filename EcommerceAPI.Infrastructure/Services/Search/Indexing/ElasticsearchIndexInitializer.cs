@@ -12,6 +12,15 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
 {
     public static class ElasticsearchIndexInitializer
     {
+        /// <summary>
+        /// Ensures the Elasticsearch products index exists, creating it with the required
+        /// analyzers and mappings if it does not already exist.
+        /// </summary>
+        /// <param name="services">The service provider used to resolve the Elasticsearch client and settings.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the index creation request fails.
+        /// </exception>
         public static async Task EnsureProductsIndexExistsAsync(this IServiceProvider services)
         {
             var client = services.GetRequiredService<ElasticsearchClient>();

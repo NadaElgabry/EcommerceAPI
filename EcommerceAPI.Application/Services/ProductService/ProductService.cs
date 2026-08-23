@@ -189,6 +189,8 @@ namespace EcommerceAPI.Application.Services.ProductService
 
             return _productMapper.ToProductResponse(product);
         }
+
+        ///<inheritdoc/>
         public async Task<CursorPagedResult<ProductSummaryResponse>> SearchProductsAsync(
         ProductQueryParamsRequest queryParams, CancellationToken cancellationToken)
         {
