@@ -281,7 +281,7 @@ namespace EcommerceAPI.Application.Services.Auth
         }
 
         /// <inheritdoc/>
-        public async Task ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default)
+        public async Task ForgotPasswordAsync(EmailRequest request, CancellationToken cancellationToken = default)
         {
             var normalizedEmail = request.Email.Trim().ToLowerInvariant();
 
