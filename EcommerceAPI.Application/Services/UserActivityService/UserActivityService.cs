@@ -1,5 +1,9 @@
-﻿using EcommerceAPI.Application.Exceptions;
+﻿using EcommerceAPI.Application.Common;
+using EcommerceAPI.Application.DTOs.Common;
+using EcommerceAPI.Application.DTOs.UserActivities;
+using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces;
+using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Domain.Entities;
@@ -31,6 +35,45 @@ namespace EcommerceAPI.Application.Services.UserService
 
             await _activityRepository.AddAsync(activity, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task<CursorPagedResult<UserActivitiesResponse>> GetAllActivitiesAsync(
+           Guid? userId, string? cursor, int pageSize, CancellationToken cancellationToken)
+        {
+            if (pageSize <= 0 || pageSize > 100) pageSize = 20;
+
+            int? cursorId = string.IsNullOrWhiteSpace(cursor) ? null : CursorHelper.Decode<int>(cursor);
+            
+            var user = await _userRepository.GetByAsync(u => u.Guid == userId, cancellationToken)
+                ?? throw new NotFoundException("User not found.");
+
+            var activities = await _activityRepository.GetPagedDescendingAsync(
+                predicate: a => (!userId.HasValue || a.UserId == user.Id) &&
+                                (!cursorId.HasValue || a.Id < cursorId),
+                orderBy: a => a.Id,
+                take: pageSize + 1,
+                cancellationToken: cancellationToken);
+
+            bool hasNext = activities.Count > pageSize;
+            if (hasNext) activities = activities.Take(pageSize).ToList();
+
+            return new CursorPagedResult<UserActivitiesResponse>
+            {
+                Data = activities.Select(a => new UserActivitiesResponse
+                {
+                    Id = a.Id,
+                    UserId = a.UserId,
+                    ActionType = a.ActionType.ToString(),
+                    ProductId = a.ProductId,
+                    Timestamp = a.Timestamp
+                }).ToList(),
+                Pagination = new CursorPageInfo
+                {
+                    NextCursor = hasNext ? CursorHelper.Encode(activities[^1].Id) : null,
+                    HasNext = hasNext,
+                    PageSize = pageSize
+                }
+            };
         }
     }
 }
