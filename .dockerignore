@@ -1,6 +1,5 @@
 **/bin/
 **/obj/
-**/logs/
 **/.vs/
 **/.vscode/
 **/.idea/
@@ -11,3 +10,5 @@
 **/Dockerfile*
 **/docker-compose*
 **/*.md
+**/logs/
+*.log

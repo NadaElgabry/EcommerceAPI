@@ -1,7 +1,9 @@
-﻿using EcommerceAPI.Application.Interfaces.Repositories;
+﻿using System.Linq.Expressions;
+using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace EcommerceAPI.Infrastructure.Persistence.Repositories
 {
@@ -46,13 +48,66 @@ namespace EcommerceAPI.Infrastructure.Persistence.Repositories
 
         public async Task<List<T>> GetAllByAsync(
             Expression<Func<T, bool>> predicate,
+        public async Task<T?> GetByAsync(Expression<Func<T, bool>> predicate, Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null, CancellationToken cancellationToken = default)
+        {
+            IQueryable<T> query = _context.Set<T>();
+
+            if (include!= null)
+            {
+                query = include(query);
+            }
+            return await query.FirstOrDefaultAsync(predicate, cancellationToken);
+        }
+        /// <inheritdoc />
+        public async Task DeleteAllByAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+        {
+            var entities = await _dbSet.Where(predicate).ToListAsync(cancellationToken);
+            _dbSet.RemoveRange(entities);
+        }
+        public async Task<List<T>> GetPagedDescendingAsync<TKey>(
+            Expression<Func<T, bool>> predicate,
+            Expression<Func<T, TKey>> orderBy,
+            int take,
             CancellationToken cancellationToken = default)
         {
             return await _dbSet
                 .Where(predicate)
+                .OrderByDescending(orderBy)
+                .Take(take)
                 .ToListAsync(cancellationToken);
         }
 
+        public async Task<List<T>> GetPagedAsync<TKey>(
+            Expression<Func<T, bool>> predicate,
+            Expression<Func<T, TKey>> orderBy,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            return await _dbSet
+                .Where(predicate)
+                .OrderBy(orderBy)
+                .Take(take)
+                .ToListAsync(cancellationToken);
+        }
+        public async Task<List<T>> GetPageOffSetAsync<TKey>(
+            Expression<Func<T, TKey>> orderBy,
+            int take, int skip
+            ,CancellationToken cancellationToken)
+        {
+            return await _dbSet
+                .OrderBy(orderBy)
+                .Skip(skip)
+                .Take(take)
+                .ToListAsync(cancellationToken);
+                
+        }
+
+        public async Task<long> GetCountAsync(CancellationToken cancellationToken)
+        {
+            return await _dbSet.LongCountAsync(cancellationToken);
+        }
+
+        /// <inheritdoc />
         public void Update(T entity)
         {
             _dbSet.Update(entity);

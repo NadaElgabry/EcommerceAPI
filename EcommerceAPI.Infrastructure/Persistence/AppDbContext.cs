@@ -1,54 +1,33 @@
-﻿using Microsoft.EntityFrameworkCore;
-using EcommerceAPI.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using EcommerceAPI.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace EcommerceAPI.Infrastructure.Contexts
 {
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-        {}
+        public AppDbContext(
+            DbContextOptions<AppDbContext> options)
+            : base(options)
+        {
+        }
 
         public DbSet<User> Users { get; set; }
-        public DbSet<Role> Roles { get; set; }
+        public DbSet<Product> Products { get; set; }
         public DbSet<UserAddress> UserAddresses { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        public DbSet<VerificationToken> VerificationTokens { get; set; }
+        public DbSet<Category> Categories { get; set; }
+        public DbSet<Tag> Tags { get; set; }
+        public DbSet<ProductTag> ProductTags { get; set; }
+        public DbSet<UserCategory> UserCategories { get; set; }
+        public DbSet<UserActivity> UserActivities { get; set; }
+        protected override void OnModelCreating(
+            ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<User>()
-                .HasOne(u => u.Role)
-                .WithMany(r => r.Users)
-                .HasForeignKey(u => u.RoleId);
+            base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.Addresses)
-                .WithOne(a => a.User)
-                .HasForeignKey(a => a.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<User>()
-                .HasMany(u=> u.RefreshTokens)
-                .WithOne(rt => rt.User)
-                .HasForeignKey(rt => rt.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<User>()
-              .Property(u => u.Email)
-              .HasMaxLength(256);
-
-            modelBuilder.Entity<RefreshToken>()
-                .Property(rt => rt.TokenHash)
-                .HasMaxLength(88);
-
-            modelBuilder.Entity<User>()
-                .HasIndex(u => u.Email)
-                .IsUnique();
-            modelBuilder.Entity<RefreshToken>()
-                .HasIndex(rt => rt.TokenHash)
-                .IsUnique();
+            modelBuilder.ApplyConfigurationsFromAssembly(
+                typeof(AppDbContext).Assembly);
         }
     }
 }

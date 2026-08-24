@@ -1,11 +1,12 @@
 ﻿using EcommerceAPI.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using EcommerceAPI.Domain.Enums;
 
 namespace EcommerceAPI.Application.Interfaces.Auth
 {
-    public record AccessTokenResult(string Token, DateTime ExpiresAtUtc);
+    public record AccessTokenResult(
+        string Token,
+        DateTime ExpiresAtUtc
+    );
 
     public interface ITokenService
     {
@@ -20,10 +21,16 @@ namespace EcommerceAPI.Application.Interfaces.Auth
         /// Generates a refresh token for the specified user, along with the associated entity.
         /// </summary>
         /// <param name="user">The user for whom to generate the refresh token.</param>
-        /// <param name="ipAdress">The IP address of the client.</param>
-        /// <param name="deviceInfo">Information about the client device.</param>
         /// <returns>A tuple containing the raw token and the associated refresh token entity.</returns>
+        public (string RawToken, RefreshToken Entity) GenerateRefreshToken(User user);
+      
+        public string Hash(string refreshToken);
 
-        public (string RawToken, RefreshToken Entity) GenerateRefreshToken(User user, string ipAdress, string deviceInfo);
+        public string GenerateHighEntropyToken();
+
+        public bool Verify(string rawToken, string hashedToken);
+
+        public (string RawToken, VerificationToken Entity) GenerateVerificationToken(User user, VerificationPurpose purpose);
+
     }
 }

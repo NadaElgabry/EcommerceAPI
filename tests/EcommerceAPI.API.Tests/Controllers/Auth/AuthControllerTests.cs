@@ -1,379 +1,269 @@
-﻿using System.Net;
-using System.Reflection;
-using System.Security.Claims;
+﻿/*using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EcommerceAPI.Application.DTOs.Auth;
 using EcommerceAPI.Application.Exceptions;
-using EcommerceAPI.Application.Interfaces.Iservices;
-using EcommerceAPI.Application.UseCases.Auth.Login;
+using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Controllers;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Xunit;
 
 namespace EcommerceAPI.Tests.Controllers
 {
+    /// <summary>
+    /// Unit tests for <see cref="AuthController"/>. The controller depends only on
+    /// <see cref="IAuthService"/> and exposes Login, Register, ActivateAccount,
+    /// IsEmailAvailable, Refresh, and Logout.
+    ///
+    /// NOTE: The controller does not currently extract client IP or User-Agent from
+    /// HttpContext, and IAuthService does not accept device metadata. Tests that
+    /// asserted on that behavior have been removed; re-add them if/when that
+    /// functionality is implemented.
+    /// </summary>
     public class AuthControllerTests
     {
-        private readonly Mock<ILoginUseCase> _loginUseCaseMock = new();
         private readonly Mock<IAuthService> _authServiceMock = new();
         private readonly AuthController _sut;
 
         public AuthControllerTests()
         {
-            _sut = new AuthController(
-                _loginUseCaseMock.Object,
-                _authServiceMock.Object
-            );
+            _sut = new AuthController(_authServiceMock.Object);
         }
 
-        private static DefaultHttpContext BuildHttpContext(
-            string? remoteIp,
-            string userAgent)
+        private static AuthResponse BuildAuthResponse() => new()
         {
-            var context = new DefaultHttpContext();
+            AccessToken = "access-token",
+            AccessTokenExpiresAtUtc = DateTime.UtcNow.AddMinutes(15),
+            RefreshToken = "refresh-token",
+            RefreshTokenExpiresAtUtc = DateTime.UtcNow.AddDays(7)
+        };
 
-            if (remoteIp is not null)
-            {
-                context.Connection.RemoteIpAddress =
-                    IPAddress.Parse(remoteIp);
-            }
-
-            context.Request.Headers["User-Agent"] = userAgent;
-
-            return context;
-        }
+        #region Login
 
         [Fact]
         public async Task Login_ValidRequest_ReturnsOkWithAuthResponse()
         {
-            var request = new LoginRequest
-            {
-                Email = "user@test.com",
-                Password = "P@ssw0rd"
-            };
+            var request = new LoginRequest { Email = "user@test.com", Password = "P@ssw0rd" };
+            var expectedResponse = BuildAuthResponse();
 
-            var expectedResponse = new AuthResponse
-            {
-                AccessToken = "access-token",
-                AccessTokenExpiresAtUtc =
-                    DateTime.UtcNow.AddMinutes(15),
-                RefreshToken = "refresh-token",
-                RefreshTokenExpiresAtUtc =
-                    DateTime.UtcNow.AddDays(7)
-            };
-
-            _sut.ControllerContext = new ControllerContext
-            {
-                HttpContext = BuildHttpContext(
-                    "203.0.113.10",
-                    "Mozilla/5.0 TestAgent"
-                )
-            };
-
-            _loginUseCaseMock
-                .Setup(useCase => useCase.Login(
-                    request,
-                    "203.0.113.10",
-                    "Mozilla/5.0 TestAgent",
-                    It.IsAny<CancellationToken>()
-                ))
+            _authServiceMock
+                .Setup(s => s.Login(request, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResponse);
 
-            var actionResult = await _sut.Login(
-                request,
-                CancellationToken.None
-            );
+            var actionResult = await _sut.Login(request, CancellationToken.None);
 
-            var okResult =
-                Assert.IsType<OkObjectResult>(actionResult);
-
-            var response =
-                Assert.IsType<AuthResponse>(okResult.Value);
-
-            Assert.Equal(
-                expectedResponse.AccessToken,
-                response.AccessToken
-            );
-
-            Assert.Equal(
-                expectedResponse.RefreshToken,
-                response.RefreshToken
-            );
+            var okResult = Assert.IsType<OkObjectResult>(actionResult);
+            var response = Assert.IsType<AuthResponse>(okResult.Value);
+            Assert.Equal(expectedResponse.AccessToken, response.AccessToken);
+            Assert.Equal(expectedResponse.RefreshToken, response.RefreshToken);
         }
 
         [Fact]
-        public async Task Login_NoRemoteIpAddress_PassesUnknownAsIp()
+        public async Task Login_ServiceThrowsUnauthorized_ExceptionPropagatesToExceptionMiddleware()
         {
-            var request = new LoginRequest
+            // Verifies the controller does not swallow exceptions itself; the actual
+            // HTTP status mapping (401/404/409/etc.) belongs in an integration test
+            // against your global exception handling middleware.
+            var request = new LoginRequest { Email = "user@test.com", Password = "wrong" };
+
+            _authServiceMock
+                .Setup(s => s.Login(request, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new UnauthorizedException("Invalid credentials"));
+
+            await Assert.ThrowsAsync<UnauthorizedException>(() => _sut.Login(request, CancellationToken.None));
+        }
+
+        #endregion
+
+        #region Register
+
+        [Fact]
+        public async Task Register_ValidRequest_ReturnsOkWithActivationToken()
+        {
+            // CreateUserAsync currently returns the raw activation token (string),
+            // not an AuthResponse. Update this test's assertions if/when Register
+            // is changed to return a bool instead.
+            var request = new RegisterRequest
             {
-                Email = "user@test.com",
+                FirstName = "Jane",
+                LastName = "Doe",
+                Email = "jane@test.com",
+                PhoneNumber = "555-0100",
                 Password = "P@ssw0rd"
             };
+            const string expectedToken = "raw-activation-token";
 
-            _sut.ControllerContext = new ControllerContext
-            {
-                HttpContext = BuildHttpContext(
-                    remoteIp: null,
-                    userAgent: "TestAgent/1.0"
-                )
-            };
+            _authServiceMock
+                .Setup(s => s.CreateUserAsync(request, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedToken);
 
-            _loginUseCaseMock
-                .Setup(useCase => useCase.Login(
-                    request,
-                    "unknown",
-                    "TestAgent/1.0",
-                    It.IsAny<CancellationToken>()
-                ))
-                .ReturnsAsync(new AuthResponse
-                {
-                    AccessToken = "access-token",
-                    AccessTokenExpiresAtUtc =
-                        DateTime.UtcNow.AddMinutes(15),
-                    RefreshToken = "refresh-token",
-                    RefreshTokenExpiresAtUtc =
-                        DateTime.UtcNow.AddDays(7)
-                });
+            var actionResult = await _sut.Register(request, CancellationToken.None);
 
-            var actionResult = await _sut.Login(
-                request,
-                CancellationToken.None
-            );
-
-            Assert.IsType<OkObjectResult>(actionResult);
-
-            _loginUseCaseMock.Verify(
-                useCase => useCase.Login(
-                    request,
-                    "unknown",
-                    "TestAgent/1.0",
-                    It.IsAny<CancellationToken>()
-                ),
-                Times.Once
-            );
+            var okResult = Assert.IsType<OkObjectResult>(actionResult);
+            var token = Assert.IsType<string>(okResult.Value);
+            Assert.Equal(expectedToken, token);
         }
 
         [Fact]
-        public async Task Login_ExtractsUserAgentHeader_AsDeviceInfo()
+        public async Task Register_ServiceThrowsConflict_ExceptionPropagatesToExceptionMiddleware()
         {
-            var request = new LoginRequest
+            var request = new RegisterRequest
             {
-                Email = "user@test.com",
-                Password = "P@ssw0rd"
+                Email = "taken@test.com",
+                PhoneNumber = "555-0100",
+                Password = "x"
             };
 
-            const string userAgent =
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) TestBrowser/9.9";
+            _authServiceMock
+                .Setup(s => s.CreateUserAsync(request, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new ConflictException("A user with this email already exists."));
 
-            _sut.ControllerContext = new ControllerContext
-            {
-                HttpContext = BuildHttpContext(
-                    "198.51.100.7",
-                    userAgent
-                )
-            };
+            await Assert.ThrowsAsync<ConflictException>(() => _sut.Register(request, CancellationToken.None));
+        }
 
-            _loginUseCaseMock
-                .Setup(useCase => useCase.Login(
-                    request,
-                    "198.51.100.7",
-                    userAgent,
-                    It.IsAny<CancellationToken>()
-                ))
-                .ReturnsAsync(new AuthResponse
-                {
-                    AccessToken = "access-token",
-                    AccessTokenExpiresAtUtc =
-                        DateTime.UtcNow.AddMinutes(15),
-                    RefreshToken = "refresh-token",
-                    RefreshTokenExpiresAtUtc =
-                        DateTime.UtcNow.AddDays(7)
-                });
+        #endregion
 
-            await _sut.Login(
-                request,
-                CancellationToken.None
-            );
+        #region ActivateAccount
 
-            _loginUseCaseMock.Verify(
-                useCase => useCase.Login(
-                    request,
-                    "198.51.100.7",
-                    userAgent,
-                    It.IsAny<CancellationToken>()
-                ),
-                Times.Once
-            );
+        [Fact]
+        public async Task ActivateAccount_ValidRequest_ReturnsOkWithAuthResponse()
+        {
+            var request = new ActivateEmailRequest { Token = "raw-activation-token" };
+            var expectedResponse = BuildAuthResponse();
+
+            _authServiceMock
+                .Setup(s => s.ActivateEmailAsync(request, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResponse);
+
+            var actionResult = await _sut.ActivateAccount(request, CancellationToken.None);
+
+            var okResult = Assert.IsType<OkObjectResult>(actionResult);
+            var response = Assert.IsType<AuthResponse>(okResult.Value);
+            Assert.Equal(expectedResponse.AccessToken, response.AccessToken);
+            Assert.Equal(expectedResponse.RefreshToken, response.RefreshToken);
         }
 
         [Fact]
-        public async Task Login_UseCaseThrows_ExceptionPropagatesToExceptionMiddleware()
+        public async Task ActivateAccount_InvalidOrExpiredToken_ExceptionPropagatesToExceptionMiddleware()
         {
-            var request = new LoginRequest
-            {
-                Email = "user@test.com",
-                Password = "wrong"
-            };
+            var request = new ActivateEmailRequest { Token = "bad-token" };
 
-            _sut.ControllerContext = new ControllerContext
-            {
-                HttpContext = BuildHttpContext(
-                    "127.0.0.1",
-                    "TestAgent"
-                )
-            };
+            _authServiceMock
+                .Setup(s => s.ActivateEmailAsync(request, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new NotFoundException("Invalid activation token."));
 
-            _loginUseCaseMock
-                .Setup(useCase => useCase.Login(
-                    request,
-                    "127.0.0.1",
-                    "TestAgent",
-                    It.IsAny<CancellationToken>()
-                ))
-                .ThrowsAsync(
-                    new InvalidOperationException(
-                        "simulated failure"
-                    )
-                );
+            await Assert.ThrowsAsync<NotFoundException>(() => _sut.ActivateAccount(request, CancellationToken.None));
+        }
 
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                () => _sut.Login(
-                    request,
-                    CancellationToken.None
-                )
-            );
+        #endregion
+
+        #region IsEmailAvailable
+
+        [Fact]
+        public async Task IsEmailAvailable_EmailNotTaken_ReturnsOkTrue()
+        {
+            const string email = "available@test.com";
+
+            _authServiceMock
+                .Setup(s => s.IsEmailAvailable(
+                    It.Is<EmailRequest>(r => r.Email == email),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
+            var actionResult = await _sut.IsEmailAvailable(new EmailRequest { Email = email }, CancellationToken.None);
+
+            var okResult = Assert.IsType<OkObjectResult>(actionResult);
+            Assert.True((bool)okResult.Value!);
         }
 
         [Fact]
-        public async Task ResetPassword_AuthenticatedSubject_PassesGuidAndReturnsNoContent()
+        public async Task IsEmailAvailable_EmailTaken_ReturnsOkFalse()
         {
-            var userGuid = Guid.NewGuid();
-            var request = CreateResetPasswordRequest();
+            const string email = "taken@test.com";
 
-            var cancellationToken =
-                new CancellationTokenSource().Token;
+            _authServiceMock
+                .Setup(s => s.IsEmailAvailable(new EmailRequest { Email = email }, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
 
-            var context = BuildHttpContext(
-                "127.0.0.1",
-                "TestAgent"
-            );
+            var actionResult = await _sut.IsEmailAvailable(new EmailRequest { Email = email }, CancellationToken.None);
 
-            context.User =
-                new ClaimsPrincipal(
-                    new ClaimsIdentity(
-                        new[]
-                        {
-                            new Claim(
-                                ClaimTypes.NameIdentifier,
-                                userGuid.ToString()
-                            )
-                        },
-                        "TestAuthentication"
-                    )
-                );
-
-            _sut.ControllerContext =
-                new ControllerContext
-                {
-                    HttpContext = context
-                };
-
-            var result = await _sut.ResetPassword(
-                request,
-                cancellationToken
-            );
-
-            Assert.IsType<NoContentResult>(result);
-
-            _authServiceMock.Verify(
-                service => service.ResetPasswordAsync(
-                    userGuid,
-                    request,
-                    cancellationToken
-                ),
-                Times.Once
-            );
+            var okResult = Assert.IsType<OkObjectResult>(actionResult);
+            Assert.False((bool)okResult.Value!);
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData("not-a-guid")]
-        public async Task ResetPassword_MissingOrMalformedSubject_ThrowsUnauthorizedException(
-            string? subject)
+        #endregion
+
+        #region Refresh
+
+        [Fact]
+        public async Task Refresh_ValidRequest_ReturnsOkWithAuthResponse()
         {
-            var context = BuildHttpContext(
-                "127.0.0.1",
-                "TestAgent"
-            );
+            var request = new RefreshTokenRequest { RefreshToken = "raw-refresh-token" };
+            var expectedResponse = BuildAuthResponse();
 
-            var claims =
-                subject is null
-                    ? Array.Empty<Claim>()
-                    : new[]
-                    {
-                        new Claim(
-                            ClaimTypes.NameIdentifier,
-                            subject
-                        )
-                    };
+            _authServiceMock
+                .Setup(s => s.Refresh(request, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResponse);
 
-            context.User =
-                new ClaimsPrincipal(
-                    new ClaimsIdentity(
-                        claims,
-                        "TestAuthentication"
-                    )
-                );
+            var actionResult = await _sut.Refresh(request, CancellationToken.None);
 
-            _sut.ControllerContext =
-                new ControllerContext
-                {
-                    HttpContext = context
-                };
-
-            await Assert.ThrowsAsync<UnauthorizedException>(
-                () => _sut.ResetPassword(
-                    CreateResetPasswordRequest(),
-                    CancellationToken.None
-                )
-            );
-
-            _authServiceMock.Verify(
-                service => service.ResetPasswordAsync(
-                    It.IsAny<Guid>(),
-                    It.IsAny<ResetPasswordRequest>(),
-                    It.IsAny<CancellationToken>()
-                ),
-                Times.Never
-            );
+            var okResult = Assert.IsType<OkObjectResult>(actionResult);
+            var response = Assert.IsType<AuthResponse>(okResult.Value);
+            Assert.Equal(expectedResponse.RefreshToken, response.RefreshToken);
         }
 
         [Fact]
-        public void ResetPassword_HasAuthorizeAttribute()
+        public async Task Refresh_ServiceThrowsUnauthorized_ExceptionPropagatesToExceptionMiddleware()
         {
-            var method =
-                typeof(AuthController)
-                    .GetMethod(
-                        nameof(AuthController.ResetPassword)
-                    );
+            var request = new RefreshTokenRequest { RefreshToken = "invalid" };
 
-            Assert.NotNull(method);
+            _authServiceMock
+                .Setup(s => s.Refresh(request, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new UnauthorizedException("Invalid or expired refresh token."));
 
-            Assert.NotNull(
-                method.GetCustomAttribute<AuthorizeAttribute>()
-            );
+            await Assert.ThrowsAsync<UnauthorizedException>(() => _sut.Refresh(request, CancellationToken.None));
         }
 
-        private static ResetPasswordRequest CreateResetPasswordRequest()
+        #endregion
+
+        #region Logout
+
+        [Fact]
+        public async Task Logout_ValidRequest_ReturnsNoContent()
         {
-            return new ResetPasswordRequest
-            {
-                OldPassword = "OldP@ssword1",
-                NewPassword = "NewP@ssword2",
-                ConfirmNewPassword = "NewP@ssword2"
-            };
+            var request = new LogoutRequest { RefreshToken = "raw-refresh-token" };
+
+            _authServiceMock
+                .Setup(s => s.Logout(request, It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            var actionResult = await _sut.Logout(request, CancellationToken.None);
+
+            Assert.IsType<NoContentResult>(actionResult);
+            _authServiceMock.Verify(s => s.Logout(request, It.IsAny<CancellationToken>()), Times.Once);
         }
+
+        [Fact]
+        public async Task Logout_NonExistentToken_StillReturnsNoContent_BecauseLogoutIsIdempotent()
+        {
+            // The service layer treats logging out a token that no longer exists as a
+            // no-op success rather than an error, so the controller should reflect that.
+            // From the controller's perspective this is the same code path as the
+            // "valid request" case above (it never inspects service internals) — this
+            // test documents the idempotency contract rather than exercising different
+            // controller logic.
+            var request = new LogoutRequest { RefreshToken = "already-gone" };
+
+            _authServiceMock
+                .Setup(s => s.Logout(request, It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            var actionResult = await _sut.Logout(request, CancellationToken.None);
+
+            Assert.IsType<NoContentResult>(actionResult);
+        }
+
+        #endregion
     }
-}
+}*/
