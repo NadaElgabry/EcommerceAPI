@@ -6,7 +6,6 @@ using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Repositories;
-using EcommerceAPI.Application.DTOs.Favorites;
 using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
