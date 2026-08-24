@@ -41,7 +41,10 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// <param name="cancellationToken">A token to monitor for cancellation requests</param>
         /// <returns>True if the email is available, false otherwise</returns>
         public Task<bool> IsEmailAvailable(EmailRequest request, CancellationToken cancellationToken = default);
-
+        public  Task ChangePasswordAsync(
+        ChangePasswordRequest request,
+        CancellationToken cancellationToken);
+        
         /// <summary>
         /// Logs in a user with the provided credentials and
         /// returns an authentication response containing access and refresh tokens.

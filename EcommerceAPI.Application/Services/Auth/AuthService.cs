@@ -27,6 +27,7 @@ namespace EcommerceAPI.Application.Services.Auth
         private readonly ILogger<AuthService> _logger;
         private readonly IEmailService _emailService;
         private readonly IVerificationEmailTemplateProvider _templateProvider;
+        private readonly ICurrentUserService _currentUserService;
         public AuthService(
             IRepository<User> userRepository,
             IRepository<VerificationToken> verificationTokenRepository,
@@ -37,7 +38,8 @@ namespace EcommerceAPI.Application.Services.Auth
             IUnitOfWork unitOfWork,
             ILogger<AuthService> logger,
             IEmailService emailService,
-            IVerificationEmailTemplateProvider templateProvider)
+            IVerificationEmailTemplateProvider templateProvider,
+            ICurrentUserService currentUserService)
         {
             _userRepository = userRepository;
             _verificationTokenRepository = verificationTokenRepository;
@@ -49,6 +51,7 @@ namespace EcommerceAPI.Application.Services.Auth
             _logger = logger;
             _emailService = emailService;
             _templateProvider = templateProvider;
+            _currentUserService = currentUserService;
         }
 
         /// <inheritdoc />
@@ -104,52 +107,18 @@ namespace EcommerceAPI.Application.Services.Auth
             await SendVerificationEmailAsync(user, token.RawToken,
                 VerificationPurpose.EmailVerification, cancellationToken);
         }
-                public async Task ResetPasswordAsync(
-            Guid userGuid,
-            ResetPasswordRequest request,
-            CancellationToken cancellationToken)
+        public async Task ChangePasswordAsync(
+        ChangePasswordRequest request,
+        CancellationToken cancellationToken)
         {
-            var validationResult =
-                await _resetPasswordValidator.ValidateAsync(
-                    request,
-                    cancellationToken
-                );
-
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors
-                    .GroupBy(error => error.PropertyName)
-                    .ToDictionary(
-                        group => group.Key,
-                        group => group
-                            .Select(error => error.ErrorMessage)
-                            .ToArray()
-                    );
-
-                throw new EcommerceAPI.Application.Exceptions.ValidationException(
-                    errors
-                );
-            }
 
             var user = await _userRepository.GetByAsync(
-                user => user.Guid == userGuid,
+                user => user.Guid == _currentUserService.UserGuid,
                 cancellationToken
-            );
+                ) ?? throw new NotFoundException("User not found.");
 
-            if (user is null)
-            {
-                throw new NotFoundException(
-                    "User not found."
-                );
-            }
 
-            var oldPasswordIsCorrect =
-                _passwordHasher.Verify(
-                    request.OldPassword,
-                    user.HashedPassword
-                );
-
-            if (!oldPasswordIsCorrect)
+            if (!_passwordHasher.Verify(request.OldPassword,user.HashedPassword))
             {
                 throw new UnauthorizedException(
                     "Invalid old password."
@@ -169,38 +138,19 @@ namespace EcommerceAPI.Application.Services.Auth
                 );
             }
 
-            var now = DateTime.UtcNow;
-
             user.HashedPassword =
                 _passwordHasher.Hash(
                     request.NewPassword
                 );
 
-            user.UpdatedAt = now;
+            user.UpdatedAt = DateTime.UtcNow;
 
             _userRepository.Update(user);
-
-            var activeRefreshTokens =
-                await _refreshTokenRepository.GetAllByAsync(
-                    token =>
-                        token.UserId == user.Id &&
-                        token.RevokedAt == null &&
-                        token.ExpiresAt > now,
-                    cancellationToken
-                );
-
-            foreach (var refreshToken in activeRefreshTokens)
-            {
-                refreshToken.RevokedAt = now;
-
-                _refreshTokenRepository.Update(
-                    refreshToken
-                );
-            }
 
             await _unitOfWork.SaveChangesAsync(
                 cancellationToken
             );
+        }
         /// <inheritdoc />
         public async Task ResendEmailAsync(ResendEmailRequest request,
             CancellationToken cancellationToken = default)

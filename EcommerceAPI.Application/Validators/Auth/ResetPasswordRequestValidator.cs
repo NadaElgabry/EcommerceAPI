@@ -3,10 +3,10 @@ using FluentValidation;
 
 namespace EcommerceAPI.Application.Validators.Auth
 {
-    public class ResetPasswordRequestValidator
-        : AbstractValidator<ResetPasswordRequest>
+    public class ChangePasswordRequestValidator
+        : AbstractValidator<ChangePasswordRequest>
     {
-        public ResetPasswordRequestValidator()
+        public ChangePasswordRequestValidator()
         {
             RuleFor(request => request.OldPassword)
                 .NotEmpty()
