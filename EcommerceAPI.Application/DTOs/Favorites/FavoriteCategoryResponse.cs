@@ -2,9 +2,8 @@
 {
     public class FavoriteCategoryResponse
     {
-        public int CategoryId { get; set; }
         public required string Name { get; set; }
-        public string slug { get; set; }
+        public string Slug { get; set; }
         public DateTime AddedAt { get; set; }
     }
 }

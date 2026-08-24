@@ -1,8 +1,8 @@
-﻿using System.Linq.Expressions;
-using EcommerceAPI.Application.Interfaces.Repositories;
+﻿using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
+using System.Linq.Expressions;
 
 namespace EcommerceAPI.Infrastructure.Persistence.Repositories
 {
@@ -66,10 +66,16 @@ namespace EcommerceAPI.Infrastructure.Persistence.Repositories
             Expression<Func<T, bool>> predicate,
             Expression<Func<T, TKey>> orderBy,
             int take,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
             CancellationToken cancellationToken = default)
         {
-            return await _dbSet
-                .Where(predicate)
+            IQueryable<T> query = _dbSet.Where(predicate);
+            if (include != null)
+            {
+                query = include(query);
+            }
+
+            return await query
                 .OrderByDescending(orderBy)
                 .Take(take)
                 .ToListAsync(cancellationToken);

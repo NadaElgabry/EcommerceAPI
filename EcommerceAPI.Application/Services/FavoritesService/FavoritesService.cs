@@ -138,7 +138,7 @@ namespace EcommerceAPI.Application.Services.FavoritesService
             var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid, cancellationToken)
                 ?? throw new NotFoundException("User not found.");
 
-            if (pageSize <= 0 || pageSize > 50) pageSize = 20;
+                if (pageSize <= 0 || pageSize > 50) pageSize = 20;
 
             var favorites = await _favoriteProductRepository.GetPagedAsync(
                 predicate: string.IsNullOrWhiteSpace(cursor)
@@ -156,11 +156,10 @@ namespace EcommerceAPI.Application.Services.FavoritesService
             {
                 Data = favorites.Select(f => new FavoriteProductResponse
                 {
-                    ProductId = f.ProductId,
                     Slug = f.Product.Slug,
                     Name = f.Product.Name,
                     Price = f.Product.Price,
-                    ProductImage = f.Product.ProductImage,
+                    ProductImageUrl = f.Product.ProductImage,
                     AddedAt = f.AddedAt
                 }).ToList(),
                 Pagination = new CursorPageInfo
@@ -184,9 +183,8 @@ namespace EcommerceAPI.Application.Services.FavoritesService
 
             return favorites.Select(f => new FavoriteCategoryResponse
             {
-                CategoryId = f.CategoryId,
                 Name = f.Category.Name,
-                slug = f.Category.Slug,
+                Slug = f.Category.Slug,
                 AddedAt = f.AddedAt
             }).ToList();
         }

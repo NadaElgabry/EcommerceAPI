@@ -3,11 +3,11 @@ using EcommerceAPI.Application.DTOs.Common;
 using EcommerceAPI.Application.DTOs.UserActivities;
 using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces;
-using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace EcommerceAPI.Application.Services.UserService
 {
@@ -50,6 +50,7 @@ namespace EcommerceAPI.Application.Services.UserService
             var activities = await _activityRepository.GetPagedDescendingAsync(
                 predicate: a => (!userId.HasValue || a.UserId == user.Id) &&
                                 (!cursorId.HasValue || a.Id < cursorId),
+                include: q => q.Include(a => a.Product),
                 orderBy: a => a.Id,
                 take: pageSize + 1,
                 cancellationToken: cancellationToken);
@@ -61,10 +62,9 @@ namespace EcommerceAPI.Application.Services.UserService
             {
                 Data = activities.Select(a => new UserActivitiesResponse
                 {
-                    Id = a.Id,
-                    UserId = a.UserId,
+                    UserId = user.Guid,
                     ActionType = a.ActionType.ToString(),
-                    ProductId = a.ProductId,
+                    Slug = a.Product?.Slug,
                     Timestamp = a.Timestamp
                 }).ToList(),
                 Pagination = new CursorPageInfo

@@ -2,10 +2,9 @@
 {
     public class UserActivitiesResponse
     {
-        public int Id { get; set; }
-        public int UserId { get; set; }
+        public Guid UserId { get; set; }
         public string ActionType { get; set; } = string.Empty;
-        public int? ProductId { get; set; }
+        public string? Slug { get; set; }
         public DateTime Timestamp { get; set; }
     }
 }
