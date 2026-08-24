@@ -48,6 +48,20 @@ namespace EcommerceAPI.Infrastructure.Persistence.Repositories
             var entities = await _dbSet.Where(predicate).ToListAsync(cancellationToken);
             _dbSet.RemoveRange(entities);
         }
+        public async Task<List<T>> GetAllByAsync(
+            Expression<Func<T, bool>> predicate,
+            CancellationToken cancellationToken = default,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null)
+        {
+            IQueryable<T> query = _dbSet.Where(predicate);
+
+            if (include != null)
+            {
+                query = include(query);
+            }
+
+            return await query.ToListAsync(cancellationToken);
+        }
         public async Task<List<T>> GetPagedDescendingAsync<TKey>(
             Expression<Func<T, bool>> predicate,
             Expression<Func<T, TKey>> orderBy,
@@ -65,14 +79,22 @@ namespace EcommerceAPI.Infrastructure.Persistence.Repositories
             Expression<Func<T, bool>> predicate,
             Expression<Func<T, TKey>> orderBy,
             int take,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
             CancellationToken cancellationToken = default)
         {
-            return await _dbSet
-                .Where(predicate)
+            IQueryable<T> query = _dbSet.Where(predicate);
+
+            if (include != null)
+            {
+                query = include(query);
+            }
+
+            return await query
                 .OrderBy(orderBy)
                 .Take(take)
                 .ToListAsync(cancellationToken);
         }
+
         public async Task<List<T>> GetPageOffSetAsync<TKey>(
             Expression<Func<T, TKey>> orderBy,
             int take, int skip

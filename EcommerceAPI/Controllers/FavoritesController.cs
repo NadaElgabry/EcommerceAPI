@@ -1,4 +1,6 @@
 ﻿using EcommerceAPI.Application.Common;
+using EcommerceAPI.Application.DTOs.Common;
+using EcommerceAPI.Application.DTOs.Favorites;
 using EcommerceAPI.Application.DTOs.Product;
 using EcommerceAPI.Application.Interfaces.IServices;
 using Microsoft.AspNetCore.Authorization;
@@ -18,12 +20,14 @@ namespace EcommerceAPI.Controllers
             _favoritesService = favoritesService;
         }
 
-        /*        
-        [HttpGet("products")]
-        public async Task<ActionResult<List<ProductResponse>>> GetFavoriteProducts(CancellationToken cancellationToken)
-        {
-        }
-        */
+[HttpGet("products")]
+public async Task<IActionResult> GetFavoriteProducts(
+    [FromQuery] string? cursor, [FromQuery] int pageSize, CancellationToken cancellationToken)
+{
+    var result = await _favoritesService.GetFavoriteProductsAsync(cursor, pageSize, cancellationToken);
+    return Ok(ApiResponse<CursorPagedResult<FavoriteProductResponse>>.SuccessResponse(
+        message: "Favorite products retrieved successfully.", statusCode: 200, data: result));
+}
 
         [HttpPost("products/{slug}")]
         public async Task<IActionResult> AddFavoriteProduct([FromRoute] string slug, CancellationToken cancellationToken)
@@ -43,12 +47,13 @@ namespace EcommerceAPI.Controllers
                 statusCode: 200));
         }
 
-        /*        
         [HttpGet("categories")]
-        public async Task<ActionResult<List<ProductResponse>>> GetFavoriteCategories(CancellationToken cancellationToken)
+        public async Task<IActionResult> GetFavoriteCategories(CancellationToken cancellationToken)
         {
+            var result = await _favoritesService.GetFavoriteCategoriesAsync(cancellationToken);
+            return Ok(ApiResponse<List<FavoriteCategoryResponse>>.SuccessResponse(
+                message: "Favorite categories retrieved successfully.", statusCode: 200, data: result));
         }
-        */
 
         [HttpPost("categories/{slug}")]
         public async Task<IActionResult> AddFavoriteCategory([FromRoute] string slug, CancellationToken cancellationToken)

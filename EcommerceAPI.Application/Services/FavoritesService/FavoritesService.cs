@@ -91,45 +91,6 @@ namespace EcommerceAPI.Application.Services.FavoritesService
                 user.Id, product.Id, UserActionType.RemovedFromFavorites, cancellationToken);
         }
 
-/*        public async Task<CursorPagedResult<FavoriteProductResponse>> GetFavoriteProductsAsync(
-            string? cursor, int pageSize, CancellationToken cancellationToken)
-        {
-            var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid, cancellationToken)
-                ?? throw new NotFoundException("User not found.");
-            if (pageSize <= 0 || pageSize > 50) pageSize = 20;
-
-            var favorites = await _favoriteProductRepository.GetPagedAsync(
-                predicate: string.IsNullOrWhiteSpace(cursor)
-                    ? f => f.UserId == user.Id
-                    : f => f.UserId == user.Id && f.Id < CursorHelper.Decode<int>(cursor),
-                orderBy: f => f.Id,
-                include: query => query.Include(f => f.Product),
-                take: pageSize + 1,
-                cancellationToken: cancellationToken);
-
-            bool hasNext = favorites.Count > pageSize;
-            if (hasNext) favorites = favorites.Take(pageSize).ToList();
-
-            return new CursorPagedResult<FavoriteProductResponse>
-            {
-                Data = favorites.Select(f => new FavoriteProductResponse
-                {
-                    ProductId = f.ProductId,
-                    Slug = f.Product.Slug,
-                    Name = f.Product.Name,
-                    Price = f.Product.Price,
-                    ProductImage = f.Product.ProductImage,
-                    AddedAt = f.AddedAt
-                }).ToList(),
-                Pagination = new CursorPageInfo
-                {
-                    NextCursor = hasNext ? CursorHelper.Encode(favorites[^1].Id) : null,
-                    HasNext = hasNext,
-                    PageSize = pageSize
-                }
-            };
-        }
-*/
         public async Task AddFavoriteCategoryAsync(string slug, CancellationToken cancellationToken)
         {
             var category = await _categoryRepository.GetByAsync(c => c.Slug == slug, cancellationToken)
@@ -172,22 +133,63 @@ namespace EcommerceAPI.Application.Services.FavoritesService
             }, cancellationToken);
         }
 
-        /*        public async Task<List<FavoriteCategoryResponse>> GetFavoriteCategoriesAsync(CancellationToken cancellationToken)
+        public async Task<CursorPagedResult<FavoriteProductResponse>> GetFavoriteProductsAsync(
+            string? cursor, int pageSize, CancellationToken cancellationToken)
+        {
+            var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid, cancellationToken)
+                ?? throw new NotFoundException("User not found.");
+
+            if (pageSize <= 0 || pageSize > 50) pageSize = 20;
+
+            var favorites = await _favoriteProductRepository.GetPagedAsync(
+                predicate: string.IsNullOrWhiteSpace(cursor)
+                    ? f => f.UserId == user.Id
+                    : f => f.UserId == user.Id && f.Id < CursorHelper.Decode<int>(cursor),
+                orderBy: f => f.Id,
+                include: query => query.Include(f => f.Product),
+                take: pageSize + 1,
+                cancellationToken: cancellationToken);
+
+            bool hasNext = favorites.Count > pageSize;
+            if (hasNext) favorites = favorites.Take(pageSize).ToList();
+
+            return new CursorPagedResult<FavoriteProductResponse>
+            {
+                Data = favorites.Select(f => new FavoriteProductResponse
                 {
-                    var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid, cancellationToken)
-                        ?? throw new NotFoundException("User not found.");
+                    ProductId = f.ProductId,
+                    Slug = f.Product.Slug,
+                    Name = f.Product.Name,
+                    Price = f.Product.Price,
+                    ProductImage = f.Product.ProductImage,
+                    AddedAt = f.AddedAt
+                }).ToList(),
+                Pagination = new CursorPageInfo
+                {
+                    NextCursor = hasNext ? CursorHelper.Encode(favorites[^1].Id) : null,
+                    HasNext = hasNext,
+                    PageSize = pageSize
+                }
+            };
+        }
 
-                    var favorites = await _favoriteCategoryRepository.GetAllByAsync(
-                        f => f.UserId == user.Id,
-                        cancellationToken,
-                        include: query => query.Include(f => f.Category));
+        public async Task<List<FavoriteCategoryResponse>> GetFavoriteCategoriesAsync(CancellationToken cancellationToken)
+        {
+            var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid, cancellationToken)
+                ?? throw new NotFoundException("User not found.");
 
-                    return favorites.Select(f => new FavoriteCategoryResponse
-                    {
-                        CategoryId = f.CategoryId,
-                        Name = f.Category.Name,
-                        AddedAt = f.AddedAt
-                    }).ToList();
-                }*/
+            var favorites = await _favoriteCategoryRepository.GetAllByAsync(
+                f => f.UserId == user.Id,
+                cancellationToken,
+                include: query => query.Include(f => f.Category));
+
+            return favorites.Select(f => new FavoriteCategoryResponse
+            {
+                CategoryId = f.CategoryId,
+                Name = f.Category.Name,
+                slug = f.Category.Slug,
+                AddedAt = f.AddedAt
+            }).ToList();
+        }
     }
 }
