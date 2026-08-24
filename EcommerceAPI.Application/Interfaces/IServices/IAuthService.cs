@@ -66,7 +66,6 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         public Task<AuthResponse> Refresh(
             RefreshTokenRequest request, CancellationToken cancellationToken = default);
 
-
         /// <summary>
         /// Executes the logout use case.
         /// </summary>
