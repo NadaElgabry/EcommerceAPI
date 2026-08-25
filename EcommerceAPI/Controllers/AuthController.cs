@@ -80,7 +80,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> ForgotPassword([FromBody] EmailRequest request, CancellationToken cancellationToken)
         {
             await _authService.ForgotPasswordAsync(request, cancellationToken);
             return Ok(ApiResponse<string>.SuccessResponse(

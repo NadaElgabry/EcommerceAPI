@@ -80,7 +80,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns></returns>
         public Task ForgotPasswordAsync(
-            ForgotPasswordRequest request, CancellationToken cancellationToken = default);
+            EmailRequest request, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Verifies the reset code provided by the user.
