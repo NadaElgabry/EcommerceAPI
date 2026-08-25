@@ -5,6 +5,7 @@ using IdempotentAPI.Filters;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authorization;
 
 namespace EcommerceAPI.Controllers
 {
@@ -21,13 +22,30 @@ namespace EcommerceAPI.Controllers
 
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> Login(
+            [FromBody] LoginRequest request,
+            CancellationToken cancellationToken)
         {
-            var result = await _authService.Login(request, cancellationToken);
+             var result = await _authService.Login(request, cancellationToken);
             return Ok(ApiResponse<AuthResponse>.SuccessResponse(message: "Login successful", statusCode: 200, data: result));
         }
 
-        [Idempotent(ExpiresInMilliseconds = 10 * 1000)]
+        [Authorize]
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ResetPassword(
+            [FromBody] ChangePasswordRequest request,
+            CancellationToken cancellationToken)
+        {
+           
+
+            await _authService.ChangePasswordAsync(
+                request,
+                cancellationToken
+            );
+
+            return StatusCode(204, ApiResponse<string>.SuccessResponse(message: "Password changed successfully", statusCode: 204));
+        }
+
         [HttpPost("register")]
         public async Task<IActionResult> Register(
             [FromBody] RegisterRequest request,
@@ -80,7 +98,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> ForgotPassword([FromBody] EmailRequest request, CancellationToken cancellationToken)
         {
             await _authService.ForgotPasswordAsync(request, cancellationToken);
             return Ok(ApiResponse<string>.SuccessResponse(

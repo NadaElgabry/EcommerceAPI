@@ -20,7 +20,7 @@ namespace EcommerceAPI.Infrastructure.Persistence.Repositories
         {
             await _dbSet.AddAsync(entity, cancellationToken);
         }
-        
+
         /// <inheritdoc />
         public async Task<bool> ExistByAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
         {
@@ -36,7 +36,7 @@ namespace EcommerceAPI.Infrastructure.Persistence.Repositories
         {
             IQueryable<T> query = _context.Set<T>();
 
-            if (include!= null)
+            if (include != null)
             {
                 query = include(query);
             }
