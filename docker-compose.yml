@@ -39,19 +39,6 @@ services:
     networks:
       - ecommerce-network
 
-  kibana:
-    image: docker.elastic.co/kibana/kibana:9.5.2
-    container_name: ecommerce-kibana
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-    environment:
-      ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
-    ports:
-      - "5601:5601"
-    networks:
-      - ecommerce-network
-
   api:
     image: ${IMAGE}
     container_name: ecommerce-api
