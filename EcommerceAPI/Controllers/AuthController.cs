@@ -27,7 +27,6 @@ namespace EcommerceAPI.Controllers
             return Ok(ApiResponse<AuthResponse>.SuccessResponse(message: "Login successful", statusCode: 200, data: result));
         }
 
-        [Idempotent(ExpiresInMilliseconds = 10 * 1000)]
         [HttpPost("register")]
         public async Task<IActionResult> Register(
             [FromBody] RegisterRequest request,
