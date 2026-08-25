@@ -27,7 +27,7 @@ namespace EcommerceAPI.Tests.Services.Auth
 
             _refreshTokenRepositoryMock
                 .Setup(repository =>
-                    repository.GetAllByAsync(
+                    repository.GetAllAsync(
                         It.IsAny<Expression<Func<RefreshToken, bool>>>(),
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<RefreshToken>());
@@ -78,7 +78,7 @@ namespace EcommerceAPI.Tests.Services.Auth
 
             _refreshTokenRepositoryMock
                 .Setup(repository =>
-                    repository.GetAllByAsync(
+                    repository.GetAllAsync(
                         It.IsAny<Expression<Func<RefreshToken, bool>>>(),
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(

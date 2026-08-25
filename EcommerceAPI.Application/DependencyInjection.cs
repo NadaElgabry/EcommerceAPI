@@ -11,6 +11,9 @@ using EcommerceAPI.Application.Validators;
 using EcommerceAPI.Application.Validators.Product;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using EcommerceAPI.Application.Services.CategoryService;
+using EcommerceAPI.Application.Services.ProductService;
+using EcommerceAPI.Application.Services.FavoritesService;
 
 namespace EcommerceAPI.Application;
 
@@ -29,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<ICategoryMapper, CategoryMapper>();
         services.AddScoped<ITagMapper, TagMapper>();
         services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<IFavoritesService, FavoritesService>();
         services.AddScoped<IUserActivityService, UserActivityService>();
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();

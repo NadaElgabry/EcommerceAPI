@@ -4,6 +4,7 @@ using EcommerceAPI.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EcommerceAPI.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260823023358_FavoritesConfigs")]
+    partial class FavoritesConfigs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -279,14 +282,9 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("Slug")
+                    b.HasIndex("Name")
                         .IsUnique();
 
                     b.ToTable("Tags");
@@ -295,20 +293,17 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         new
                         {
                             Id = 1,
-                            Name = "New Arrival",
-                            Slug = "new-arrival"
+                            Name = "New Arrival"
                         },
                         new
                         {
                             Id = 2,
-                            Name = "Best Seller",
-                            Slug = "best-seller"
+                            Name = "Bestseller"
                         },
                         new
                         {
                             Id = 3,
-                            Name = "Sale",
-                            Slug = "sale"
+                            Name = "Sale"
                         });
                 });
 

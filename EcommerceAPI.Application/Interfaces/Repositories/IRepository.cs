@@ -52,11 +52,11 @@ namespace EcommerceAPI.Application.Interfaces.Repositories
             int take,
             Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
             CancellationToken cancellationToken = default);
-
         public Task<List<T>> GetPagedDescendingAsync<TKey>(
             Expression<Func<T, bool>> predicate,
             Expression<Func<T, TKey>> orderBy,
             int take,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
             CancellationToken cancellationToken = default);
 
         Task<List<T>> GetPageOffSetAsync<TKey>(
