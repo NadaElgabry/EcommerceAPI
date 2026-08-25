@@ -8,7 +8,7 @@ namespace EcommerceAPI.Application.Validators.Auth
 {
     public class ResetPasswordRequestValidator : AbstractValidator<ResetPasswordRequest>
     {
-        public ResetPasswordRequestValidator() 
+        public ResetPasswordRequestValidator()
         {
             RuleFor(request => request.NewPassword)
                .NotEmpty()

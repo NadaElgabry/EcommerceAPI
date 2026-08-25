@@ -5,6 +5,7 @@ using IdempotentAPI.Filters;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authorization;
 
 namespace EcommerceAPI.Controllers
 {
@@ -21,10 +22,28 @@ namespace EcommerceAPI.Controllers
 
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> Login(
+            [FromBody] LoginRequest request,
+            CancellationToken cancellationToken)
         {
-            var result = await _authService.Login(request, cancellationToken);
+             var result = await _authService.Login(request, cancellationToken);
             return Ok(ApiResponse<AuthResponse>.SuccessResponse(message: "Login successful", statusCode: 200, data: result));
+        }
+
+        [Authorize]
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ResetPassword(
+            [FromBody] ChangePasswordRequest request,
+            CancellationToken cancellationToken)
+        {
+           
+
+            await _authService.ChangePasswordAsync(
+                request,
+                cancellationToken
+            );
+
+            return StatusCode(204, ApiResponse<string>.SuccessResponse(message: "Password changed successfully", statusCode: 204));
         }
 
         [HttpPost("register")]
