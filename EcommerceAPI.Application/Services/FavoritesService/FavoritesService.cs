@@ -62,11 +62,13 @@ namespace EcommerceAPI.Application.Services.FavoritesService
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
                 await _favoriteProductRepository.AddAsync(favorite, cancellationToken);
+
+                await _userActivityService.LogActivityAsync(
+                  user.Id, product.Id, UserActionType.AddedToFavorites, cancellationToken);
+
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
 
-            await _userActivityService.LogActivityAsync(
-                user.Id, product.Id, UserActionType.AddedToFavorites, cancellationToken);
         }
 
         public async Task RemoveFavoriteProductAsync(string productSlug, CancellationToken cancellationToken)
@@ -83,11 +85,13 @@ namespace EcommerceAPI.Application.Services.FavoritesService
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
                 _favoriteProductRepository.Delete(favorite);
+
+                await _userActivityService.LogActivityAsync(
+                    user.Id, product.Id, UserActionType.RemovedFromFavorites, cancellationToken);
+
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
 
-            await _userActivityService.LogActivityAsync(
-                user.Id, product.Id, UserActionType.RemovedFromFavorites, cancellationToken);
         }
 
         public async Task AddFavoriteCategoryAsync(string slug, CancellationToken cancellationToken)
