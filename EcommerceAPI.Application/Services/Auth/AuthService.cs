@@ -188,7 +188,7 @@ namespace EcommerceAPI.Application.Services.Auth
                 ?? throw new UnauthorizedException("Invalid credentials");
 
             if(!user.IsActive)
-                throw new UnauthorizedException("User is not Activated");
+                throw new ForbiddenException("User is not Activated");
 
             if (!_passwordHasher.Verify(request.Password, user.HashedPassword))
                 throw new UnauthorizedException("Invalid credentials");
