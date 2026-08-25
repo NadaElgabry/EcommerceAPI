@@ -31,7 +31,7 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             var request = new SearchRequest
             {
                 SearchText = queryParams.Search,
-                SearchFields = new[] { "name^3", "name.ngram^1", "brand^2", "tags^1.5", "description" },
+                SearchFields = _settings.ProductSearchFields,
                 SortField = ResolveSortField(queryParams.SortBy, hasSearchText),
                 SortDir = string.Equals(queryParams.SortDir, "asc", StringComparison.OrdinalIgnoreCase)
                     ? SearchSortDirection.Asc

@@ -11,6 +11,7 @@ using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Application.Mappers.Mappings;
 using EcommerceAPI.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace EcommerceAPI.Application.Services.TagService
 {
@@ -25,9 +26,12 @@ namespace EcommerceAPI.Application.Services.TagService
 
         private readonly IRepository<Product> _productRepository;
 
+        private readonly ILogger<TagService> _logger;
+
         public TagService(IRepository<Tag> tagRepository, ITagMapper tagMapper,
             ISlugGenerator slugGenerator, IUnitOfWork unitOfWork,
-            IProductIndexingService indexingService, IRepository<Product> productRepository)
+            IProductIndexingService indexingService, IRepository<Product> productRepository,
+            ILogger<TagService> logger)
         {
             _tagRepository = tagRepository;
             _tagMapper = tagMapper;
@@ -35,6 +39,7 @@ namespace EcommerceAPI.Application.Services.TagService
             _unitOfWork = unitOfWork;
             _indexingService = indexingService;
             _productRepository = productRepository;
+            _logger = logger;
         }
 
         public async Task<TagResponse> CreateTagAsync(CreateTagRequest request, CancellationToken cancellationToken)
@@ -111,7 +116,14 @@ CancellationToken cancellationToken = default)
 
             foreach (var product in affectedProducts)
             {
-                await _indexingService.IndexProductAsync(product, cancellationToken);
+                try
+                {
+                    await _indexingService.IndexProductAsync(product, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to reindex product {ProductId} after tag rename.", product.Id);
+                }
             }
         }
 
