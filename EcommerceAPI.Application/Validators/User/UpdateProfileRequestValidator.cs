@@ -10,14 +10,20 @@ namespace EcommerceAPI.Application.Validators
         public UpdateProfileRequestValidator()
         {
             RuleFor(request => request.FirstName)
+                .NotEmpty()
+                .WithMessage("First name is required.")
                 .MaximumLength(50)
-                .WithMessage("First name cannot exceed 50 characters.")
-                .When(request => request.FirstName != null);
+                .WithMessage(
+                    "First name cannot exceed 50 characters."
+                ).When(request => request.FirstName != null);
 
             RuleFor(request => request.LastName)
+                .NotEmpty()
+                .WithMessage("Last name is required.")
                 .MaximumLength(50)
-                .WithMessage("Last name cannot exceed 50 characters.")
-                .When(request => request.LastName != null);
+                .WithMessage(
+                    "Last name cannot exceed 50 characters."
+                ).When(request => request.LastName != null);
 
             RuleFor(request => request.PhoneNumber)
                 .MinimumLength(10)
