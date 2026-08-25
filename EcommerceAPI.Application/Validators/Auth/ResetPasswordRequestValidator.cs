@@ -1,32 +1,34 @@
 ﻿using EcommerceAPI.Application.DTOs.Auth;
 using FluentValidation;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace EcommerceAPI.Application.Validators.Auth
 {
-    public class ChangePasswordRequestValidator
-        : AbstractValidator<ChangePasswordRequest>
+    public class ResetPasswordRequestValidator : AbstractValidator<ResetPasswordRequest>
     {
-        public ChangePasswordRequestValidator()
+        public ResetPasswordRequestValidator()
         {
-            RuleFor(request => request.OldPassword)
-                .NotEmpty()
-                .WithMessage("Old password is required.");
-
             RuleFor(request => request.NewPassword)
-                .NotEmpty()
-                .WithMessage("New password is required.")
-                .MinimumLength(8)
-                .WithMessage("New password must be at least 8 characters long.")
-                .Matches(@"\d")
-                .WithMessage("New password must contain at least one number.")
-                .Matches(@"[^a-zA-Z0-9\s]")
-                .WithMessage("New password must contain at least one special character.");
-
-            RuleFor(request => request.ConfirmNewPassword)
-                .NotEmpty()
-                .WithMessage("Confirm new password is required.")
-                .Equal(request => request.NewPassword)
-                .WithMessage("New password and confirmation password must match.");
+               .NotEmpty()
+               .WithMessage("Password is required.")
+               .MinimumLength(8)
+               .WithMessage(
+                   "Password must contain at least 8 characters."
+               )
+               .MaximumLength(100)
+               .WithMessage(
+                   "Password cannot exceed 100 characters."
+               )
+               .Matches(@"[0-9]")
+               .WithMessage(
+                   "Password must contain at least one number."
+               )
+               .Matches(@"[^a-zA-Z0-9]")
+               .WithMessage(
+                   "Password must contain at least one special character."
+               );
         }
     }
 }
