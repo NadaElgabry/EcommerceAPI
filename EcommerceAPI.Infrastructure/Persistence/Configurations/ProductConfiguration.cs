@@ -26,7 +26,7 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
 
 
             builder.HasOne(p => p.Category)
-                .WithMany()
+                .WithMany(c => c.Products)
                 .HasForeignKey(p => p.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
 

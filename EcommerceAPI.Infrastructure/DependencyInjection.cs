@@ -3,6 +3,7 @@ using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Email;
 using EcommerceAPI.Application.Interfaces.Image;
 using EcommerceAPI.Application.Interfaces.Repositories;
+using EcommerceAPI.Application.Interfaces.Search;
 using EcommerceAPI.Application.Interfaces.Slug;
 using EcommerceAPI.Infrastructure.Contexts;
 using EcommerceAPI.Infrastructure.Persistence;
@@ -10,8 +11,11 @@ using EcommerceAPI.Infrastructure.Persistence.Repositories;
 using EcommerceAPI.Infrastructure.Services.Auth;
 using EcommerceAPI.Infrastructure.Services.Email;
 using EcommerceAPI.Infrastructure.Services.Mail;
+using EcommerceAPI.Infrastructure.Services.Search;
+using EcommerceAPI.Infrastructure.Services.Search.Indexing;
 using EcommerceAPI.Infrastructure.Services.Slug;
 using EcommerceAPI.Infrastructure.Settings;
+using Elastic.Clients.Elasticsearch;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -44,6 +48,23 @@ public static class DependencyInjection
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.Configure<ElasticsearchSettings>(configuration.GetSection("Elasticsearch"));
+
+        var esSettings = configuration.GetSection("Elasticsearch").Get<ElasticsearchSettings>()
+            ?? throw new InvalidOperationException("Elasticsearch settings are not configured.");
+
+        var esClientSettings = new ElasticsearchClientSettings(new Uri(esSettings.Url))
+            .MaximumRetries(3)
+            .RequestTimeout(TimeSpan.FromMinutes(2))
+            .DefaultIndex(esSettings.ProductsIndex);
+
+        services.AddSingleton(new ElasticsearchClient(esClientSettings));
+
+        services.AddSingleton(typeof(ISearchService<>), typeof(ElasticSearchService<>));
+
+        services.AddScoped<IProductIndexingService, ProductIndexingService>();
+
+        services.AddScoped<IProductSearchService, ElasticProductSearchService>();
         services.AddJwtAuthentication(configuration);
 
         return services;
