@@ -4,6 +4,7 @@ using EcommerceAPI.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EcommerceAPI.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260822125459_SyncPendingModelChanges")]
+    partial class SyncPendingModelChanges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -73,60 +76,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("EcommerceAPI.Domain.Entities.FavoriteCategory", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("AddedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("UserId", "CategoryId")
-                        .IsUnique();
-
-                    b.ToTable("FavoriteCategories");
-                });
-
-            modelBuilder.Entity("EcommerceAPI.Domain.Entities.FavoriteProduct", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("AddedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductId");
-
-                    b.HasIndex("UserId", "ProductId")
-                        .IsUnique();
-
-                    b.ToTable("FavoriteProducts");
-                });
-
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.Product", b =>
                 {
                     b.Property<int>("Id")
@@ -143,6 +92,9 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CategoryId1")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreationDate")
@@ -174,6 +126,8 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("CategoryId1");
 
                     b.HasIndex("Slug")
                         .IsUnique();
@@ -496,51 +450,17 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.ToTable("VerificationTokens");
                 });
 
-            modelBuilder.Entity("EcommerceAPI.Domain.Entities.FavoriteCategory", b =>
-                {
-                    b.HasOne("EcommerceAPI.Domain.Entities.Category", "Category")
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("EcommerceAPI.Domain.Entities.User", "User")
-                        .WithMany("PreferredCategories")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Category");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("EcommerceAPI.Domain.Entities.FavoriteProduct", b =>
-                {
-                    b.HasOne("EcommerceAPI.Domain.Entities.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("EcommerceAPI.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Product");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.Product", b =>
                 {
                     b.HasOne("EcommerceAPI.Domain.Entities.Category", "Category")
-                        .WithMany("Products")
+                        .WithMany()
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("EcommerceAPI.Domain.Entities.Category", null)
+                        .WithMany("Products")
+                        .HasForeignKey("CategoryId1");
 
                     b.Navigation("Category");
                 });
@@ -600,6 +520,25 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EcommerceAPI.Domain.Entities.UserCategory", b =>
+                {
+                    b.HasOne("EcommerceAPI.Domain.Entities.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EcommerceAPI.Domain.Entities.User", "User")
+                        .WithMany("PreferredCategories")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
 
                     b.Navigation("User");
                 });

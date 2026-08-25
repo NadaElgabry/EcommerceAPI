@@ -19,11 +19,46 @@ services:
     networks:
       - ecommerce-network
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.5.2
+    container_name: ecommerce-elasticsearch
+    environment:
+      discovery.type: "single-node"
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    networks:
+      - ecommerce-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.5.2
+    container_name: ecommerce-kibana
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
+    ports:
+      - "5601:5601"
+    networks:
+      - ecommerce-network
+
   api:
     image: ${IMAGE}
     container_name: ecommerce-api
     depends_on:
       sqlserver:
+        condition: service_healthy
+      elasticsearch:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
@@ -41,6 +76,9 @@ services:
       EmailSettings__Password: "${MAIL_PASSWORD}"
       EmailSettings__SenderName: "${MAIL_SENDER_NAME}"
       EmailSettings__SenderEmail: "${MAIL_SENDER_EMAIL}"
+
+      Elasticsearch__Uri: "http://elasticsearch:9200"
+      Elasticsearch__ProductsIndex: "products"
     ports:
       - "5223:8080"
     volumes:
@@ -60,6 +98,7 @@ services:
 
 volumes:
   sqlserver-data:
+  es-data:
 
 networks:
   ecommerce-network:

@@ -42,13 +42,13 @@ namespace EcommerceAPI.Application.Interfaces.Repositories
         /// </summary>
         /// <param name="entity">The entity to update.</param>
         /// 
-        Task<List<T>> GetAllByAsync(
+        Task<List<T>> GetAllAsync(
+        Expression<Func<T, bool>>? predicate = null,
+        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
+        CancellationToken cancellationToken = default);
+        public Task<List<T>> GetPagedAsync<TKey>(
             Expression<Func<T, bool>> predicate,
-            CancellationToken cancellationToken = default,
-            Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null);
-        Task<List<T>> GetPagedAsync<TKey>(
-            Expression<Func<T, bool>> predicate,
-            Expression<Func<T, TKey>> orderBy,
+            Expression<Func<T, TKey>> orderBy,           
             int take,
             Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
             CancellationToken cancellationToken = default);
@@ -59,11 +59,12 @@ namespace EcommerceAPI.Application.Interfaces.Repositories
             Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
             CancellationToken cancellationToken = default);
 
-        public Task<List<T>> GetPageOffSetAsync<TKey>(
+        Task<List<T>> GetPageOffSetAsync<TKey>(
             Expression<Func<T, TKey>> orderBy,
-            int take, int skip
-            , CancellationToken cancellationToken = default);
-
+            int take,
+            int skip,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>>? include=null,
+            CancellationToken cancellationToken = default);
         public Task<long> GetCountAsync(CancellationToken cancellationToken = default);
 
         public void Update(T entity);

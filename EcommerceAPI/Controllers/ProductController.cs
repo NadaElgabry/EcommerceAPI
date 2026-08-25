@@ -65,6 +65,16 @@ namespace EcommerceAPI.Controllers
                     data: result));
         }
 
+        [HttpGet]
+        public async Task<IActionResult> SearchProducts([FromQuery] ProductQueryParamsRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _productService.SearchProductsAsync(request, cancellationToken);
+            return Ok(ApiResponse<CursorPagedResult<ProductSummaryResponse>>.SuccessResponse(
+                message: "Products retrieved successfully",
+                statusCode:200,
+                data:result));
+        }
+
         [HttpDelete("{slug}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteProduct(
