@@ -43,10 +43,12 @@ namespace EcommerceAPI.Application.Services.UserService
             if (pageSize <= 0 || pageSize > 100) pageSize = 20;
 
             int? cursorId = string.IsNullOrWhiteSpace(cursor) ? null : CursorHelper.Decode<int>(cursor);
-            
-            var user = await _userRepository.GetByAsync(u => u.Guid == userId, cancellationToken)
-                ?? throw new NotFoundException("User not found.");
-
+            User? user = null;
+            if (userId.HasValue)
+            {
+                user = await _userRepository.GetByAsync(u => u.Guid == userId, cancellationToken)
+                    ?? throw new NotFoundException("User not found.");
+            }
             var activities = await _activityRepository.GetPagedDescendingAsync(
                 predicate: a => (!userId.HasValue || a.UserId == user.Id) &&
                                 (!cursorId.HasValue || a.Id < cursorId),
