@@ -441,21 +441,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.ToTable("UserAddresses");
                 });
 
-            modelBuilder.Entity("EcommerceAPI.Domain.Entities.UserCategory", b =>
-                {
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("int");
-
-                    b.HasKey("UserId", "CategoryId");
-
-                    b.HasIndex("CategoryId");
-
-                    b.ToTable("UserCategories");
-                });
-
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.VerificationToken", b =>
                 {
                     b.Property<int>("Id")

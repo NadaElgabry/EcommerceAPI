@@ -48,7 +48,7 @@ namespace EcommerceAPI.Infrastructure.Persistence.Repositories
             var entities = await _dbSet.Where(predicate).ToListAsync(cancellationToken);
             _dbSet.RemoveRange(entities);
         }
-        public async Task<List<T>> GetAllByAsync(
+        public async Task<List<T>> GetAllAsync(
             Expression<Func<T, bool>> predicate,
             CancellationToken cancellationToken = default,
             Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null)

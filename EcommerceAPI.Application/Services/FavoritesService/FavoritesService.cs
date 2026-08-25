@@ -180,10 +180,10 @@ namespace EcommerceAPI.Application.Services.FavoritesService
             var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid, cancellationToken)
                 ?? throw new NotFoundException("User not found.");
 
-            var favorites = await _favoriteCategoryRepository.GetAllByAsync(
-                f => f.UserId == user.Id,
-                cancellationToken,
-                include: query => query.Include(f => f.Category));
+            var favorites = await _favoriteCategoryRepository.GetAllAsync(
+                   f => f.UserId == user.Id,
+                   query => query.Include(f => f.Category),
+                   cancellationToken);
 
             return favorites.Select(f => new FavoriteCategoryResponse
             {
