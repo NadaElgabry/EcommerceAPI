@@ -101,10 +101,10 @@ namespace EcommerceAPI.Application.Services.CategoryService
             }
 
             var categories = await _categoryRepository.GetPagedAsync(
-                category => category.Id > lastCategoryId,
-                category => category.Id,
-                request.Limit + 1,
-                cancellationToken);
+                predicate: category => category.Id > lastCategoryId,
+                orderBy: category => category.Id,
+                take: request.Limit + 1,
+                cancellationToken: cancellationToken);
 
             var hasNext = categories.Count > request.Limit;
 
