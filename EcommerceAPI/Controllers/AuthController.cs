@@ -46,7 +46,6 @@ namespace EcommerceAPI.Controllers
             return StatusCode(204, ApiResponse<string>.SuccessResponse(message: "Password changed successfully", statusCode: 204));
         }
 
-        [Idempotent(ExpiresInMilliseconds = 10 * 1000)]
         [HttpPost("register")]
         public async Task<IActionResult> Register(
             [FromBody] RegisterRequest request,
@@ -99,7 +98,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> ForgotPassword([FromBody] EmailRequest request, CancellationToken cancellationToken)
         {
             await _authService.ForgotPasswordAsync(request, cancellationToken);
             return Ok(ApiResponse<string>.SuccessResponse(

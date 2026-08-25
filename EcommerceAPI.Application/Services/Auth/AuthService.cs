@@ -234,7 +234,7 @@ namespace EcommerceAPI.Application.Services.Auth
                 ?? throw new UnauthorizedException("Invalid credentials");
 
             if(!user.IsActive)
-                throw new UnauthorizedException("User is not Activated");
+                throw new ForbiddenException("User is not Activated");
 
             if (!_passwordHasher.Verify(request.Password, user.HashedPassword))
                 throw new UnauthorizedException("Invalid credentials");
@@ -327,7 +327,7 @@ namespace EcommerceAPI.Application.Services.Auth
         }
 
         /// <inheritdoc/>
-        public async Task ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default)
+        public async Task ForgotPasswordAsync(EmailRequest request, CancellationToken cancellationToken = default)
         {
             var normalizedEmail = request.Email.Trim().ToLowerInvariant();
 
