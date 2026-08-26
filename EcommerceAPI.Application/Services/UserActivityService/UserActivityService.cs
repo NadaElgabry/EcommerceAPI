@@ -50,12 +50,12 @@ namespace EcommerceAPI.Application.Services.UserService
                     ?? throw new NotFoundException("User not found.");
             }
             var activities = await _activityRepository.GetPagedDescendingAsync(
-                predicate: a => (!userId.HasValue || a.UserId == user.Id) &&
-                                (!cursorId.HasValue || a.Id < cursorId),
-                include: q => q.Include(a => a.Product),
-                orderBy: a => a.Id,
-                take: pageSize + 1,
-                cancellationToken: cancellationToken);
+                            predicate: a => (!userId.HasValue || a.UserId == user.Id) &&
+                                            (!cursorId.HasValue || a.Id < cursorId),
+                            include: q => q.Include(a => a.Product).Include(a => a.User),
+                            orderBy: a => a.Id,
+                            take: pageSize + 1,
+                            cancellationToken: cancellationToken);
 
             bool hasNext = activities.Count > pageSize;
             if (hasNext) activities = activities.Take(pageSize).ToList();
