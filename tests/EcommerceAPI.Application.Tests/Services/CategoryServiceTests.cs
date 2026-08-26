@@ -1,4 +1,4 @@
-﻿/*using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using EcommerceAPI.Application.Common;
 using EcommerceAPI.Application.DTOs.Category;
 using EcommerceAPI.Application.Interfaces;
@@ -100,7 +100,7 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         3,
-                        It.IsAny<CancellationToken>()))
+                        cancellationToken:It.IsAny<CancellationToken>()))
                 .ReturnsAsync(categories);
 
             _categoryMapper
@@ -157,7 +157,7 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         3,
-                        It.IsAny<CancellationToken>()),
+                       cancellationToken: It.IsAny<CancellationToken>()),
                 Times.Once
             );
 
@@ -218,7 +218,7 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         21,
-                        It.IsAny<CancellationToken>()))
+                        cancellationToken: It.IsAny<CancellationToken>()))
                 .ReturnsAsync(categories);
 
             _categoryMapper
@@ -307,7 +307,7 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         3,
-                        It.IsAny<CancellationToken>()))
+                        cancellationToken: It.IsAny<CancellationToken>()))
                 .ReturnsAsync(categories);
 
             _categoryMapper
@@ -367,7 +367,7 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         21,
-                        It.IsAny<CancellationToken>()))
+                       cancellationToken: It.IsAny<CancellationToken>()))
                 .ReturnsAsync(
                     new List<DomainCategory>()
                 );
@@ -406,4 +406,4 @@ namespace EcommerceAPI.Application.Tests.Services
             );
         }
     }
-}*/
+}
