@@ -12,5 +12,9 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         public Task<CursorPagedResult<CategoryResponse>> GetCategoriesAsync(
             GetCategoriesRequest request,
             CancellationToken cancellationToken);
+
+        public Task DeleteCategoryAsync(
+            string slug,
+            CancellationToken cancellationToken);
     }
 }

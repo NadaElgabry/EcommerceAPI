@@ -10,6 +10,7 @@ using EcommerceAPI.Application.Interfaces.Slug;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Domain.Enums;
+using System.IO;
 
 namespace EcommerceAPI.Application.Services.CategoryService
 {
@@ -137,6 +138,34 @@ namespace EcommerceAPI.Application.Services.CategoryService
                     PageSize = categoryResponses.Count
                 }
             };
+        }
+
+        public async Task DeleteCategoryAsync(
+            string slug,
+            CancellationToken cancellationToken)
+        {
+            var category = await _categoryRepository.GetByAsync(
+                c => c.Slug == slug,
+                cancellationToken)
+                ?? throw new NotFoundException(
+                    $"Category '{slug}' not found.");
+
+            var fileName = Path.GetFileName(
+                category.ImageUrl);
+
+            _imageService.DeleteFile(
+                fileName,
+                ImageOwnerType.Category);
+
+            await _unitOfWork.ExecuteInTransactionAsync(
+                async () =>
+                {
+                    _categoryRepository.Delete(category);
+
+                    await _unitOfWork.SaveChangesAsync(
+                        cancellationToken);
+                },
+                cancellationToken);
         }
     }
 }

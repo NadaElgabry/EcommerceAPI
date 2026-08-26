@@ -56,5 +56,18 @@ namespace EcommerceAPI.Controllers
                         message: "Categories retrieved successfully.",
                         data: categories));
         }
+
+        [HttpDelete("{slug}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteCategory(
+            string slug,
+            CancellationToken cancellationToken)
+        {
+            await _categoryService.DeleteCategoryAsync(
+                slug,
+                cancellationToken);
+
+            return NoContent();
+        }
     }
 }
