@@ -30,9 +30,9 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
                 .HasMaxLength(50);
 
             builder.HasOne(o => o.User)
-                .WithMany()
-                .HasForeignKey(o => o.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
+                    .WithMany(u => u.Orders)
+                    .HasForeignKey(o => o.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasMany(o => o.Items)
                 .WithOne(i => i.order)

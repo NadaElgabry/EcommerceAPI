@@ -11,9 +11,9 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
             builder.HasKey(c => c.Id);
 
             builder.HasOne(c => c.User)
-                .WithOne()
-                .HasForeignKey<Cart>(c => c.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                    .WithOne(u => u.Cart)
+                    .HasForeignKey<Cart>(c => c.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasMany(c => c.Items)
                 .WithOne(i => i.Cart)

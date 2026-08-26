@@ -24,6 +24,8 @@ namespace EcommerceAPI.Domain.Entities
         public List<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
         public List<FavoriteCategory> PreferredCategories { get; set; } = new List<FavoriteCategory>();
         public List<VerificationToken> VerificationTokens { get; set; } = new List<VerificationToken>();
+        public Cart Cart { get; set; }
+        public List<Order> Orders { get; set; } = new List<Order>(); 
 
     }
 }
