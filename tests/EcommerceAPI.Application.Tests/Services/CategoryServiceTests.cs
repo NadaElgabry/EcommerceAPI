@@ -100,7 +100,7 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         3,
-                        cancellationToken:It.IsAny<CancellationToken>()))
+                        It.IsAny<CancellationToken>()))
                 .ReturnsAsync(categories);
 
             _categoryMapper
@@ -157,7 +157,7 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         3,
-                       cancellationToken: It.IsAny<CancellationToken>()),
+                        It.IsAny<CancellationToken>()),
                 Times.Once
             );
 
@@ -218,7 +218,7 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         21,
-                        cancellationToken: It.IsAny<CancellationToken>()))
+                        It.IsAny<CancellationToken>()))
                 .ReturnsAsync(categories);
 
             _categoryMapper
@@ -233,7 +233,9 @@ namespace EcommerceAPI.Application.Tests.Services
             );
 
             // Assert
-            Assert.Single(result.Data);
+            Assert.Single(
+                result.Data
+            );
 
             Assert.False(
                 result.Pagination.HasNext
@@ -246,6 +248,22 @@ namespace EcommerceAPI.Application.Tests.Services
             Assert.Equal(
                 1,
                 result.Pagination.PageSize
+            );
+
+            _categoryRepository.Verify(
+                repository =>
+                    repository.GetPagedAsync(
+                        It.IsAny<Expression<Func<DomainCategory, bool>>>(),
+                        It.IsAny<Expression<Func<DomainCategory, int>>>(),
+                        21,
+                        It.IsAny<CancellationToken>()),
+                Times.Once
+            );
+
+            _categoryMapper.Verify(
+                mapper =>
+                    mapper.toCategoryResponse(firstCategory),
+                Times.Once
             );
         }
 
@@ -307,7 +325,7 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         3,
-                        cancellationToken: It.IsAny<CancellationToken>()))
+                        It.IsAny<CancellationToken>()))
                 .ReturnsAsync(categories);
 
             _categoryMapper
@@ -349,6 +367,28 @@ namespace EcommerceAPI.Application.Tests.Services
             Assert.Null(
                 result.Pagination.NextCursor
             );
+
+            _categoryRepository.Verify(
+                repository =>
+                    repository.GetPagedAsync(
+                        It.IsAny<Expression<Func<DomainCategory, bool>>>(),
+                        It.IsAny<Expression<Func<DomainCategory, int>>>(),
+                        3,
+                        It.IsAny<CancellationToken>()),
+                Times.Once
+            );
+
+            _categoryMapper.Verify(
+                mapper =>
+                    mapper.toCategoryResponse(thirdCategory),
+                Times.Once
+            );
+
+            _categoryMapper.Verify(
+                mapper =>
+                    mapper.toCategoryResponse(fourthCategory),
+                Times.Once
+            );
         }
 
         [Fact]
@@ -367,7 +407,7 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         21,
-                       cancellationToken: It.IsAny<CancellationToken>()))
+                        It.IsAny<CancellationToken>()))
                 .ReturnsAsync(
                     new List<DomainCategory>()
                 );
@@ -396,6 +436,16 @@ namespace EcommerceAPI.Application.Tests.Services
             Assert.Equal(
                 0,
                 result.Pagination.PageSize
+            );
+
+            _categoryRepository.Verify(
+                repository =>
+                    repository.GetPagedAsync(
+                        It.IsAny<Expression<Func<DomainCategory, bool>>>(),
+                        It.IsAny<Expression<Func<DomainCategory, int>>>(),
+                        21,
+                        It.IsAny<CancellationToken>()),
+                Times.Once
             );
 
             _categoryMapper.Verify(
