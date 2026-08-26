@@ -5,10 +5,13 @@ using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Repositories;
+using EcommerceAPI.Application.Interfaces.Search;
 using EcommerceAPI.Application.Interfaces.Slug;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Application.Mappers.Mappings;
 using EcommerceAPI.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace EcommerceAPI.Application.Services.TagService
 {
@@ -19,12 +22,24 @@ namespace EcommerceAPI.Application.Services.TagService
         private readonly ISlugGenerator _slugGenerator;
         private readonly IUnitOfWork _unitOfWork;
 
-        public TagService(IRepository<Tag> tagRepository, ITagMapper tagMapper, ISlugGenerator slugGenerator, IUnitOfWork unitOfWork)
+        private readonly IProductIndexingService _indexingService;
+
+        private readonly IRepository<Product> _productRepository;
+
+        private readonly ILogger<TagService> _logger;
+
+        public TagService(IRepository<Tag> tagRepository, ITagMapper tagMapper,
+            ISlugGenerator slugGenerator, IUnitOfWork unitOfWork,
+            IProductIndexingService indexingService, IRepository<Product> productRepository,
+            ILogger<TagService> logger)
         {
             _tagRepository = tagRepository;
             _tagMapper = tagMapper;
             _slugGenerator = slugGenerator;
             _unitOfWork = unitOfWork;
+            _indexingService = indexingService;
+            _productRepository = productRepository;
+            _logger = logger;
         }
 
         public async Task<TagResponse> CreateTagAsync(CreateTagRequest request, CancellationToken cancellationToken)
@@ -94,6 +109,22 @@ CancellationToken cancellationToken = default)
                 _tagRepository.Update(tag);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
+            var affectedProducts = await _productRepository.GetAllAsync(
+             predicate: p => p.ProductTags.Any(pt => pt.TagId == tag.Id),
+             include: q => q.Include(p => p.Category).Include(p => p.ProductTags).ThenInclude(pt => pt.Tag),
+             cancellationToken: cancellationToken);
+
+            foreach (var product in affectedProducts)
+            {
+                try
+                {
+                    await _indexingService.IndexProductAsync(product, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to reindex product {ProductId} after tag rename.", product.Id);
+                }
+            }
         }
 
         public async Task DeleteTagAsync(string slug, CancellationToken cancellationToken)

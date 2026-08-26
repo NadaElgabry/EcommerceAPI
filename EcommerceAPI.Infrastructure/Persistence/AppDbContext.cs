@@ -19,7 +19,8 @@ namespace EcommerceAPI.Infrastructure.Contexts
         public DbSet<Category> Categories { get; set; }
         public DbSet<Tag> Tags { get; set; }
         public DbSet<ProductTag> ProductTags { get; set; }
-        public DbSet<UserCategory> UserCategories { get; set; }
+        public DbSet<FavoriteCategory> FavoriteCategories { get; set; }
+        public DbSet<FavoriteProduct> FavoriteProducts { get; set; }
         public DbSet<UserActivity> UserActivities { get; set; }
         protected override void OnModelCreating(
             ModelBuilder modelBuilder)

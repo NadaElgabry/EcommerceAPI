@@ -27,6 +27,7 @@ namespace EcommerceAPI.Application.Services.Auth
         private readonly ILogger<AuthService> _logger;
         private readonly IEmailService _emailService;
         private readonly IVerificationEmailTemplateProvider _templateProvider;
+        private readonly ICurrentUserService _currentUserService;
         public AuthService(
             IRepository<User> userRepository,
             IRepository<VerificationToken> verificationTokenRepository,
@@ -37,7 +38,8 @@ namespace EcommerceAPI.Application.Services.Auth
             IUnitOfWork unitOfWork,
             ILogger<AuthService> logger,
             IEmailService emailService,
-            IVerificationEmailTemplateProvider templateProvider)
+            IVerificationEmailTemplateProvider templateProvider,
+            ICurrentUserService currentUserService)
         {
             _userRepository = userRepository;
             _verificationTokenRepository = verificationTokenRepository;
@@ -49,6 +51,7 @@ namespace EcommerceAPI.Application.Services.Auth
             _logger = logger;
             _emailService = emailService;
             _templateProvider = templateProvider;
+            _currentUserService = currentUserService;
         }
 
         /// <inheritdoc />
@@ -104,7 +107,50 @@ namespace EcommerceAPI.Application.Services.Auth
             await SendVerificationEmailAsync(user, token.RawToken,
                 VerificationPurpose.EmailVerification, cancellationToken);
         }
+        public async Task ChangePasswordAsync(
+        ChangePasswordRequest request,
+        CancellationToken cancellationToken)
+        {
 
+            var user = await _userRepository.GetByAsync(
+                user => user.Guid == _currentUserService.UserGuid,
+                cancellationToken
+                ) ?? throw new NotFoundException("User not found.");
+
+
+            if (!_passwordHasher.Verify(request.OldPassword,user.HashedPassword))
+            {
+                throw new UnauthorizedException(
+                    "Invalid old password."
+                );
+            }
+
+            var newPasswordIsSameAsOld =
+                _passwordHasher.Verify(
+                    request.NewPassword,
+                    user.HashedPassword
+                );
+
+            if (newPasswordIsSameAsOld)
+            {
+                throw new BadRequestException(
+                    "New password must be different from the old password."
+                );
+            }
+
+            user.HashedPassword =
+                _passwordHasher.Hash(
+                    request.NewPassword
+                );
+
+            user.UpdatedAt = DateTime.UtcNow;
+
+            _userRepository.Update(user);
+
+            await _unitOfWork.SaveChangesAsync(
+                cancellationToken
+            );
+        }
         /// <inheritdoc />
         public async Task ResendEmailAsync(ResendEmailRequest request,
             CancellationToken cancellationToken = default)
@@ -188,7 +234,7 @@ namespace EcommerceAPI.Application.Services.Auth
                 ?? throw new UnauthorizedException("Invalid credentials");
 
             if(!user.IsActive)
-                throw new UnauthorizedException("User is not Activated");
+                throw new ForbiddenException("User is not Activated");
 
             if (!_passwordHasher.Verify(request.Password, user.HashedPassword))
                 throw new UnauthorizedException("Invalid credentials");
@@ -281,7 +327,7 @@ namespace EcommerceAPI.Application.Services.Auth
         }
 
         /// <inheritdoc/>
-        public async Task ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default)
+        public async Task ForgotPasswordAsync(EmailRequest request, CancellationToken cancellationToken = default)
         {
             var normalizedEmail = request.Email.Trim().ToLowerInvariant();
 

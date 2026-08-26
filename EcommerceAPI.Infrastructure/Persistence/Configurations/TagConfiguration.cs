@@ -14,16 +14,20 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(100);
 
-            builder.HasIndex(t => t.Name)
+            builder.Property(t => t.Slug)
+                .IsRequired()
+                .HasMaxLength(150);
+
+            builder.HasIndex(t => t.Slug)
                 .IsUnique();
 
             builder.HasIndex(t => t.Slug)
                 .IsUnique();
 
             builder.HasData(
-                new Tag { Id = 1, Name = "New Arrival",Slug = "new-arrival" },
-                new Tag { Id = 2, Name = "Bestseller", Slug="bestseller"},
-                new Tag { Id = 3, Name = "Sale", Slug="sale" }
+                new Tag { Id = 1, Name = "New Arrival" , Slug = "new-arrival" },
+                new Tag { Id = 2, Name = "Best Seller", Slug = "best-seller" },
+                new Tag { Id = 3, Name = "Sale" , Slug = "sale" }
                 );
         }
     }

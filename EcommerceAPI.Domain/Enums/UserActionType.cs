@@ -6,6 +6,8 @@
         AddToCart = 2,
         RemoveFromCart = 3,
         InitiateCheckout = 4,
-        PlaceOrder = 5
+        PlaceOrder = 5,
+        AddedToFavorites = 6,
+        RemovedFromFavorites =7
     }
 }
