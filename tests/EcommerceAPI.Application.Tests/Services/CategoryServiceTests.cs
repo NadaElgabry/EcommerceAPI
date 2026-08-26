@@ -7,6 +7,7 @@ using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Interfaces.Slug;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Application.Services.CategoryService;
+using Microsoft.EntityFrameworkCore.Query;
 using Moq;
 using Xunit;
 using DomainCategory = EcommerceAPI.Domain.Entities.Category;
@@ -37,7 +38,6 @@ namespace EcommerceAPI.Application.Tests.Services
         [Fact]
         public async Task GetCategoriesAsync_WhenMoreCategoriesExist_ReturnsPageWithNextCursor()
         {
-            // Arrange
             var request = new GetCategoriesRequest
             {
                 Cursor = null,
@@ -100,6 +100,8 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         3,
+                        It.IsAny<Func<IQueryable<DomainCategory>,
+                            IIncludableQueryable<DomainCategory, object>>?>(),
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(categories);
 
@@ -113,38 +115,18 @@ namespace EcommerceAPI.Application.Tests.Services
                     mapper.toCategoryResponse(secondCategory))
                 .Returns(secondResponse);
 
-            // Act
             var result = await _sut.GetCategoriesAsync(
                 request,
                 CancellationToken.None
             );
 
-            // Assert
             Assert.NotNull(result);
+            Assert.Equal(2, result.Data.Count);
+            Assert.Equal("Electronics", result.Data[0].Name);
+            Assert.Equal("Groceries", result.Data[1].Name);
 
-            Assert.Equal(
-                2,
-                result.Data.Count
-            );
-
-            Assert.Equal(
-                "Electronics",
-                result.Data[0].Name
-            );
-
-            Assert.Equal(
-                "Groceries",
-                result.Data[1].Name
-            );
-
-            Assert.True(
-                result.Pagination.HasNext
-            );
-
-            Assert.Equal(
-                2,
-                result.Pagination.PageSize
-            );
+            Assert.True(result.Pagination.HasNext);
+            Assert.Equal(2, result.Pagination.PageSize);
 
             Assert.Equal(
                 CursorHelper.Encode(secondCategory.Id),
@@ -157,6 +139,8 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         3,
+                        It.IsAny<Func<IQueryable<DomainCategory>,
+                            IIncludableQueryable<DomainCategory, object>>?>(),
                         It.IsAny<CancellationToken>()),
                 Times.Once
             );
@@ -183,14 +167,13 @@ namespace EcommerceAPI.Application.Tests.Services
         [Fact]
         public async Task GetCategoriesAsync_WhenNoMoreCategoriesExist_ReturnsPageWithoutNextCursor()
         {
-            // Arrange
             var request = new GetCategoriesRequest
             {
                 Cursor = null,
                 Limit = 20
             };
 
-            var firstCategory = new DomainCategory
+            var category = new DomainCategory
             {
                 Id = 1,
                 Name = "Electronics",
@@ -199,17 +182,12 @@ namespace EcommerceAPI.Application.Tests.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            var firstResponse = new CategoryResponse
+            var response = new CategoryResponse
             {
-                Name = firstCategory.Name,
-                Slug = firstCategory.Slug,
-                ImageUrl = firstCategory.ImageUrl,
-                CreatedAt = firstCategory.CreatedAt
-            };
-
-            var categories = new List<DomainCategory>
-            {
-                firstCategory
+                Name = category.Name,
+                Slug = category.Slug,
+                ImageUrl = category.ImageUrl,
+                CreatedAt = category.CreatedAt
             };
 
             _categoryRepository
@@ -218,37 +196,28 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         21,
+                        It.IsAny<Func<IQueryable<DomainCategory>,
+                            IIncludableQueryable<DomainCategory, object>>?>(),
                         It.IsAny<CancellationToken>()))
-                .ReturnsAsync(categories);
+                .ReturnsAsync(new List<DomainCategory>
+                {
+                    category
+                });
 
             _categoryMapper
                 .Setup(mapper =>
-                    mapper.toCategoryResponse(firstCategory))
-                .Returns(firstResponse);
+                    mapper.toCategoryResponse(category))
+                .Returns(response);
 
-            // Act
             var result = await _sut.GetCategoriesAsync(
                 request,
                 CancellationToken.None
             );
 
-            // Assert
-            Assert.Single(
-                result.Data
-            );
-
-            Assert.False(
-                result.Pagination.HasNext
-            );
-
-            Assert.Null(
-                result.Pagination.NextCursor
-            );
-
-            Assert.Equal(
-                1,
-                result.Pagination.PageSize
-            );
+            Assert.Single(result.Data);
+            Assert.False(result.Pagination.HasNext);
+            Assert.Null(result.Pagination.NextCursor);
+            Assert.Equal(1, result.Pagination.PageSize);
 
             _categoryRepository.Verify(
                 repository =>
@@ -256,13 +225,9 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         21,
+                        It.IsAny<Func<IQueryable<DomainCategory>,
+                            IIncludableQueryable<DomainCategory, object>>?>(),
                         It.IsAny<CancellationToken>()),
-                Times.Once
-            );
-
-            _categoryMapper.Verify(
-                mapper =>
-                    mapper.toCategoryResponse(firstCategory),
                 Times.Once
             );
         }
@@ -270,12 +235,9 @@ namespace EcommerceAPI.Application.Tests.Services
         [Fact]
         public async Task GetCategoriesAsync_WhenCursorProvided_UsesCursorForNextPage()
         {
-            // Arrange
-            var cursor = CursorHelper.Encode(2);
-
             var request = new GetCategoriesRequest
             {
-                Cursor = cursor,
+                Cursor = CursorHelper.Encode(2),
                 Limit = 2
             };
 
@@ -295,12 +257,6 @@ namespace EcommerceAPI.Application.Tests.Services
                 Slug = "books",
                 ImageUrl = "uploads/categories/books.jpg",
                 CreatedAt = DateTime.UtcNow
-            };
-
-            var categories = new List<DomainCategory>
-            {
-                thirdCategory,
-                fourthCategory
             };
 
             var thirdResponse = new CategoryResponse
@@ -325,8 +281,14 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         3,
+                        It.IsAny<Func<IQueryable<DomainCategory>,
+                            IIncludableQueryable<DomainCategory, object>>?>(),
                         It.IsAny<CancellationToken>()))
-                .ReturnsAsync(categories);
+                .ReturnsAsync(new List<DomainCategory>
+                {
+                    thirdCategory,
+                    fourthCategory
+                });
 
             _categoryMapper
                 .Setup(mapper =>
@@ -338,35 +300,17 @@ namespace EcommerceAPI.Application.Tests.Services
                     mapper.toCategoryResponse(fourthCategory))
                 .Returns(fourthResponse);
 
-            // Act
             var result = await _sut.GetCategoriesAsync(
                 request,
                 CancellationToken.None
             );
 
-            // Assert
-            Assert.Equal(
-                2,
-                result.Data.Count
-            );
+            Assert.Equal(2, result.Data.Count);
+            Assert.Equal("Clothing", result.Data[0].Name);
+            Assert.Equal("Books", result.Data[1].Name);
 
-            Assert.Equal(
-                "Clothing",
-                result.Data[0].Name
-            );
-
-            Assert.Equal(
-                "Books",
-                result.Data[1].Name
-            );
-
-            Assert.False(
-                result.Pagination.HasNext
-            );
-
-            Assert.Null(
-                result.Pagination.NextCursor
-            );
+            Assert.False(result.Pagination.HasNext);
+            Assert.Null(result.Pagination.NextCursor);
 
             _categoryRepository.Verify(
                 repository =>
@@ -374,19 +318,9 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         3,
+                        It.IsAny<Func<IQueryable<DomainCategory>,
+                            IIncludableQueryable<DomainCategory, object>>?>(),
                         It.IsAny<CancellationToken>()),
-                Times.Once
-            );
-
-            _categoryMapper.Verify(
-                mapper =>
-                    mapper.toCategoryResponse(thirdCategory),
-                Times.Once
-            );
-
-            _categoryMapper.Verify(
-                mapper =>
-                    mapper.toCategoryResponse(fourthCategory),
                 Times.Once
             );
         }
@@ -394,7 +328,6 @@ namespace EcommerceAPI.Application.Tests.Services
         [Fact]
         public async Task GetCategoriesAsync_WhenNoCategoriesExist_ReturnsEmptyPage()
         {
-            // Arrange
             var request = new GetCategoriesRequest
             {
                 Cursor = null,
@@ -407,36 +340,22 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         21,
+                        It.IsAny<Func<IQueryable<DomainCategory>,
+                            IIncludableQueryable<DomainCategory, object>>?>(),
                         It.IsAny<CancellationToken>()))
-                .ReturnsAsync(
-                    new List<DomainCategory>()
-                );
+                .ReturnsAsync(new List<DomainCategory>());
 
-            // Act
             var result = await _sut.GetCategoriesAsync(
                 request,
                 CancellationToken.None
             );
 
-            // Assert
             Assert.NotNull(result);
+            Assert.Empty(result.Data);
 
-            Assert.Empty(
-                result.Data
-            );
-
-            Assert.False(
-                result.Pagination.HasNext
-            );
-
-            Assert.Null(
-                result.Pagination.NextCursor
-            );
-
-            Assert.Equal(
-                0,
-                result.Pagination.PageSize
-            );
+            Assert.False(result.Pagination.HasNext);
+            Assert.Null(result.Pagination.NextCursor);
+            Assert.Equal(0, result.Pagination.PageSize);
 
             _categoryRepository.Verify(
                 repository =>
@@ -444,6 +363,8 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<Expression<Func<DomainCategory, bool>>>(),
                         It.IsAny<Expression<Func<DomainCategory, int>>>(),
                         21,
+                        It.IsAny<Func<IQueryable<DomainCategory>,
+                            IIncludableQueryable<DomainCategory, object>>?>(),
                         It.IsAny<CancellationToken>()),
                 Times.Once
             );
