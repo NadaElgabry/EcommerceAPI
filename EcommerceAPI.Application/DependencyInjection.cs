@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using EcommerceAPI.Application.Services.CategoryService;
 using EcommerceAPI.Application.Services.ProductService;
 using EcommerceAPI.Application.Services.FavoritesService;
+using EcommerceAPI.Application.Services.CartService;
 
 namespace EcommerceAPI.Application;
 
@@ -34,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IFavoritesService, FavoritesService>();
         services.AddScoped<IUserActivityService, UserActivityService>();
+        services.AddScoped<ICartService, CartService>();
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateProfileRequestValidator>();
