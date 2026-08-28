@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<IFavoritesService, FavoritesService>();
         services.AddScoped<IUserActivityService, UserActivityService>();
         services.AddScoped<ICartService, CartService>();
+        services.AddScoped<ICartMapper, CartMapper>();
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateProfileRequestValidator>();

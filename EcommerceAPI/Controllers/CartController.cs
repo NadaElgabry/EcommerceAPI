@@ -26,5 +26,13 @@ namespace EcommerceAPI.Controllers
             var itemCount = await _cartService.AddToCart(request, cancellationToken);
             return Ok(ApiResponse<int>.SuccessResponse(data: itemCount, message: "Added to cart.", statusCode: 200));
         }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> GetCart(CancellationToken cancellationToken) 
+        {
+            var result = await _cartService.GetCart(cancellationToken);
+            return Ok(ApiResponse<CartResponse>.SuccessResponse(data:result, message:"Cart retrived successfuly",statusCode: 200));
+        }
     }
 }

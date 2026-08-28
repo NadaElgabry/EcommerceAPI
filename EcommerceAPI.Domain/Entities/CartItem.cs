@@ -15,5 +15,18 @@ namespace EcommerceAPI.Domain.Entities
         public decimal UnitPrice { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Overwrites UnitPrice with the product's current price.
+        /// Returns true if the price actually changed.
+        /// </summary>
+        public bool RefreshPrice(decimal currentPrice)
+        {
+            if (UnitPrice == currentPrice)
+                return false;
+
+            UnitPrice = currentPrice;
+            return true;
+        }
     }
 }

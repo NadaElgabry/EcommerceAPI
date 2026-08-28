@@ -4,6 +4,7 @@ using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Repositories;
+using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -22,9 +23,11 @@ namespace EcommerceAPI.Application.Services.CartService
         private readonly IUnitOfWork _unitOfWork;
         private readonly IUserActivityService _userActivityService;
 
+        private readonly ICartMapper _cartMapper ;
+
         public CartService(ICurrentUserService currentUserService,IRepository<Product> productRepository,
             IRepository<User> userSerivce, IUnitOfWork unitOfWork, IRepository<Cart> cartRepository,
-            IUserActivityService userActivityService)
+            IUserActivityService userActivityService, ICartMapper cartMapper)
         {
             _currentUserService = currentUserService;
             _cartRepository = cartRepository;
@@ -32,12 +35,13 @@ namespace EcommerceAPI.Application.Services.CartService
             _unitOfWork = unitOfWork;
             _userRepository = userSerivce;
             _userActivityService= userActivityService;
+            _cartMapper = cartMapper;
         }
 
         public async Task<int> AddToCart(AddToCartRequest request, CancellationToken cancellationToken)
         {
             bool newCart = false;
-            var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid, cancellationToken)
+            var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid && u.IsActive, cancellationToken)
                 ?? throw new NotFoundException("User not Found");
             var product = await _productRepository.GetByAsync(p => p.Slug == request.ProductSlug, cancellationToken)
                 ?? throw new NotFoundException("Product not Found"); ;
@@ -55,7 +59,10 @@ namespace EcommerceAPI.Application.Services.CartService
             }
 
             if (existingItem is not null)
+            {
                 existingItem.Quantity += request.Quantity;
+                existingItem.RefreshPrice(product.Price);
+            }
             else
                 cart.Items.Add(new CartItem { ProductId = product.Id, Quantity = request.Quantity, UnitPrice = product.Price });
             cart.UpdatedAt = DateTime.UtcNow;
@@ -74,6 +81,35 @@ namespace EcommerceAPI.Application.Services.CartService
             ,cancellationToken);
 
             return cart.Items.Sum(i => i.Quantity);
+        }
+
+        public async Task<CartResponse> GetCart(CancellationToken cancellationToken)
+        {
+            var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid && u.IsActive,
+                cancellationToken)
+                 ?? throw new NotFoundException("User not Found");
+            var cart = await _cartRepository.GetByAsync(predicate: c => c.UserId == user.Id,
+                cancellationToken: cancellationToken,
+                include: query => query.Include(c => c.Items).ThenInclude(ci => ci.Product));
+
+            if (cart is null)
+                return new CartResponse { Items = new List<CartItemResponse>() };
+            var changedItemIds = new List<int>();
+
+            foreach (var item in cart.Items)
+            {
+                if (item.RefreshPrice(item.Product.Price))
+                    changedItemIds.Add(item.Id);
+            }
+
+            if (changedItemIds.Any())
+            {
+                cart.UpdatedAt = DateTime.UtcNow;
+                _cartRepository.Update(cart);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+
+            return _cartMapper.ToCartResponse(cart, changedItemIds);
         }
     }
 }
