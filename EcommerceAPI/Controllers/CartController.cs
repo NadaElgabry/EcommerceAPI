@@ -3,7 +3,6 @@ using EcommerceAPI.Application.DTOs.Cart;
 using EcommerceAPI.Application.Interfaces.IServices;
 using IdempotentAPI.Filters;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EcommerceAPI.Controllers
@@ -20,7 +19,7 @@ namespace EcommerceAPI.Controllers
 
         [HttpPost]
         [Authorize]
-        [Idempotent(ExpiresInMilliseconds =1000*30)]
+        [Idempotent(ExpiresInMilliseconds =1000*20)]
         public async Task<IActionResult> AddtoCart([FromBody] AddToCartRequest request,CancellationToken cancellationToken)
         {
             var itemCount = await _cartService.AddToCart(request, cancellationToken);
@@ -33,6 +32,16 @@ namespace EcommerceAPI.Controllers
         {
             var result = await _cartService.GetCart(cancellationToken);
             return Ok(ApiResponse<CartResponse>.SuccessResponse(data:result, message:"Cart retrived successfuly",statusCode: 200));
+        }
+
+        [HttpPut]
+        [Authorize]
+        public async Task<IActionResult> UpdateCart([FromBody] UpdateCartRequest request,CancellationToken cancellationToken)
+        {
+            var result = await _cartService.UpdateCart(request, cancellationToken);
+            var message = result is null ? "Product removed from cart." : "Product updated successfully.";
+            return Ok(ApiResponse<CartItemResponse?>.SuccessResponse(
+                data: result, message: message,statusCode:200));
         }
     }
 }

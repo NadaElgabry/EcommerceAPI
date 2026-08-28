@@ -41,11 +41,9 @@ namespace EcommerceAPI.Application.Services.CartService
         public async Task<int> AddToCart(AddToCartRequest request, CancellationToken cancellationToken)
         {
             bool newCart = false;
-            var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid && u.IsActive, cancellationToken)
-                ?? throw new NotFoundException("User not Found");
-            var product = await _productRepository.GetByAsync(p => p.Slug == request.ProductSlug, cancellationToken)
-                ?? throw new NotFoundException("Product not Found"); ;
-            var cart = await _cartRepository.GetByAsync(predicate: c => c.UserId == user.Id, cancellationToken: cancellationToken, include: query => query.Include(c => c.Items));
+            var user = await GetActiveUserAsync(cancellationToken);
+            var product = await GetProductBySlugAsync(request.ProductSlug, cancellationToken);
+            var cart = await GetCartWithItemsAsync(user.Id, cancellationToken);
             var existingItem = cart?.Items.FirstOrDefault(i => i.ProductId == product.Id);
             var requestedTotal = request.Quantity + (existingItem?.Quantity ?? 0);
 
@@ -85,12 +83,8 @@ namespace EcommerceAPI.Application.Services.CartService
 
         public async Task<CartResponse> GetCart(CancellationToken cancellationToken)
         {
-            var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid && u.IsActive,
-                cancellationToken)
-                 ?? throw new NotFoundException("User not Found");
-            var cart = await _cartRepository.GetByAsync(predicate: c => c.UserId == user.Id,
-                cancellationToken: cancellationToken,
-                include: query => query.Include(c => c.Items).ThenInclude(ci => ci.Product));
+            var user = await GetActiveUserAsync(cancellationToken);
+            var cart = await GetCartWithItemsAsync(user.Id, cancellationToken);
 
             if (cart is null)
                 return new CartResponse { Items = new List<CartItemResponse>() };
@@ -110,6 +104,72 @@ namespace EcommerceAPI.Application.Services.CartService
             }
 
             return _cartMapper.ToCartResponse(cart, changedItemIds);
+        }
+        public async Task<CartItemResponse?> UpdateCart(UpdateCartRequest request, CancellationToken cancellationToken)
+        {
+            var user = await GetActiveUserAsync(cancellationToken);
+            var product = await GetProductBySlugAsync(request.ProductSlug, cancellationToken);
+            var cart = await GetCartWithItemsAsync(user.Id, cancellationToken)
+                ?? throw new NotFoundException("Cart not Found");
+
+            var existingItem = cart.Items.FirstOrDefault(i => i.ProductId == product.Id)
+                ?? throw new NotFoundException("Item not Found in cart");
+
+            bool isRemoval = request.Quantity == 0;
+
+            if (isRemoval)
+            {
+                cart.Items.Remove(existingItem);
+                existingItem = null;
+            }
+            else
+            {
+                EnsureSufficientStock(request.Quantity, product.StockQuantity);
+                existingItem.Quantity = request.Quantity;
+                existingItem.RefreshPrice(product.Price);
+            }
+
+            cart.UpdatedAt = DateTime.UtcNow;
+
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                _cartRepository.Update(cart);
+                if(isRemoval)
+                    await _userActivityService.LogActivityAsync(
+                                                user.Id,
+                                                product.Id,
+                                                UserActionType.RemoveFromCart,
+                                                cancellationToken);
+            }, cancellationToken);
+
+            return existingItem is null ? null : _cartMapper.ToCartItemResponse(existingItem);
+        }
+        private async Task<User> GetActiveUserAsync(CancellationToken cancellationToken)
+        {
+            return await _userRepository.GetByAsync(
+                u => u.Guid == _currentUserService.UserGuid && u.IsActive,
+                cancellationToken)
+                ?? throw new NotFoundException("User not Found");
+        }
+
+        private async Task<Product> GetProductBySlugAsync(string slug, CancellationToken cancellationToken)
+        {
+            return await _productRepository.GetByAsync(p => p.Slug == slug, cancellationToken)
+                ?? throw new NotFoundException("Product not Found");
+        }
+
+        private async Task<Cart> GetCartWithItemsAsync(int userId, CancellationToken cancellationToken)
+        {
+            return await _cartRepository.GetByAsync(
+                predicate: c => c.UserId == userId,
+                cancellationToken: cancellationToken,
+                include: query => query.Include(c => c.Items));
+        }
+
+        private static void EnsureSufficientStock(int requestedQuantity, int availableStock)
+        {
+            if (requestedQuantity > availableStock)
+                throw new InsufficientStockException("There is no enough quantity in stock");
         }
     }
 }

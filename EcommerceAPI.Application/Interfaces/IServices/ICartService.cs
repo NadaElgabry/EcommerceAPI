@@ -9,5 +9,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
     {
         public Task<int> AddToCart(AddToCartRequest request,CancellationToken cancellationToken);
         public Task<CartResponse> GetCart(CancellationToken cancellationToken);
+
+        public Task<CartItemResponse?> UpdateCart(UpdateCartRequest request, CancellationToken cancellationToken);
     }
 }

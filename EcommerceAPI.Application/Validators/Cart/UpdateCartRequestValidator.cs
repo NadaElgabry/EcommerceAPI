@@ -6,9 +6,9 @@ using System.Text;
 
 namespace EcommerceAPI.Application.Validators.Cart
 {
-    public class AddToCartRequestValidator :AbstractValidator<AddToCartRequest>
-    {
-        public AddToCartRequestValidator() 
+    public class UpdateCartRequestValidator :AbstractValidator<UpdateCartRequest>
+    { 
+        public UpdateCartRequestValidator() 
         {
             RuleFor(request => request.ProductSlug)
                 .NotEmpty()
@@ -16,9 +16,8 @@ namespace EcommerceAPI.Application.Validators.Cart
                 .WithMessage("Product slug is required");
 
             RuleFor(request => request.Quantity)
-                .GreaterThanOrEqualTo(1)
-                .WithMessage("Quantity must be a positive number");
-                             
+                .GreaterThanOrEqualTo(0)
+                .WithMessage("Quantity cannot be negative");;
         }
     }
 }
