@@ -11,9 +11,8 @@ using EcommerceAPI.Application.Validators;
 using EcommerceAPI.Application.Validators.Product;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using EcommerceAPI.Application.Services.CategoryService;
-using EcommerceAPI.Application.Services.ProductService;
 using EcommerceAPI.Application.Services.FavoritesService;
+using EcommerceAPI.Application.Validators.Auth;
 
 namespace EcommerceAPI.Application;
 
