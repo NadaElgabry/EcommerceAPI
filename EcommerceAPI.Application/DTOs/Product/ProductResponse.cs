@@ -10,8 +10,8 @@ namespace EcommerceAPI.Application.DTOs.Product
         public string Brand { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public int StockQuantity { get; set; }
-        public string? ProductImageUrl { get; set; }
-        public string? AltText { get; set; }
+        public string ProductImageUrl { get; set; }
+        public string AltText { get; set; }
         public DateTime CreationDate { get; set; }
         public int CategoryId { get; set; }
         public List<string> Tags { get; set; } = new();

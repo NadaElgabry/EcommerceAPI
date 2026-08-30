@@ -9,6 +9,8 @@ namespace EcommerceAPI.Application.DTOs.Cart
         public string Name { get; set; }
         public string Slug { get; set; }
         public string Brand { get; set; }
+        public string ProductImageUrl { get; set; }
+        public string AltText { get; set; }
         public decimal UnitPrice { get; set; }
         public int Quantity { get; set; }
         public bool PriceChanged { get; set; }

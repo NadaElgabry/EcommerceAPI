@@ -16,9 +16,9 @@
 
         public int StockQuantity { get; set; }
 
-        public string? ProductImage { get; set; }
+        public string ProductImage { get; set; }
 
-        public string? AltText { get; set; }
+        public string AltText { get; set; }
 
         public DateTime CreationDate { get; set; }
 
