@@ -13,6 +13,11 @@ namespace EcommerceAPI.Application.Interfaces.IServices
             GetCategoriesRequest request,
             CancellationToken cancellationToken);
 
+        public Task<CategoryResponse> UpdateCategoryAsync(
+            string slug,
+            UpdateCategoryRequest request,
+            CancellationToken cancellationToken);
+
         public Task DeleteCategoryAsync(
             string slug,
             CancellationToken cancellationToken);

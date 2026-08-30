@@ -140,6 +140,96 @@ namespace EcommerceAPI.Application.Services.CategoryService
             };
         }
 
+        public async Task<CategoryResponse> UpdateCategoryAsync(
+            string slug,
+            UpdateCategoryRequest request,
+            CancellationToken cancellationToken)
+        {
+            var category = await _categoryRepository.GetByAsync(
+                c => c.Slug == slug,
+                cancellationToken)
+                ?? throw new NotFoundException(
+                    $"Category '{slug}' not found.");
+
+            var updatedSlug = category.Slug;
+            var oldImageUrl = category.ImageUrl;
+            string? newImageUrl = null;
+
+            if (request.Name != null)
+            {
+                if (await _categoryRepository.ExistByAsync(
+                    c => c.Name == request.Name &&
+                         c.Id != category.Id,
+                    cancellationToken))
+                {
+                    throw new ConflictException(
+                        "Category with the same name already exists.");
+                }
+
+                updatedSlug = _slugGenerator.GenerateSlug(
+                    request.Name);
+
+                if (await _categoryRepository.ExistByAsync(
+                    c => c.Slug == updatedSlug &&
+                         c.Id != category.Id,
+                    cancellationToken))
+                {
+                    throw new ConflictException(
+                        "A category with a matching slug already exists.");
+                }
+            }
+
+            if (request.Image != null)
+            {
+                newImageUrl = await _imageService.SaveFileAsync(
+                    request.Image,
+                    updatedSlug,
+                    ImageOwnerType.Category,
+                    cancellationToken);
+            }
+
+            if (request.Name != null)
+            {
+                category.Name = request.Name;
+                category.Slug = updatedSlug;
+            }
+
+            if (newImageUrl != null)
+            {
+                category.ImageUrl = newImageUrl;
+            }
+
+            await _unitOfWork.ExecuteInTransactionAsync(
+                async () =>
+                {
+                    _categoryRepository.Update(category);
+
+                    await _unitOfWork.SaveChangesAsync(
+                        cancellationToken);
+                },
+                cancellationToken);
+
+            if (newImageUrl != null &&
+                !string.Equals(
+                    oldImageUrl,
+                    newImageUrl,
+                    StringComparison.OrdinalIgnoreCase) &&
+                oldImageUrl.StartsWith(
+                    "categories/",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                var oldFileName = Path.GetFileName(
+                    oldImageUrl);
+
+                _imageService.DeleteFile(
+                    oldFileName,
+                    ImageOwnerType.Category);
+            }
+
+            return _categoryMapper.toCategoryResponse(
+                category);
+        }
+
         public async Task DeleteCategoryAsync(
             string slug,
             CancellationToken cancellationToken)

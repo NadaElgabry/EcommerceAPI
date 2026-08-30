@@ -57,6 +57,27 @@ namespace EcommerceAPI.Controllers
                         data: categories));
         }
 
+        [HttpPut("{slug}")]
+        [Authorize(Roles = "Admin")]
+        [RequestSizeLimit(6 * 1024 * 1024)]
+        public async Task<IActionResult> UpdateCategory(
+            string slug,
+            [FromForm] UpdateCategoryRequest request,
+            CancellationToken cancellationToken)
+        {
+            var categoryResponse =
+                await _categoryService.UpdateCategoryAsync(
+                    slug,
+                    request,
+                    cancellationToken);
+
+            return Ok(
+                ApiResponse<CategoryResponse>.SuccessResponse(
+                    statusCode: 200,
+                    message: "Category updated.",
+                    data: categoryResponse));
+        }
+
         [HttpDelete("{slug}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteCategory(
