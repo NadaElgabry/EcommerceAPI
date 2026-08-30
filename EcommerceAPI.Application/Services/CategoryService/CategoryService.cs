@@ -1,6 +1,7 @@
 ﻿using EcommerceAPI.Application.Common;
 using EcommerceAPI.Application.DTOs.Category;
 using EcommerceAPI.Application.DTOs.Common;
+using EcommerceAPI.Application.DTOs.Product;
 using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Image;
@@ -17,20 +18,26 @@ namespace EcommerceAPI.Application.Services.CategoryService
     public class CategoryService : ICategoryService
     {
         private readonly IRepository<Category> _categoryRepository;
+        private readonly IRepository<Product> _productRepository;
         private readonly ICategoryMapper _categoryMapper;
+        private readonly IProductMapper _productMapper;
         private readonly IImageService _imageService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ISlugGenerator _slugGenerator;
 
         public CategoryService(
             IRepository<Category> categoryRepository,
+            IRepository<Product> productRepository,
             ICategoryMapper categoryMapper,
+            IProductMapper productMapper,
             IImageService imageService,
             IUnitOfWork unitOfWork,
             ISlugGenerator slugGenerator)
         {
             _categoryRepository = categoryRepository;
+            _productRepository = productRepository;
             _categoryMapper = categoryMapper;
+            _productMapper = productMapper;
             _imageService = imageService;
             _unitOfWork = unitOfWork;
             _slugGenerator = slugGenerator;
@@ -136,6 +143,80 @@ namespace EcommerceAPI.Application.Services.CategoryService
                     NextCursor = nextCursor,
                     HasNext = hasNext,
                     PageSize = categoryResponses.Count
+                }
+            };
+        }
+
+        public async Task<CategoryResponse> GetCategoryDetailsAsync(
+            string slug,
+            CancellationToken cancellationToken)
+        {
+            var category = await _categoryRepository.GetByAsync(
+                category => category.Slug == slug,
+                cancellationToken)
+                ?? throw new NotFoundException(
+                    $"Category '{slug}' not found.");
+
+            return _categoryMapper.toCategoryResponse(
+                category);
+        }
+
+        public async Task<CursorPagedResult<ProductSummaryResponse>> GetCategoryProductsAsync(
+            string slug,
+            GetCategoriesRequest request,
+            CancellationToken cancellationToken)
+        {
+            var category = await _categoryRepository.GetByAsync(
+                category => category.Slug == slug,
+                cancellationToken)
+                ?? throw new NotFoundException(
+                    $"Category '{slug}' not found.");
+
+            var lastProductId = 0;
+
+            if (!string.IsNullOrWhiteSpace(request.Cursor))
+            {
+                lastProductId = CursorHelper.Decode<int>(
+                    request.Cursor);
+            }
+
+            var products = await _productRepository.GetPagedAsync(
+                predicate: product =>
+                    product.CategoryId == category.Id &&
+                    product.Id > lastProductId,
+                orderBy: product => product.Id,
+                take: request.Limit + 1,
+                cancellationToken: cancellationToken);
+
+            var hasNext = products.Count > request.Limit;
+
+            if (hasNext)
+            {
+                products.RemoveAt(products.Count - 1);
+            }
+
+            string? nextCursor = null;
+
+            if (hasNext && products.Count > 0)
+            {
+                nextCursor = CursorHelper.Encode(
+                    products[^1].Id);
+            }
+
+            var productResponses = products
+                .Select(product =>
+                    _productMapper.ToProductSummaryResponse(product))
+                .ToList();
+
+            return new CursorPagedResult<ProductSummaryResponse>
+            {
+                Data = productResponses,
+
+                Pagination = new CursorPageInfo
+                {
+                    NextCursor = nextCursor,
+                    HasNext = hasNext,
+                    PageSize = productResponses.Count
                 }
             };
         }
