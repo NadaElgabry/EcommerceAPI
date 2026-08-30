@@ -1,4 +1,6 @@
-﻿using EcommerceAPI.Application.DTOs.Order;
+﻿using EcommerceAPI.Application.Common;
+using EcommerceAPI.Application.DTOs.Common;
+using EcommerceAPI.Application.DTOs.Order;
 using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
@@ -95,13 +97,59 @@ namespace EcommerceAPI.Application.Services.OrderService
 
             return _orderMapper.ToOrderResponse(order);
         }
+        public async Task<CursorPagedResult<OrderSummary>> GetOrdersAsync(Guid userGuid, GetOrdersRequest request, CancellationToken cancellationToken)
+        {
+            if (_currentUserService.Role != "Admin")
+            {
+                if (_currentUserService.UserGuid != userGuid)
+                {
+                    throw new UnauthorizedAccessException("You are not authorized to access this resource.");
+                }
+            }
+            var user = await _userRepository.GetByAsync(predicate: u => u.Guid == userGuid
+            , cancellationToken) ?? throw new NotFoundException("User not found");
+
+            var lastOrderId = string.IsNullOrEmpty(request.Cursor) ? 0 : CursorHelper.Decode<int>(request.Cursor);
+            var take = Math.Clamp(request.Limit, 1, 50);
+            var orders = await _orderRepository.GetPagedAsync(predicate: o => o.UserId == user.Id && o.Id > lastOrderId,
+                orderBy: o => o.CreationDate, take: take + 1, include: query => query.Include(c => c.Items)
+            );
+
+            var hasNext = orders.Count > request.Limit;
+
+            if (hasNext)
+            {
+                orders.RemoveAt(orders.Count - 1);
+            }
+            string? nextCursor = null;
+
+            if (hasNext && orders.Count > 0)
+            {
+                nextCursor = CursorHelper.Encode(
+                    orders[^1].Id);
+            }
+            var ordersummaries = orders.Select(o => _orderMapper.ToOrderSummary(o)).ToList();
+
+            return new CursorPagedResult<OrderSummary>
+            {
+                Data = ordersummaries,
+
+                Pagination = new CursorPageInfo
+                {
+                    NextCursor = nextCursor,
+                    HasNext = hasNext,
+                    PageSize = ordersummaries.Count
+                }
+            };
+        }
+
         public async Task<OrderResponse> GetOrderByGuidAsync(Guid orderGuid, CancellationToken cancellationToken)
         {
             var user = await GetActiveUserAsync(cancellationToken);
 
             var order = await _orderRepository.GetByAsync(
                 predicate: o => o.Guid == orderGuid && o.UserId == user.Id,
-                include: query => query.Include(o => o.Items).ThenInclude(i => i.product),
+                include: query => query.Include(o => o.Items).ThenInclude(i => i.Product),
                 cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("Order not found");
 

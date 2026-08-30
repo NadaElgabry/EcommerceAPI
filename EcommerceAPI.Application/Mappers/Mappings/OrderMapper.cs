@@ -20,10 +20,24 @@ namespace EcommerceAPI.Application.Mappers
                 Items = cart.Items.Select(i => new OrderItem
                 {
                     ProductId = i.ProductId,
-                    product = i.Product,
+                    Product = i.Product,
                     Quantity = i.Quantity,
                     UnitPrice = i.UnitPrice
                 }).ToList()
+            };
+        }
+        public OrderItemResponse ToOrderItemResponse(OrderItem item)
+        {
+            return new OrderItemResponse
+            {
+                Slug = item.Product.Slug,
+                Name = item.Product.Name,
+                Quantity = item.Quantity,
+                Brand = item.Product.Brand,
+                ProductImage = item.Product.ProductImage,
+                AltText = item.Product.AltText,
+                UnitPrice = item.UnitPrice,
+                Description = item.Product.Description,
             };
         }
 
@@ -35,16 +49,24 @@ namespace EcommerceAPI.Application.Mappers
                 OrderNumber = order.OrderNumber,
                 Address = order.Address,
                 Status = order.Status.ToString(),
+                CreationDate = order.CreationDate,
                 TotalAmount = order.TotalAmount,
-                Items = order.Items.Select(i => new OrderItemResponse
-                {
-                    ProductName = i.product.Name,
-                    ProductSlug = i.product.Slug,
-                    Quantity = i.Quantity,
-                    UnitPrice = i.UnitPrice
-                }).ToList()
+                Items = order.Items.Select(oi => ToOrderItemResponse(oi)).ToList()
             };
         }
+        public OrderSummary ToOrderSummary(Order order)
+        {
+            return new OrderSummary
+            {
+                Total = order.TotalAmount,
+                Address = order.Address,
+                CreationDate = order.CreationDate,
+                DeliveryTime = order.DeliveryTime,
+                Status = order.Status.ToString(),
+                TotalItems = order.Items.Count()
+            };
+        }
+
         private static string GenerateOrderNumber()
         {
             var randomDigits = Random.Shared.Next(100000, 999999);

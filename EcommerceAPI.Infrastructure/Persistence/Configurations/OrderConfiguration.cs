@@ -41,7 +41,7 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
                     .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasMany(o => o.Items)
-                .WithOne(i => i.order)
+                .WithOne(i => i.Order)
                 .HasForeignKey(i => i.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
 
