@@ -18,6 +18,12 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
             builder.HasIndex(o => o.IdempotencyKey)
                 .IsUnique();
 
+            builder.HasIndex(o => o.OrderNumber)
+                .IsUnique();
+
+            builder.HasIndex(o => o.Guid)
+                .IsUnique();
+
             builder.Property(o => o.Address)
                 .IsRequired()
                 .HasMaxLength(300);
@@ -44,6 +50,8 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
                 {
                     Id = 1,
                     UserId = 1,
+                    Guid = Guid.Parse("a0a0a0a0-a0a0-a0a0-a0a0-a0a0a0a0a0a0"),
+                    OrderNumber = "100001",
                     IdempotencyKey = "seed-order-0001",
                     Address = "12 Tahrir Street, Giza, Egypt",
                     TotalAmount = 205.11m,
@@ -55,6 +63,8 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
                 {
                     Id = 2,
                     UserId = 1,
+                    Guid = Guid.Parse("b0b0b0b0-b0b0-b0b0-b0b0-b0b0b0b0b0b0"),
+                    OrderNumber = "100002",
                     IdempotencyKey = "seed-order-0002",
                     Address = "12 Tahrir Street, Giza, Egypt",
                     TotalAmount = 5.12m,
