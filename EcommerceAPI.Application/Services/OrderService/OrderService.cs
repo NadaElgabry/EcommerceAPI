@@ -46,8 +46,24 @@ namespace EcommerceAPI.Application.Services.OrderService
             var cart = await GetCartWithItemsAsync(user.Id, cancellationToken)
                 ?? throw new NotFoundException("Cart not Found");
 
+            if (await _orderRepository.ExistByAsync(predicate: o => o.IdempotencyKey == idempotencyKey, cancellationToken: cancellationToken))
+            {
+                throw new ConflictException("An order with the same idempotency key already exists.");
+            }
+
             if (!cart.Items.Any())
-                throw new InvalidOperationException("Cannot place an order with an empty cart.");
+                throw new BadRequestException("Cannot place an order with an empty cart.");
+
+            var priceChangedItems = cart.Items
+                .Where(i => i.UnitPrice != i.Product.Price)
+                .Select(i => i.Product.Name)
+                .ToList();
+
+            if (priceChangedItems.Any())
+            {
+                throw new ConflictException(
+                    $"The price has changed for the following items: {string.Join(", ", priceChangedItems)}. Please review your cart before checking out.");
+            }
 
             var insufficientItems = cart.Items
                 .Where(i => i.Quantity > i.Product.StockQuantity)
