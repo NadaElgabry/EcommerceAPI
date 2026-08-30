@@ -34,7 +34,6 @@ namespace EcommerceAPI.Application.Services.UserService
             };
 
             await _activityRepository.AddAsync(activity, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         public async Task<CursorPagedResult<UserActivitiesResponse>> GetAllActivitiesAsync(
