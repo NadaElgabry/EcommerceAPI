@@ -20,6 +20,7 @@ namespace EcommerceAPI.Application.Mappers
                 Items = cart.Items.Select(i => new OrderItem
                 {
                     ProductId = i.ProductId,
+                    product = i.Product,
                     Quantity = i.Quantity,
                     UnitPrice = i.UnitPrice
                 }).ToList()

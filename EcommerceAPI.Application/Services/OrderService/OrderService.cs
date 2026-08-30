@@ -17,6 +17,7 @@ namespace EcommerceAPI.Application.Services.OrderService
         private readonly IRepository<User> _userRepository;
         private readonly IRepository<Cart> _cartRepository;
         private readonly IRepository<Order> _orderRepository;
+        private readonly IRepository<Product> _productRepository;
         private readonly IOrderMapper _orderMapper;
         private readonly IUnitOfWork _unitOfWork;
 
@@ -25,6 +26,7 @@ namespace EcommerceAPI.Application.Services.OrderService
             IRepository<User> userRepository,
             IRepository<Cart> cartRepository,
             IRepository<Order> orderRepository,
+            IRepository<Product> productRepository,
             IOrderMapper orderMapper,
             IUnitOfWork unitOfWork)
         {
@@ -32,9 +34,11 @@ namespace EcommerceAPI.Application.Services.OrderService
             _userRepository = userRepository;
             _cartRepository = cartRepository;
             _orderRepository = orderRepository;
+            _productRepository = productRepository;
             _orderMapper = orderMapper;
             _unitOfWork = unitOfWork;
         }
+
 
         public async Task<OrderResponse> PlaceOrderAsync(PlaceOrderRequest request, string idempotencyKey, CancellationToken cancellationToken)
         {
@@ -45,14 +49,45 @@ namespace EcommerceAPI.Application.Services.OrderService
             if (!cart.Items.Any())
                 throw new InvalidOperationException("Cannot place an order with an empty cart.");
 
+            var insufficientItems = cart.Items
+                .Where(i => i.Quantity > i.Product.StockQuantity)
+                .Select(i => i.Product.Name)
+                .ToList();
+
+            if (insufficientItems.Any())
+            {
+                throw new InsufficientStockException(
+                    $"Insufficient stock for: {string.Join(", ", insufficientItems)}");
+            }
+
             var order = _orderMapper.ToEntity(request, cart, user.Id, idempotencyKey);
 
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                await _orderRepository.AddAsync(order, cancellationToken);
 
+                foreach (var item in cart.Items)
+                {
+                    item.Product.StockQuantity -= item.Quantity;
+                    _productRepository.Update(item.Product);
+                }
+
+                await _orderRepository.AddAsync(order, cancellationToken);
                 _cartRepository.Delete(cart);
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
+
+            return _orderMapper.ToOrderResponse(order);
+        }
+        public async Task<OrderResponse> GetOrderByGuidAsync(Guid orderGuid, CancellationToken cancellationToken)
+        {
+            var user = await GetActiveUserAsync(cancellationToken);
+
+            var order = await _orderRepository.GetByAsync(
+                predicate: o => o.Guid == orderGuid && o.UserId == user.Id,
+                include: query => query.Include(o => o.Items).ThenInclude(i => i.product),
+                cancellationToken: cancellationToken)
+                ?? throw new NotFoundException("Order not found");
 
             return _orderMapper.ToOrderResponse(order);
         }

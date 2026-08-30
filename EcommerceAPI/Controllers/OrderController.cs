@@ -28,5 +28,16 @@ namespace EcommerceAPI.Controllers
             return Ok(ApiResponse<OrderResponse>.SuccessResponse(data: orderResponse, message: $"Order #{orderResponse.OrderNumber} placed successfully!", statusCode: 200));
         }
 
+        [HttpGet("{guid}")]
+        [Authorize]
+        public async Task<IActionResult> GetOrder([FromRoute] Guid guid, CancellationToken cancellationToken)
+        {
+            var response = await _orderService.GetOrderByGuidAsync(guid, cancellationToken);
+            return Ok(ApiResponse<OrderResponse>.SuccessResponse(
+                data: response,
+                message: "Order retrieved successfully",
+                statusCode: 200));
+        }
+
     }
 }
