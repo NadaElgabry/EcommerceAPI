@@ -10,7 +10,7 @@ namespace EcommerceAPI.Application.DTOs.Product
         public decimal Price { get; set; }
         public int StockQuantity { get; set; }
         public string AltText { get; set; }
-        public int CategoryId { get; set; }
+        public string CategorySlug { get; set; }
         public IFormFile Image { get; set; }
         public List<int> TagIds { get; set; } = new();
     }

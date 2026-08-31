@@ -67,10 +67,10 @@ namespace EcommerceAPI.Application.Services.ProductService
 
         public async Task<ProductResponse> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken)
         {
-            var category = await _categoryRepository.GetByAsync(c => c.Id == request.CategoryId, cancellationToken);
+            var category = await _categoryRepository.GetByAsync(c => c.Slug == request.CategorySlug, cancellationToken);
             if (category == null)
             {
-                throw new NotFoundException($"Category with ID {request.CategoryId} not found.");
+                throw new NotFoundException($"Category with slug {request.CategorySlug} not found.");
             }
 
             // 2. Generate and validate Slug
@@ -100,7 +100,7 @@ namespace EcommerceAPI.Application.Services.ProductService
                 }
             }
 
-            var newProduct = _productMapper.ToProduct(request, slug, imageUrl, validTags);
+            var newProduct = _productMapper.ToProduct(request, slug,category, imageUrl, validTags);
 
 
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
@@ -118,7 +118,9 @@ namespace EcommerceAPI.Application.Services.ProductService
         {
             var product = await _productRepository.GetByAsync(
                 predicate: p => p.Slug == slug,
-                include: query => query.Include(p => p.ProductTags).ThenInclude(pt => pt.Tag),
+                include: query => query
+                .Include(p => p.Category)
+                .Include(p => p.ProductTags).ThenInclude(pt => pt.Tag),
                 cancellationToken: cancellationToken)
                 ?? throw new NotFoundException($"Product '{slug}' not found.");
 
