@@ -67,12 +67,11 @@ namespace EcommerceAPI.Application.Services.ProductService
 
         public async Task<ProductResponse> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken)
         {
-            var CategorySlug = _slugGenerator.GenerateSlug(request.CategoryName);
 
-            var category = await _categoryRepository.GetByAsync(c => c.Slug == CategorySlug, cancellationToken);
+            var category = await _categoryRepository.GetByAsync(c => c.Slug == request.CategorySlug, cancellationToken);
             if (category == null)
             {
-                throw new NotFoundException($"Category with name {request.CategoryName} not found.");
+                throw new NotFoundException($"Category with slug {request.CategorySlug} not found.");
             }
 
             // 2. Generate and validate Slug

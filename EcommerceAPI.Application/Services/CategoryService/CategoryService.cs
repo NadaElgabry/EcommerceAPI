@@ -11,6 +11,7 @@ using EcommerceAPI.Application.Interfaces.Slug;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 using System.IO;
 
 namespace EcommerceAPI.Application.Services.CategoryService
@@ -185,6 +186,7 @@ namespace EcommerceAPI.Application.Services.CategoryService
                     product.CategoryId == category.Id &&
                     product.Id > lastProductId,
                 orderBy: product => product.Id,
+                include: query => query.Include(p => p.Category),
                 take: request.Limit + 1,
                 cancellationToken: cancellationToken);
 

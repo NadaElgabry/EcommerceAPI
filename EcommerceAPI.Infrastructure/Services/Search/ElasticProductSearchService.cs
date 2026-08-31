@@ -47,8 +47,10 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                 Name = doc.Name,
                 Slug = doc.Slug,
                 Price = doc.Price,
+                StockQuantity = doc.StockQuantity,
                 ProductImageUrl = doc.ProductImage,
-                AltText = doc.AltText
+                AltText = doc.AltText,
+                CategorySlug = doc.CategorySlug
             }).ToList();
 
             return new CursorPagedResult<ProductSummaryResponse>
