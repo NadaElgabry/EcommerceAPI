@@ -1,5 +1,4 @@
-﻿using EcommerceAPI.Application.DTOs.Product;
-using EcommerceAPI.Application.Interfaces.IServices;
+﻿using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Application.Mappers.Mappings;
 using EcommerceAPI.Application.Services.Auth;
@@ -12,6 +11,8 @@ using EcommerceAPI.Application.Validators.Product;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using EcommerceAPI.Application.Services.FavoritesService;
+using EcommerceAPI.Application.Services.CartService;
+using EcommerceAPI.Application.Validators.Cart;
 using EcommerceAPI.Application.Validators.Auth;
 
 namespace EcommerceAPI.Application;
@@ -33,11 +34,14 @@ public static class DependencyInjection
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IFavoritesService, FavoritesService>();
         services.AddScoped<IUserActivityService, UserActivityService>();
+        services.AddScoped<ICartService, CartService>();
+        services.AddScoped<ICartMapper, CartMapper>();
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateProfileRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<ProductQueryParamsRequestValidator>();
-
+        services.AddValidatorsFromAssemblyContaining<AddToCartRequestValidator>();
+        services.AddValidatorsFromAssemblyContaining<UpdateCartRequestValidator>();
         return services;
     }
 }

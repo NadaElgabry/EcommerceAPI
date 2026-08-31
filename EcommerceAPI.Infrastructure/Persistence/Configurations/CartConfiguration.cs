@@ -1,6 +1,7 @@
 ﻿using EcommerceAPI.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.Reflection.Emit;
 
 namespace EcommerceAPI.Infrastructure.Persistence.Configurations
 {
@@ -20,11 +21,16 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
                 .HasForeignKey(i => i.CartId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            builder.HasIndex(c => c.UserId)
+                .IsUnique();
+
             builder.HasData(
                 new Cart
                 {
                     Id = 1,
-                    UserId = 1
+                    UserId = 1,
+                    CreatedAt = new DateTime(2026, 8, 28, 14, 3, 34, 501, DateTimeKind.Utc).AddTicks(8514),
+                    UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                 }
             );
         }
