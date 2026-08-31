@@ -75,6 +75,8 @@ namespace EcommerceAPI.Application.Services.CartService
                     _cartRepository.Update(cart);
                 }
                 await _userActivityService.LogActivityAsync(user.Id, product.Id, UserActionType.AddToCart, cancellationToken);
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
             }
             ,cancellationToken);
 
@@ -140,6 +142,7 @@ namespace EcommerceAPI.Application.Services.CartService
                                                 product.Id,
                                                 UserActionType.RemoveFromCart,
                                                 cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
 
             return existingItem is null ? null : _cartMapper.ToCartItemResponse(existingItem);
