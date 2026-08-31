@@ -40,9 +40,9 @@ namespace EcommerceAPI.Controllers
                 statusCode: 200));
         }
 
-        [HttpGet("{guid}")]
+        [HttpGet("user/{guid}")]
         [Authorize]
-        public async Task<IActionResult> GetOrdersList([FromRoute] Guid guid,[FromBody] GetOrdersRequest request,CancellationToken cancellationToken)
+        public async Task<IActionResult> GetOrdersList([FromRoute] Guid guid,[FromQuery] GetOrdersRequest request,CancellationToken cancellationToken)
         {
             var response = await _orderService.GetOrdersAsync(guid,request,cancellationToken);
             return Ok(ApiResponse<CursorPagedResult<OrderSummary>>.SuccessResponse(
