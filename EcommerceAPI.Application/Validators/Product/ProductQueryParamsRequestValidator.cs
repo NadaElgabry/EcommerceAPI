@@ -35,14 +35,6 @@ namespace EcommerceAPI.Application.Validators.Product
                 .WithMessage("tags cannot contain empty or overly long values.")
                 .When(x => x.Tags is { Count: > 0 });
 
-            // --- brand ---
-            RuleFor(x => x.Brand)
-                .Must(b => b!.Count <= MaxListItems)
-                .WithMessage($"brand cannot contain more than {MaxListItems} values.")
-                .Must(b => b!.All(v => !string.IsNullOrWhiteSpace(v) && v.Length <= MaxListItemLength))
-                .WithMessage("brand cannot contain empty or overly long values.")
-                .When(x => x.Brand is { Count: > 0 });
-
             // --- minPrice / maxPrice: individual bounds ---
             RuleFor(x => x.MinPrice)
                 .GreaterThanOrEqualTo(0)

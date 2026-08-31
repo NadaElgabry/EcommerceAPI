@@ -15,10 +15,6 @@ namespace EcommerceAPI.Application.Validators.Product
                 .NotEmpty()
                 .MaximumLength(2000);
 
-            RuleFor(request => request.Brand)
-                .NotEmpty()
-                .MaximumLength(100);
-
             RuleFor(request => request.Price)
                 .GreaterThan(0)
                 .WithMessage("Price must be greater than 0.");

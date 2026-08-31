@@ -22,12 +22,9 @@ namespace EcommerceAPI.Infrastructure.Persistence.Seed
                 throw new InvalidOperationException("Seed categories before seeding products.");
             }
 
-            var brands = new[] { "AudioTech", "Cadbury", "Nike", "Samsung", "Sony", "Apple", "Adidas", "LG", "Philips", "Bosch" };
-
             var faker = new Faker<Product>()
                 .RuleFor(p => p.Name, f => f.Commerce.ProductName())
                 .RuleFor(p => p.Description, f => f.Commerce.ProductDescription())
-                .RuleFor(p => p.Brand, f => f.PickRandom(brands))
                 .RuleFor(p => p.Price, f => f.Random.Decimal(5, 2000))
                 .RuleFor(p => p.StockQuantity, f => f.Random.Int(0, 500))
                 .RuleFor(p => p.CreationDate, f => f.Date.Past(2))

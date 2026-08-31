@@ -1,6 +1,7 @@
 ﻿using EcommerceAPI.Application.Common;
 using EcommerceAPI.Application.DTOs.Category;
 using EcommerceAPI.Application.DTOs.Common;
+using EcommerceAPI.Application.DTOs.Product;
 using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Image;
@@ -17,20 +18,26 @@ namespace EcommerceAPI.Application.Services.CategoryService
     public class CategoryService : ICategoryService
     {
         private readonly IRepository<Category> _categoryRepository;
+        private readonly IRepository<Product> _productRepository;
         private readonly ICategoryMapper _categoryMapper;
+        private readonly IProductMapper _productMapper;
         private readonly IImageService _imageService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ISlugGenerator _slugGenerator;
 
         public CategoryService(
             IRepository<Category> categoryRepository,
+            IRepository<Product> productRepository,
             ICategoryMapper categoryMapper,
+            IProductMapper productMapper,
             IImageService imageService,
             IUnitOfWork unitOfWork,
             ISlugGenerator slugGenerator)
         {
             _categoryRepository = categoryRepository;
+            _productRepository = productRepository;
             _categoryMapper = categoryMapper;
+            _productMapper = productMapper;
             _imageService = imageService;
             _unitOfWork = unitOfWork;
             _slugGenerator = slugGenerator;
@@ -138,6 +145,170 @@ namespace EcommerceAPI.Application.Services.CategoryService
                     PageSize = categoryResponses.Count
                 }
             };
+        }
+
+        public async Task<CategoryResponse> GetCategoryDetailsAsync(
+            string slug,
+            CancellationToken cancellationToken)
+        {
+            var category = await _categoryRepository.GetByAsync(
+                category => category.Slug == slug,
+                cancellationToken)
+                ?? throw new NotFoundException(
+                    $"Category '{slug}' not found.");
+
+            return _categoryMapper.toCategoryResponse(
+                category);
+        }
+
+        public async Task<CursorPagedResult<ProductSummaryResponse>> GetCategoryProductsAsync(
+            string slug,
+            GetCategoriesRequest request,
+            CancellationToken cancellationToken)
+        {
+            var category = await _categoryRepository.GetByAsync(
+                category => category.Slug == slug,
+                cancellationToken)
+                ?? throw new NotFoundException(
+                    $"Category '{slug}' not found.");
+
+            var lastProductId = 0;
+
+            if (!string.IsNullOrWhiteSpace(request.Cursor))
+            {
+                lastProductId = CursorHelper.Decode<int>(
+                    request.Cursor);
+            }
+
+            var products = await _productRepository.GetPagedAsync(
+                predicate: product =>
+                    product.CategoryId == category.Id &&
+                    product.Id > lastProductId,
+                orderBy: product => product.Id,
+                take: request.Limit + 1,
+                cancellationToken: cancellationToken);
+
+            var hasNext = products.Count > request.Limit;
+
+            if (hasNext)
+            {
+                products.RemoveAt(products.Count - 1);
+            }
+
+            string? nextCursor = null;
+
+            if (hasNext && products.Count > 0)
+            {
+                nextCursor = CursorHelper.Encode(
+                    products[^1].Id);
+            }
+
+            var productResponses = products
+                .Select(product =>
+                    _productMapper.ToProductSummaryResponse(product))
+                .ToList();
+
+            return new CursorPagedResult<ProductSummaryResponse>
+            {
+                Data = productResponses,
+
+                Pagination = new CursorPageInfo
+                {
+                    NextCursor = nextCursor,
+                    HasNext = hasNext,
+                    PageSize = productResponses.Count
+                }
+            };
+        }
+
+        public async Task<CategoryResponse> UpdateCategoryAsync(
+            string slug,
+            UpdateCategoryRequest request,
+            CancellationToken cancellationToken)
+        {
+            var category = await _categoryRepository.GetByAsync(
+                c => c.Slug == slug,
+                cancellationToken)
+                ?? throw new NotFoundException(
+                    $"Category '{slug}' not found.");
+
+            var updatedSlug = category.Slug;
+            var oldImageUrl = category.ImageUrl;
+            string? newImageUrl = null;
+
+            if (request.Name != null)
+            {
+                if (await _categoryRepository.ExistByAsync(
+                    c => c.Name == request.Name &&
+                         c.Id != category.Id,
+                    cancellationToken))
+                {
+                    throw new ConflictException(
+                        "Category with the same name already exists.");
+                }
+
+                updatedSlug = _slugGenerator.GenerateSlug(
+                    request.Name);
+
+                if (await _categoryRepository.ExistByAsync(
+                    c => c.Slug == updatedSlug &&
+                         c.Id != category.Id,
+                    cancellationToken))
+                {
+                    throw new ConflictException(
+                        "A category with a matching slug already exists.");
+                }
+            }
+
+            if (request.Image != null)
+            {
+                newImageUrl = await _imageService.SaveFileAsync(
+                    request.Image,
+                    updatedSlug,
+                    ImageOwnerType.Category,
+                    cancellationToken);
+            }
+
+            if (request.Name != null)
+            {
+                category.Name = request.Name;
+                category.Slug = updatedSlug;
+            }
+
+            if (newImageUrl != null)
+            {
+                category.ImageUrl = newImageUrl;
+            }
+
+            await _unitOfWork.ExecuteInTransactionAsync(
+                async () =>
+                {
+                    _categoryRepository.Update(category);
+
+                    await _unitOfWork.SaveChangesAsync(
+                        cancellationToken);
+                },
+                cancellationToken);
+
+            if (newImageUrl != null &&
+                !string.Equals(
+                    oldImageUrl,
+                    newImageUrl,
+                    StringComparison.OrdinalIgnoreCase) &&
+                oldImageUrl.StartsWith(
+                    "categories/",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                var oldFileName = Path.GetFileName(
+                    oldImageUrl);
+
+                _imageService.DeleteFile(
+                    oldFileName,
+                    ImageOwnerType.Category);
+            }
+
+            return _categoryMapper.toCategoryResponse(
+                category);
         }
 
         public async Task DeleteCategoryAsync(
