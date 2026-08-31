@@ -126,7 +126,7 @@ namespace EcommerceAPI.Application.Services.OrderService
             if (hasNext && orders.Count > 0)
             {
                 nextCursor = CursorHelper.Encode(
-                    orders[^1].Id);
+                    orders[^1].CreationDate);
             }
             var ordersummaries = orders.Select(o => _orderMapper.ToOrderSummary(o)).ToList();
 

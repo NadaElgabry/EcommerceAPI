@@ -57,6 +57,8 @@ namespace EcommerceAPI.Application.Mappers
         {
             return new OrderSummary
             {
+                Guid = order.Guid,
+                OrderNumber= order.OrderNumber,
                 Total = order.TotalAmount,
                 Address = order.Address,
                 CreationDate = order.CreationDate,

@@ -1,4 +1,5 @@
 ﻿using EcommerceAPI.Application.Common;
+using EcommerceAPI.Application.DTOs.Common;
 using EcommerceAPI.Application.DTOs.Order;
 using EcommerceAPI.Application.Interfaces.IServices;
 using IdempotentAPI.Filters;
@@ -39,5 +40,15 @@ namespace EcommerceAPI.Controllers
                 statusCode: 200));
         }
 
+        [HttpGet("user/{guid}")]
+        [Authorize]
+        public async Task<IActionResult> GetOrdersList([FromRoute] Guid guid,[FromQuery] GetOrdersRequest request,CancellationToken cancellationToken)
+        {
+            var response = await _orderService.GetOrdersAsync(guid,request,cancellationToken);
+            return Ok(ApiResponse<CursorPagedResult<OrderSummary>>.SuccessResponse(
+                data: response,
+                message: "Orders retrieved successfully",
+                statusCode: 200));
+        }
     }
 }

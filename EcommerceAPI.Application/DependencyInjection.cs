@@ -1,19 +1,21 @@
 ﻿using EcommerceAPI.Application.Interfaces.IServices;
+using EcommerceAPI.Application.Mappers;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Application.Mappers.Mappings;
 using EcommerceAPI.Application.Services.Auth;
+using EcommerceAPI.Application.Services.CartService;
 using EcommerceAPI.Application.Services.CategoryService;
+using EcommerceAPI.Application.Services.FavoritesService;
+using EcommerceAPI.Application.Services.OrderService;
 using EcommerceAPI.Application.Services.ProductService;
 using EcommerceAPI.Application.Services.TagService;
 using EcommerceAPI.Application.Services.UserService;
 using EcommerceAPI.Application.Validators;
+using EcommerceAPI.Application.Validators.Auth;
+using EcommerceAPI.Application.Validators.Cart;
 using EcommerceAPI.Application.Validators.Product;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using EcommerceAPI.Application.Services.FavoritesService;
-using EcommerceAPI.Application.Services.CartService;
-using EcommerceAPI.Application.Validators.Cart;
-using EcommerceAPI.Application.Validators.Auth;
 
 namespace EcommerceAPI.Application;
 
@@ -36,6 +38,8 @@ public static class DependencyInjection
         services.AddScoped<IUserActivityService, UserActivityService>();
         services.AddScoped<ICartService, CartService>();
         services.AddScoped<ICartMapper, CartMapper>();
+        services.AddScoped<IOrderService,OrderService>();
+        services.AddScoped<IOrderMapper, OrderMapper>();
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateProfileRequestValidator>();

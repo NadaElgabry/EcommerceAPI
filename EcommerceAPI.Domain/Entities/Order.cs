@@ -15,8 +15,7 @@ namespace EcommerceAPI.Domain.Entities
         public decimal TotalAmount { get; set; }
         public OrderStatus Status { get; set; }
         public DateTime CreationDate { get; set; } = DateTime.Now;
-        public DateTime DeliveryTime { get; set; }
-        
+        public DateTime? DeliveryTime { get; set; }
         public List<OrderItem> Items { get; set; } = new List<OrderItem>(); 
 
     }
