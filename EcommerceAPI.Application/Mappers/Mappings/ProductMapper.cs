@@ -6,7 +6,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
 {
     public class ProductMapper : IProductMapper
     {
-        public Product ToProduct(CreateProductRequest request ,string slug, string imageUrl, List<Tag> validTags) 
+        public Product ToProduct(CreateProductRequest request ,string slug, Category category, string imageUrl, List<Tag> validTags) 
         {
             var product = new Product
             {
@@ -16,7 +16,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 Price = request.Price,
                 StockQuantity = request.StockQuantity,
                 AltText = request.AltText,
-                CategoryId = request.CategoryId,
+                CategoryId = category.Id,
                 ProductImage = imageUrl,
                 CreationDate = DateTime.UtcNow
             };
@@ -55,6 +55,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 Name = product.Name,
                 Slug = product.Slug,
                 Price = product.Price,
+                StockQuantity = product.StockQuantity,
                 AltText = product.AltText,
                 ProductImageUrl = product.ProductImage,
             };
