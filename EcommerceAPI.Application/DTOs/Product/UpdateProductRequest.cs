@@ -11,7 +11,7 @@ namespace EcommerceAPI.Application.DTOs.Product
         public int StockQuantity { get; set; }
         public string? AltText { get; set; }
         public IFormFile Image { get; set; }
-        public string CategoryName { get; set; }
+        public string CategorySlug { get; set; }
         public List<string> TagNames { get; set; } = new();
     }
 }

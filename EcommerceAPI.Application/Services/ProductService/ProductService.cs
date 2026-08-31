@@ -150,14 +150,14 @@ namespace EcommerceAPI.Application.Services.ProductService
                 cancellationToken: cancellationToken)
                 ?? throw new NotFoundException($"Product '{slug}' not found.");
 
-            if (request.CategoryName != product.Category.Name)
+            if (request.CategorySlug != product.Category.Slug)
             {
-                var CategorySlug = _slugGenerator.GenerateSlug(request.CategoryName);
+                var CategorySlug = _slugGenerator.GenerateSlug(request.CategorySlug);
                 var categoryExists = await _categoryRepository.ExistByAsync(
                     c => c.Slug == CategorySlug, cancellationToken);
                 if (!categoryExists)
                 {
-                    throw new NotFoundException($"Category with name {request.CategoryName} not found.");
+                    throw new NotFoundException($"Category with slug {request.CategorySlug} not found.");
                 }
                 var category = await _categoryRepository.GetByAsync(c => c.Slug == CategorySlug, cancellationToken);
 

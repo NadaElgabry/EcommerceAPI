@@ -12,7 +12,7 @@ namespace EcommerceAPI.Application.DTOs.Product
         public string ProductImageUrl { get; set; }
         public string AltText { get; set; }
         public DateTime CreationDate { get; set; }
-        public string CategoryName { get; set; }
+        public string CategorySlug { get; set; }
         public List<string> Tags { get; set; } = new();
     }
 }
