@@ -67,10 +67,12 @@ namespace EcommerceAPI.Application.Services.ProductService
 
         public async Task<ProductResponse> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken)
         {
-            var category = await _categoryRepository.GetByAsync(c => c.Slug == request.CategorySlug, cancellationToken);
+            var CategorySlug = _slugGenerator.GenerateSlug(request.CategoryName);
+
+            var category = await _categoryRepository.GetByAsync(c => c.Slug == CategorySlug, cancellationToken);
             if (category == null)
             {
-                throw new NotFoundException($"Category with slug {request.CategorySlug} not found.");
+                throw new NotFoundException($"Category with name {request.CategoryName} not found.");
             }
 
             // 2. Generate and validate Slug
@@ -88,11 +90,11 @@ namespace EcommerceAPI.Application.Services.ProductService
             }
 
             var validTags = new List<Tag>();
-            if (request.TagIds != null && request.TagIds.Any())
+            if (request.TagNames != null && request.TagNames.Any())
             {
-                foreach (var tagId in request.TagIds.Distinct())
+                foreach (var tagName in request.TagNames.Distinct())
                 {
-                    var tag = await _tagRepository.GetByAsync(t => t.Id == tagId, cancellationToken);
+                    var tag = await _tagRepository.GetByAsync(t => t.Name == tagName, cancellationToken);
                     if (tag != null)
                     {
                         validTags.Add(tag);
@@ -149,15 +151,18 @@ namespace EcommerceAPI.Application.Services.ProductService
                 cancellationToken: cancellationToken)
                 ?? throw new NotFoundException($"Product '{slug}' not found.");
 
-            if (request.CategoryId != product.CategoryId)
+            if (request.CategoryName != product.Category.Name)
             {
+                var CategorySlug = _slugGenerator.GenerateSlug(request.CategoryName);
                 var categoryExists = await _categoryRepository.ExistByAsync(
-                    c => c.Id == request.CategoryId, cancellationToken);
+                    c => c.Slug == CategorySlug, cancellationToken);
                 if (!categoryExists)
                 {
-                    throw new NotFoundException($"Category with ID {request.CategoryId} not found.");
+                    throw new NotFoundException($"Category with name {request.CategoryName} not found.");
                 }
-                product.CategoryId = request.CategoryId;
+                var category = await _categoryRepository.GetByAsync(c => c.Slug == CategorySlug, cancellationToken);
+
+                product.CategoryId = category.Id;
             }
 
             if (!string.Equals(request.Name, product.Name, StringComparison.Ordinal))
@@ -181,9 +186,14 @@ namespace EcommerceAPI.Application.Services.ProductService
             _productMapper.UpdateProductFromRequest(product, request);
 
             product.ProductTags.Clear();
-            foreach (var tagId in request.TagIds.Distinct())
+            foreach (var tagName in request.TagNames.Distinct())
             {
-                product.ProductTags.Add(new ProductTag { ProductId = product.Id, TagId = tagId });
+                var tag = await _tagRepository.GetByAsync(t => t.Name == tagName, cancellationToken);
+                if (tag == null)
+                {
+                    throw new NotFoundException($"Tag with name {tagName} not found.");
+                }
+                product.ProductTags.Add(new ProductTag { ProductId = product.Id, TagId = tag.Id });
             }
 
             _productRepository.Update(product);
