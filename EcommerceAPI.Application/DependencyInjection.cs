@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using EcommerceAPI.Application.Services.FavoritesService;
 using EcommerceAPI.Application.Services.CartService;
 using EcommerceAPI.Application.Validators.Cart;
+using EcommerceAPI.Application.Validators.Auth;
 
 namespace EcommerceAPI.Application;
 

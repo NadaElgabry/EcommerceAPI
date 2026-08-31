@@ -1,11 +1,14 @@
 ﻿using EcommerceAPI.Application.DTOs.Auth;
 using FluentValidation;
 
-namespace EcommerceAPI.Application.Validators
+namespace EcommerceAPI.Application.Validators.Auth
 {
     public class RegisterRequestValidator
         : AbstractValidator<RegisterRequest>
     {
+        private static readonly System.Text.RegularExpressions.Regex EgyptianPhoneRegex =
+            new(@"^(\+20|0020|0)?1[0125][0-9]{8}$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
         public RegisterRequestValidator()
         {
             RuleFor(request => request.FirstName)
@@ -24,25 +27,15 @@ namespace EcommerceAPI.Application.Validators
                     "Last name cannot exceed 50 characters."
                 );
 
-            RuleFor(request => request.Email)
-                .NotEmpty()
-                .WithMessage("Email is required.")
-                .EmailAddress()
-                .WithMessage("Email format is invalid.")
-                .MaximumLength(100)
-                .WithMessage(
-                    "Email cannot exceed 100 characters."
-                );
+            RuleFor(r => r.Email)
+                    .NotEmpty().WithMessage("Email is required.")
+                    .MaximumLength(100).WithMessage("Email cannot exceed 100 characters.")
+                    .EmailAddress().WithMessage("Email format is invalid.");
 
-            RuleFor(request => request.PhoneNumber)
-                .NotEmpty()
-                .WithMessage("Phone number is required.")
-                .MinimumLength(10)
-                .WithMessage("Phone number must contain at least 10 characters.")
-                .MaximumLength(15)
-                .WithMessage("Phone number cannot exceed 15 characters.")
-                .Matches(@"^(\+20|0020|0)?1[0125][0-9]{8}$")
-                .WithMessage("Phone number must be a valid Egyptian mobile number (e.g. 01012345678).");
+            RuleFor(r => r.PhoneNumber)
+                .NotEmpty().WithMessage("Phone number is required.")
+                .Matches(EgyptianPhoneRegex)
+                    .WithMessage("Phone number must be a valid Egyptian mobile number (e.g. 01012345678).");
 
             RuleFor(request => request.BirthDate)
                 .NotEmpty()
@@ -51,24 +44,7 @@ namespace EcommerceAPI.Application.Validators
                 .WithMessage("Birth Date is invalid");
 
             RuleFor(request => request.Password)
-                .NotEmpty()
-                .WithMessage("Password is required.")
-                .MinimumLength(8)
-                .WithMessage(
-                    "Password must contain at least 8 characters."
-                )
-                .MaximumLength(100)
-                .WithMessage(
-                    "Password cannot exceed 100 characters."
-                )
-                .Matches(@"[0-9]")
-                .WithMessage(
-                    "Password must contain at least one number."
-                )
-                .Matches(@"[^a-zA-Z0-9]")
-                .WithMessage(
-                    "Password must contain at least one special character."
-                );
+                .ValidPassword();
         }
     }
 }

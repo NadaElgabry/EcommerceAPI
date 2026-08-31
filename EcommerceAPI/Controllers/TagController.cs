@@ -52,7 +52,7 @@ namespace EcommerceAPI.Controllers
             await _tagService.DeleteTagAsync(slug, cancellationToken);
             return StatusCode(
                 204,
-                ApiResponse<string>.SuccessResponse(message: "Product deleted successfully",
+                ApiResponse<string>.SuccessResponse(message: "Tag deleted successfully",
                 statusCode: 204));
         }
     }
