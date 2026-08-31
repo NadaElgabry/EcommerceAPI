@@ -8,7 +8,6 @@ namespace EcommerceAPI.Application.DTOs.Product
     {
         public string? CategorySlug { get; set; }
         public List<string>? Tags { get; set; }
-        public List<string>? Brand { get; set; }
         public decimal? MinPrice { get; set; }
         public decimal? MaxPrice { get; set; }
         public bool? InStock { get; set; }

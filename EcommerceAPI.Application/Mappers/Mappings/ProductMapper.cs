@@ -13,7 +13,6 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 Name = request.Name,
                 Slug = slug,
                 Description = request.Description,
-                Brand = request.Brand,
                 Price = request.Price,
                 StockQuantity = request.StockQuantity,
                 AltText = request.AltText,
@@ -41,11 +40,10 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 Name = product.Name,
                 Slug = product.Slug,
                 Description = product.Description,
-                Brand = product.Brand,
                 Price = product.Price,
                 StockQuantity = product.StockQuantity,
                 AltText = product.AltText,
-                CategoryId = product.CategoryId,
+                CategoryName = product.Category.Name,
                 ProductImageUrl = product.ProductImage,
                 CreationDate = product.CreationDate,
             };
@@ -65,7 +63,6 @@ namespace EcommerceAPI.Application.Mappers.Mappings
         public void UpdateProductFromRequest(Product product, UpdateProductRequest request)
         {
             product.Description = request.Description;
-            product.Brand = request.Brand;
             product.Price = request.Price;
             product.StockQuantity = request.StockQuantity;
             product.AltText = request.AltText;

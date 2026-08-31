@@ -14,7 +14,6 @@ namespace EcommerceAPI.Application.Mappers.Mappings
             {
                 Name = cartItem.Product.Name,
                 Slug = cartItem.Product.Slug,
-                Brand = cartItem.Product.Brand,
                 AltText = cartItem.Product.AltText,
                 ProductImageUrl = cartItem.Product.ProductImage,
                 UnitPrice = cartItem.UnitPrice,

@@ -33,7 +33,6 @@ namespace EcommerceAPI.Application.Mappers
                 Slug = item.Product.Slug,
                 Name = item.Product.Name,
                 Quantity = item.Quantity,
-                Brand = item.Product.Brand,
                 ProductImage = item.Product.ProductImage,
                 AltText = item.Product.AltText,
                 UnitPrice = item.UnitPrice,
