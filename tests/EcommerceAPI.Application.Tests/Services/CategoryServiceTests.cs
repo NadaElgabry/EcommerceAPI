@@ -1,0 +1,385 @@
+using System.Linq.Expressions;
+using EcommerceAPI.Application.Common;
+using EcommerceAPI.Application.DTOs.Category;
+using EcommerceAPI.Application.Interfaces;
+using EcommerceAPI.Application.Interfaces.Image;
+using EcommerceAPI.Application.Interfaces.Repositories;
+using EcommerceAPI.Application.Interfaces.Slug;
+using EcommerceAPI.Application.Mappers.Interfaces;
+using EcommerceAPI.Application.Services.CategoryService;
+using Microsoft.EntityFrameworkCore.Query;
+using Moq;
+using Xunit;
+using DomainCategory = EcommerceAPI.Domain.Entities.Category;
+using DomainProduct = EcommerceAPI.Domain.Entities.Product;
+
+namespace EcommerceAPI.Application.Tests.Services
+{
+    public class CategoryServiceTests
+    {
+        private readonly Mock<IRepository<DomainCategory>> _categoryRepository = new();
+        private readonly Mock<IRepository<DomainProduct>> _productRepository = new();
+        private readonly Mock<ICategoryMapper> _categoryMapper = new();
+        private readonly Mock<IProductMapper> _productMapper = new();
+        private readonly Mock<IImageService> _imageService = new();
+        private readonly Mock<IUnitOfWork> _unitOfWork = new();
+        private readonly Mock<ISlugGenerator> _slugGenerator = new();
+
+        private readonly CategoryService _sut;
+
+        public CategoryServiceTests()
+        {
+            _sut = new CategoryService(
+                _categoryRepository.Object,
+                _productRepository.Object,
+                _categoryMapper.Object,
+                _productMapper.Object,
+                _imageService.Object,
+                _unitOfWork.Object,
+                _slugGenerator.Object
+            );
+        }
+
+        [Fact]
+        public async Task GetCategoriesAsync_WhenMoreCategoriesExist_ReturnsPageWithNextCursor()
+        {
+            var request = new GetCategoriesRequest
+            {
+                Cursor = null,
+                Limit = 2
+            };
+
+            var firstCategory = new DomainCategory
+            {
+                Id = 1,
+                Name = "Electronics",
+                Slug = "electronics",
+                ImageUrl = "uploads/categories/electronics.jpg",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var secondCategory = new DomainCategory
+            {
+                Id = 2,
+                Name = "Groceries",
+                Slug = "groceries",
+                ImageUrl = "uploads/categories/groceries.jpg",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var thirdCategory = new DomainCategory
+            {
+                Id = 3,
+                Name = "Clothing",
+                Slug = "clothing",
+                ImageUrl = "uploads/categories/clothing.jpg",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var categories = new List<DomainCategory>
+            {
+                firstCategory,
+                secondCategory,
+                thirdCategory
+            };
+
+            var firstResponse = new CategoryResponse
+            {
+                Name = firstCategory.Name,
+                Slug = firstCategory.Slug,
+                ImageUrl = firstCategory.ImageUrl,
+                CreatedAt = firstCategory.CreatedAt
+            };
+
+            var secondResponse = new CategoryResponse
+            {
+                Name = secondCategory.Name,
+                Slug = secondCategory.Slug,
+                ImageUrl = secondCategory.ImageUrl,
+                CreatedAt = secondCategory.CreatedAt
+            };
+
+            _categoryRepository
+                .Setup(repository =>
+                    repository.GetPagedAsync(
+                        It.IsAny<Expression<Func<DomainCategory, bool>>>(),
+                        It.IsAny<Expression<Func<DomainCategory, int>>>(),
+                        3,
+                        It.IsAny<Func<IQueryable<DomainCategory>,
+                            IIncludableQueryable<DomainCategory, object>>?>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync(categories);
+
+            _categoryMapper
+                .Setup(mapper =>
+                    mapper.toCategoryResponse(firstCategory))
+                .Returns(firstResponse);
+
+            _categoryMapper
+                .Setup(mapper =>
+                    mapper.toCategoryResponse(secondCategory))
+                .Returns(secondResponse);
+
+            var result = await _sut.GetCategoriesAsync(
+                request,
+                CancellationToken.None
+            );
+
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Data.Count);
+            Assert.Equal("Electronics", result.Data[0].Name);
+            Assert.Equal("Groceries", result.Data[1].Name);
+
+            Assert.True(result.Pagination.HasNext);
+            Assert.Equal(2, result.Pagination.PageSize);
+
+            Assert.Equal(
+                CursorHelper.Encode(secondCategory.Id),
+                result.Pagination.NextCursor
+            );
+
+            _categoryRepository.Verify(
+                repository =>
+                    repository.GetPagedAsync(
+                        It.IsAny<Expression<Func<DomainCategory, bool>>>(),
+                        It.IsAny<Expression<Func<DomainCategory, int>>>(),
+                        3,
+                        It.IsAny<Func<IQueryable<DomainCategory>,
+                            IIncludableQueryable<DomainCategory, object>>?>(),
+                        It.IsAny<CancellationToken>()),
+                Times.Once
+            );
+
+            _categoryMapper.Verify(
+                mapper =>
+                    mapper.toCategoryResponse(firstCategory),
+                Times.Once
+            );
+
+            _categoryMapper.Verify(
+                mapper =>
+                    mapper.toCategoryResponse(secondCategory),
+                Times.Once
+            );
+
+            _categoryMapper.Verify(
+                mapper =>
+                    mapper.toCategoryResponse(thirdCategory),
+                Times.Never
+            );
+        }
+
+        [Fact]
+        public async Task GetCategoriesAsync_WhenNoMoreCategoriesExist_ReturnsPageWithoutNextCursor()
+        {
+            var request = new GetCategoriesRequest
+            {
+                Cursor = null,
+                Limit = 20
+            };
+
+            var category = new DomainCategory
+            {
+                Id = 1,
+                Name = "Electronics",
+                Slug = "electronics",
+                ImageUrl = "uploads/categories/electronics.jpg",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var response = new CategoryResponse
+            {
+                Name = category.Name,
+                Slug = category.Slug,
+                ImageUrl = category.ImageUrl,
+                CreatedAt = category.CreatedAt
+            };
+
+            _categoryRepository
+                .Setup(repository =>
+                    repository.GetPagedAsync(
+                        It.IsAny<Expression<Func<DomainCategory, bool>>>(),
+                        It.IsAny<Expression<Func<DomainCategory, int>>>(),
+                        21,
+                        It.IsAny<Func<IQueryable<DomainCategory>,
+                            IIncludableQueryable<DomainCategory, object>>?>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<DomainCategory>
+                {
+                    category
+                });
+
+            _categoryMapper
+                .Setup(mapper =>
+                    mapper.toCategoryResponse(category))
+                .Returns(response);
+
+            var result = await _sut.GetCategoriesAsync(
+                request,
+                CancellationToken.None
+            );
+
+            Assert.Single(result.Data);
+            Assert.False(result.Pagination.HasNext);
+            Assert.Null(result.Pagination.NextCursor);
+            Assert.Equal(1, result.Pagination.PageSize);
+
+            _categoryRepository.Verify(
+                repository =>
+                    repository.GetPagedAsync(
+                        It.IsAny<Expression<Func<DomainCategory, bool>>>(),
+                        It.IsAny<Expression<Func<DomainCategory, int>>>(),
+                        21,
+                        It.IsAny<Func<IQueryable<DomainCategory>,
+                            IIncludableQueryable<DomainCategory, object>>?>(),
+                        It.IsAny<CancellationToken>()),
+                Times.Once
+            );
+        }
+
+        [Fact]
+        public async Task GetCategoriesAsync_WhenCursorProvided_UsesCursorForNextPage()
+        {
+            var request = new GetCategoriesRequest
+            {
+                Cursor = CursorHelper.Encode(2),
+                Limit = 2
+            };
+
+            var thirdCategory = new DomainCategory
+            {
+                Id = 3,
+                Name = "Clothing",
+                Slug = "clothing",
+                ImageUrl = "uploads/categories/clothing.jpg",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var fourthCategory = new DomainCategory
+            {
+                Id = 4,
+                Name = "Books",
+                Slug = "books",
+                ImageUrl = "uploads/categories/books.jpg",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var thirdResponse = new CategoryResponse
+            {
+                Name = thirdCategory.Name,
+                Slug = thirdCategory.Slug,
+                ImageUrl = thirdCategory.ImageUrl,
+                CreatedAt = thirdCategory.CreatedAt
+            };
+
+            var fourthResponse = new CategoryResponse
+            {
+                Name = fourthCategory.Name,
+                Slug = fourthCategory.Slug,
+                ImageUrl = fourthCategory.ImageUrl,
+                CreatedAt = fourthCategory.CreatedAt
+            };
+
+            _categoryRepository
+                .Setup(repository =>
+                    repository.GetPagedAsync(
+                        It.IsAny<Expression<Func<DomainCategory, bool>>>(),
+                        It.IsAny<Expression<Func<DomainCategory, int>>>(),
+                        3,
+                        It.IsAny<Func<IQueryable<DomainCategory>,
+                            IIncludableQueryable<DomainCategory, object>>?>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<DomainCategory>
+                {
+                    thirdCategory,
+                    fourthCategory
+                });
+
+            _categoryMapper
+                .Setup(mapper =>
+                    mapper.toCategoryResponse(thirdCategory))
+                .Returns(thirdResponse);
+
+            _categoryMapper
+                .Setup(mapper =>
+                    mapper.toCategoryResponse(fourthCategory))
+                .Returns(fourthResponse);
+
+            var result = await _sut.GetCategoriesAsync(
+                request,
+                CancellationToken.None
+            );
+
+            Assert.Equal(2, result.Data.Count);
+            Assert.Equal("Clothing", result.Data[0].Name);
+            Assert.Equal("Books", result.Data[1].Name);
+
+            Assert.False(result.Pagination.HasNext);
+            Assert.Null(result.Pagination.NextCursor);
+
+            _categoryRepository.Verify(
+                repository =>
+                    repository.GetPagedAsync(
+                        It.IsAny<Expression<Func<DomainCategory, bool>>>(),
+                        It.IsAny<Expression<Func<DomainCategory, int>>>(),
+                        3,
+                        It.IsAny<Func<IQueryable<DomainCategory>,
+                            IIncludableQueryable<DomainCategory, object>>?>(),
+                        It.IsAny<CancellationToken>()),
+                Times.Once
+            );
+        }
+
+        [Fact]
+        public async Task GetCategoriesAsync_WhenNoCategoriesExist_ReturnsEmptyPage()
+        {
+            var request = new GetCategoriesRequest
+            {
+                Cursor = null,
+                Limit = 20
+            };
+
+            _categoryRepository
+                .Setup(repository =>
+                    repository.GetPagedAsync(
+                        It.IsAny<Expression<Func<DomainCategory, bool>>>(),
+                        It.IsAny<Expression<Func<DomainCategory, int>>>(),
+                        21,
+                        It.IsAny<Func<IQueryable<DomainCategory>,
+                            IIncludableQueryable<DomainCategory, object>>?>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<DomainCategory>());
+
+            var result = await _sut.GetCategoriesAsync(
+                request,
+                CancellationToken.None
+            );
+
+            Assert.NotNull(result);
+            Assert.Empty(result.Data);
+
+            Assert.False(result.Pagination.HasNext);
+            Assert.Null(result.Pagination.NextCursor);
+            Assert.Equal(0, result.Pagination.PageSize);
+
+            _categoryRepository.Verify(
+                repository =>
+                    repository.GetPagedAsync(
+                        It.IsAny<Expression<Func<DomainCategory, bool>>>(),
+                        It.IsAny<Expression<Func<DomainCategory, int>>>(),
+                        21,
+                        It.IsAny<Func<IQueryable<DomainCategory>,
+                            IIncludableQueryable<DomainCategory, object>>?>(),
+                        It.IsAny<CancellationToken>()),
+                Times.Once
+            );
+
+            _categoryMapper.Verify(
+                mapper =>
+                    mapper.toCategoryResponse(
+                        It.IsAny<DomainCategory>()),
+                Times.Never
+            );
+        }
+    }
+}
