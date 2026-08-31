@@ -17,6 +17,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 StockQuantity = request.StockQuantity,
                 AltText = request.AltText,
                 CategoryId = category.Id,
+                Category = category,
                 ProductImage = imageUrl,
                 CreationDate = DateTime.UtcNow
             };
@@ -56,6 +57,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 Slug = product.Slug,
                 Price = product.Price,
                 StockQuantity = product.StockQuantity,
+                CategorySlug = product.Category.Slug,
                 AltText = product.AltText,
                 ProductImageUrl = product.ProductImage,
             };
