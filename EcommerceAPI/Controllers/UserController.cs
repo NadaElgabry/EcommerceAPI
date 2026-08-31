@@ -26,15 +26,16 @@ namespace EcommerceAPI.Controllers
         public async Task<IActionResult> UpdateUser(
             [FromRoute] Guid userId, [FromBody] UpdateProfileRequest request, CancellationToken cancellationToken)
         {
-            await _userService.UpdateProfileAsync(
+            var result = await _userService.UpdateProfileAsync(
                 userId,
                 request,
                 cancellationToken);
 
             return Ok(
-                ApiResponse<string>.SuccessResponse(
+                ApiResponse<UserResponse>.SuccessResponse(
                     message: "User updated successfully",
-                    statusCode: 200));
+                    statusCode: 200,
+                    data:result));
         }
 
         [HttpGet("{userId}")]

@@ -58,7 +58,7 @@ namespace EcommerceAPI.Application.Services.UserService
         }
 
         /// <inheritdoc />
-        public async Task UpdateProfileAsync(Guid userId, UpdateProfileRequest request, CancellationToken cancellationToken = default)
+        public async Task<UserResponse> UpdateProfileAsync(Guid userId, UpdateProfileRequest request, CancellationToken cancellationToken = default)
         {
             if (_currentUserService.Role != "Admin")
             {
@@ -66,18 +66,21 @@ namespace EcommerceAPI.Application.Services.UserService
                 {
                     throw new UnauthorizedAccessException("You are not authorized to access this resource.");
                 }
-
-                var user = await _userRepository.GetByAsync(
+            }
+            var user = await _userRepository.GetByAsync(
                     u => u.Guid == userId,
                     cancellationToken)
                     ?? throw new NotFoundException("User not found.");
 
-                _userMapper.UpdateUserFromRequest(user, request);
+                user = _userMapper.UpdateUserFromRequest(user, request);
+                await _unitOfWork.ExecuteInTransactionAsync(
+                    async () =>
+                    {
+                        _userRepository.Update(user);
 
-                _userRepository.Update(user);
-
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
-            }
+                        await _unitOfWork.SaveChangesAsync(cancellationToken);
+                    }, cancellationToken);
+            return _userMapper.ToUserResponse(user);           
         }
 
         public async Task<OffsetPagedResult<UserResponse>> GetAllUsersAsync(

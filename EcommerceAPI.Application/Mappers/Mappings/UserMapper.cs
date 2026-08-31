@@ -23,11 +23,12 @@ namespace EcommerceAPI.Application.Mappers.Mappings
             };
         }
 
-        public void UpdateUserFromRequest(User user, UpdateProfileRequest request)
+        public User UpdateUserFromRequest(User user, UpdateProfileRequest request)
         {
             if (request.FirstName != null) user.FirstName = request.FirstName;
             if (request.LastName != null) user.LastName = request.LastName;
             if (request.PhoneNumber != null) user.PhoneNumber = request.PhoneNumber;
+            return user;
         }
     }
 }
