@@ -4,6 +4,7 @@ using EcommerceAPI.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EcommerceAPI.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260830100445_OrderIndexing")]
+    partial class OrderIndexing
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -364,6 +367,9 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("AltText")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Brand")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -386,7 +392,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("ProductImage")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Slug")
@@ -410,26 +415,24 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         new
                         {
                             Id = 1,
-                            AltText = "Wireless Headphones",
+                            Brand = "AudioTech",
                             CategoryId = 1,
                             CreationDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "High quality noise-canceling headphones.",
                             Name = "Wireless Headphones",
                             Price = 199.99m,
-                            ProductImage = "https://example.com/images/wireless-headphones.jpg",
                             Slug = "wireless-headphones",
                             StockQuantity = 50
                         },
                         new
                         {
                             Id = 2,
-                            AltText = "Moro Dark Chocolate",
+                            Brand = "Cadbury",
                             CategoryId = 2,
                             CreationDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Has chocolate in it.",
                             Name = "Moro Dark Chocolate",
                             Price = 5.12m,
-                            ProductImage = "https://example.com/images/moro-dark-chocolate.jpg",
                             Slug = "moro-dark-chocolate",
                             StockQuantity = 100
                         });
@@ -790,21 +793,21 @@ namespace EcommerceAPI.Infrastructure.Migrations
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.OrderItem", b =>
                 {
-                    b.HasOne("EcommerceAPI.Domain.Entities.Order", "Order")
+                    b.HasOne("EcommerceAPI.Domain.Entities.Order", "order")
                         .WithMany("Items")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("EcommerceAPI.Domain.Entities.Product", "Product")
+                    b.HasOne("EcommerceAPI.Domain.Entities.Product", "product")
                         .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Order");
+                    b.Navigation("order");
 
-                    b.Navigation("Product");
+                    b.Navigation("product");
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.Product", b =>

@@ -99,7 +99,7 @@ namespace EcommerceAPI.Infrastructure.Services.Search
 
         /// <summary>
         /// Builds the list of Elasticsearch filters to apply based on the provided query parameters.
-        /// Supports filtering by category, tags, brand, price range, and stock availability.
+        /// Supports filtering by category, tags, price range, and stock availability.
         /// </summary>
         /// <param name="queryParams">The query parameters containing the requested filter criteria.</param>
         /// <returns>A list of <see cref="SearchFilter"/> instances representing the filters to apply.</returns>
@@ -124,16 +124,6 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                     Field = "tags.keyword",
                     Type = SearchFilterType.Terms,
                     Values = queryParams.Tags.Cast<object>()
-                });
-            }
-
-            if (queryParams.Brand is { Count: > 0 })
-            {
-                filters.Add(new SearchFilter
-                {
-                    Field = "brand.keyword",
-                    Type = SearchFilterType.Terms,
-                    Values = queryParams.Brand.Cast<object>()
                 });
             }
 

@@ -13,7 +13,7 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
             builder.Property(i => i.UnitPrice)
                 .HasColumnType("decimal(18,2)");
 
-            builder.HasOne(i => i.product)
+            builder.HasOne(i => i.Product)
                 .WithMany()
                 .HasForeignKey(i => i.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);

@@ -6,9 +6,10 @@ namespace EcommerceAPI.Domain.Enums
 {
     public enum OrderStatus
     {
-        Placed = 0,
-        Shipped = 1,
-        Delivered = 2,
-        Cancelled = 3
+        Pending = 0,
+        Placed = 1,
+        Shipped = 2,
+        Delivered = 3,
+        Cancelled = 4
     }
 }

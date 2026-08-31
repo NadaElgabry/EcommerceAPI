@@ -86,7 +86,6 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
                 Slug = product.Slug,
                 Name = product.Name,
                 Description = product.Description,
-                Brand = product.Brand,
                 Price = product.Price,
                 StockQuantity = product.StockQuantity,
                 ProductImage = product.ProductImage,

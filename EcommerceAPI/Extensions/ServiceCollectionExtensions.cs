@@ -56,7 +56,7 @@ public static class ServiceCollectionExtensions
         {
             options.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
 
-            // Define the JWT Bearer scheme
+            // 1. Define the JWT Bearer scheme
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Name = "Authorization",
@@ -64,8 +64,14 @@ public static class ServiceCollectionExtensions
                 Scheme = "Bearer",
                 BearerFormat = "JWT",
                 In = ParameterLocation.Header,
-                Description = "Enter your JWT token below.\n\nExample: \"12345abcdef\""
+                Description = "Enter your raw JWT token below."
             });
+
+            options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference("Bearer", document)] = new List<string>()
+            });
+
 
             // Register the custom Idempotency Header Filter
             options.OperationFilter<IdempotencyHeaderFilter>();

@@ -3,9 +3,9 @@ using FluentValidation;
 
 namespace EcommerceAPI.Application.Validators.Product
 {
-    public class CreateProductRequestValidator : AbstractValidator<CreateProductRequest>
+    public class UpdateProductRequestValidator : AbstractValidator<UpdateProductRequest>
     {
-        public CreateProductRequestValidator()
+        public UpdateProductRequestValidator()
         {
             RuleFor(request => request.Name)
                 .NotEmpty()
