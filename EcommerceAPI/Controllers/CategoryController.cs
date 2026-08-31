@@ -1,6 +1,7 @@
 ﻿using EcommerceAPI.Application.Common;
 using EcommerceAPI.Application.DTOs.Category;
 using EcommerceAPI.Application.DTOs.Common;
+using EcommerceAPI.Application.DTOs.Product;
 using EcommerceAPI.Application.Interfaces.IServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -55,6 +56,66 @@ namespace EcommerceAPI.Controllers
                         statusCode: 200,
                         message: "Categories retrieved successfully.",
                         data: categories));
+        }
+
+        [HttpGet("{slug}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetCategoryDetails(
+            string slug,
+            CancellationToken cancellationToken)
+        {
+            var category =
+                await _categoryService.GetCategoryDetailsAsync(
+                    slug,
+                    cancellationToken);
+
+            return Ok(
+                ApiResponse<CategoryResponse>.SuccessResponse(
+                    statusCode: 200,
+                    message: "Category retrieved successfully.",
+                    data: category));
+        }
+
+        [HttpGet("{slug}/products")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetCategoryProducts(
+            string slug,
+            [FromQuery] GetCategoriesRequest request,
+            CancellationToken cancellationToken)
+        {
+            var products =
+                await _categoryService.GetCategoryProductsAsync(
+                    slug,
+                    request,
+                    cancellationToken);
+
+            return Ok(
+                ApiResponse<CursorPagedResult<ProductSummaryResponse>>
+                    .SuccessResponse(
+                        statusCode: 200,
+                        message: "Category products retrieved successfully.",
+                        data: products));
+        }
+
+        [HttpPut("{slug}")]
+        [Authorize(Roles = "Admin")]
+        [RequestSizeLimit(6 * 1024 * 1024)]
+        public async Task<IActionResult> UpdateCategory(
+            string slug,
+            [FromForm] UpdateCategoryRequest request,
+            CancellationToken cancellationToken)
+        {
+            var categoryResponse =
+                await _categoryService.UpdateCategoryAsync(
+                    slug,
+                    request,
+                    cancellationToken);
+
+            return Ok(
+                ApiResponse<CategoryResponse>.SuccessResponse(
+                    statusCode: 200,
+                    message: "Category updated.",
+                    data: categoryResponse));
         }
 
         [HttpDelete("{slug}")]

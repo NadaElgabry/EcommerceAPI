@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using EcommerceAPI.Application.Common;
 using EcommerceAPI.Application.DTOs.Category;
 using EcommerceAPI.Application.Interfaces;
@@ -11,13 +11,16 @@ using Microsoft.EntityFrameworkCore.Query;
 using Moq;
 using Xunit;
 using DomainCategory = EcommerceAPI.Domain.Entities.Category;
+using DomainProduct = EcommerceAPI.Domain.Entities.Product;
 
 namespace EcommerceAPI.Application.Tests.Services
 {
     public class CategoryServiceTests
     {
         private readonly Mock<IRepository<DomainCategory>> _categoryRepository = new();
+        private readonly Mock<IRepository<DomainProduct>> _productRepository = new();
         private readonly Mock<ICategoryMapper> _categoryMapper = new();
+        private readonly Mock<IProductMapper> _productMapper = new();
         private readonly Mock<IImageService> _imageService = new();
         private readonly Mock<IUnitOfWork> _unitOfWork = new();
         private readonly Mock<ISlugGenerator> _slugGenerator = new();
@@ -28,7 +31,9 @@ namespace EcommerceAPI.Application.Tests.Services
         {
             _sut = new CategoryService(
                 _categoryRepository.Object,
+                _productRepository.Object,
                 _categoryMapper.Object,
+                _productMapper.Object,
                 _imageService.Object,
                 _unitOfWork.Object,
                 _slugGenerator.Object
