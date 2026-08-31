@@ -21,9 +21,9 @@ namespace EcommerceAPI.Controllers
         [Authorize]
         [Idempotent(ExpiresInMilliseconds = 1000 * 20)]
         public async Task<IActionResult> PlaceOrder([FromBody] PlaceOrderRequest request,
-            [FromHeader(Name = "IdempotencyKey")] string idempotencyKey,
             CancellationToken cancellationToken)
         {
+            var idempotencyKey = Request.Headers["IdempotencyKey"].ToString();
             var orderResponse = await _orderService.PlaceOrderAsync(request,idempotencyKey, cancellationToken);
             return Ok(ApiResponse<OrderResponse>.SuccessResponse(data: orderResponse, message: $"Order #{orderResponse.OrderNumber} placed successfully!", statusCode: 200));
         }
