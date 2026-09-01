@@ -7,14 +7,11 @@ on:
 jobs:
   docker-build-and-push:
     runs-on: self-hosted
-
     permissions:
       contents: read
       packages: write
-
     outputs:
       image: ${{ steps.image.outputs.name }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,7 +21,6 @@ jobs:
         run: |
           REPO=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
           SHA=sha-$(echo '${{ github.sha }}' | cut -c1-7)
-
           echo "name=ghcr.io/${REPO}:${SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GitHub Container Registry
@@ -42,56 +38,60 @@ jobs:
           push: true
           tags: ${{ steps.image.outputs.name }}
 
-    deploy:
-      runs-on: self-hosted
-      needs: docker-build-and-push
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
-        - name: Fix logs permissions
-          run: sudo chown -R $USER:$USER ./logs || true
+  deploy:
+    runs-on: self-hosted
+    needs: docker-build-and-push
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        - name: Generate HTTPS cert if missing
-          run: |
-            mkdir -p ./certs
-            if [ ! -f ./certs/aspnetapp.pfx ]; then
-              openssl req -x509 -newkey rsa:2048 -nodes \
-                -keyout /tmp/key.pem -out /tmp/cert.pem \
-                -days 3650 -subj "/CN=localhost"
-              openssl pkcs12 -export \
-                -out ./certs/aspnetapp.pfx \
-                -inkey /tmp/key.pem -in /tmp/cert.pem \
-                -password pass:${{ secrets.CERT_PASSWORD }}
-              rm /tmp/key.pem /tmp/cert.pem
-            fi
+      - name: Fix logs permissions
+        run: sudo chown -R $USER:$USER ./logs || true
 
-        - name: Write .env file
-          run: |
-            cat > .env <<EOF
-            IMAGE=${{ needs.docker-build-and-push.outputs.image }}
-            DB_SA_PASSWORD=${{ secrets.DB_SA_PASSWORD }}
-            JWT_KEY=${{ secrets.JWT_KEY }}
-            JWT_ISSUER=${{ secrets.JWT_ISSUER }}
-            JWT_AUDIENCE=${{ secrets.JWT_AUDIENCE }}
-            JWT_EXPIRY_MINUTES=${{ secrets.JWT_EXPIRY_MINUTES }}
-            JWT_REFRESH_TOKEN_EXPIRY_DAYS=${{ secrets.JWT_REFRESH_TOKEN_EXPIRY_DAYS }}
-            MAIL_HOST=${{ secrets.MAIL_HOST }}
-            MAIL_PORT=${{ secrets.MAIL_PORT }}
-            MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
-            MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
-            MAIL_SENDER_NAME=${{ secrets.MAIL_SENDER_NAME }}
-            MAIL_SENDER_EMAIL=${{ secrets.MAIL_SENDER_EMAIL }}
-            CERT_PASSWORD=${{ secrets.CERT_PASSWORD }}
-            EOF
-        - name: Log in to GHCR
-          run: |
-            echo "${{ secrets.GITHUB_TOKEN }}" | \
-              docker login ghcr.io \
+      - name: Generate HTTPS cert if missing
+        run: |
+          mkdir -p ./certs
+          if [ ! -f ./certs/aspnetapp.pfx ]; then
+            openssl req -x509 -newkey rsa:2048 -nodes \
+              -keyout /tmp/key.pem -out /tmp/cert.pem \
+              -days 3650 -subj "/CN=localhost"
+            openssl pkcs12 -export \
+              -out ./certs/aspnetapp.pfx \
+              -inkey /tmp/key.pem -in /tmp/cert.pem \
+              -password pass:${{ secrets.CERT_PASSWORD }}
+            rm /tmp/key.pem /tmp/cert.pem
+          fi
+
+      - name: Write .env file
+        run: |
+          cat > .env <<EOF
+          IMAGE=${{ needs.docker-build-and-push.outputs.image }}
+          DB_SA_PASSWORD=${{ secrets.DB_SA_PASSWORD }}
+          JWT_KEY=${{ secrets.JWT_KEY }}
+          JWT_ISSUER=${{ secrets.JWT_ISSUER }}
+          JWT_AUDIENCE=${{ secrets.JWT_AUDIENCE }}
+          JWT_EXPIRY_MINUTES=${{ secrets.JWT_EXPIRY_MINUTES }}
+          JWT_REFRESH_TOKEN_EXPIRY_DAYS=${{ secrets.JWT_REFRESH_TOKEN_EXPIRY_DAYS }}
+          MAIL_HOST=${{ secrets.MAIL_HOST }}
+          MAIL_PORT=${{ secrets.MAIL_PORT }}
+          MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+          MAIL_SENDER_NAME=${{ secrets.MAIL_SENDER_NAME }}
+          MAIL_SENDER_EMAIL=${{ secrets.MAIL_SENDER_EMAIL }}
+          CERT_PASSWORD=${{ secrets.CERT_PASSWORD }}
+          EOF
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+            docker login ghcr.io \
               -u "${{ github.actor }}" \
               --password-stdin
-        - name: Pull image
-          run: |
-            docker pull "${{ needs.docker-build-and-push.outputs.image }}"
-        - name: Deploy with Docker Compose
-          run: |
-              docker compose up -d --pull always --remove-orphans
+
+      - name: Pull image
+        run: |
+          docker pull "${{ needs.docker-build-and-push.outputs.image }}"
+
+      - name: Deploy with Docker Compose
+        run: |
+          docker compose up -d --pull always --remove-orphans
