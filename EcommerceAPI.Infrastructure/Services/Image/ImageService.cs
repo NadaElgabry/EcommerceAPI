@@ -1,17 +1,20 @@
 ﻿using EcommerceAPI.Application.Interfaces.Image;
 using EcommerceAPI.Domain.Enums;
-using Microsoft.AspNetCore.Hosting;
+using Amazon.S3;
+using Amazon.S3.Model;
 using Microsoft.AspNetCore.Http;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Processing;
 
-public class ImageService(IWebHostEnvironment environment) : IImageService
+public class ImageService(IAmazonS3 s3Client, IConfiguration configuration) : IImageService
 {
     private const long MaxFileSizeBytes = 5 * 1024 * 1024;
     private const int MaxDimension = 4096;
     private const int MinDimension = 4;
+    private readonly string _bucketName = configuration["AWS:S3:BucketName"]
+        ?? throw new InvalidOperationException("AWS:S3:BucketName is not configured.");
 
     private static readonly Dictionary<string, List<byte[]>> Signatures = new()
     {
@@ -27,7 +30,7 @@ public class ImageService(IWebHostEnvironment environment) : IImageService
             throw new ArgumentException("Empty file.");
 
         if (imageFile.Length > MaxFileSizeBytes)
-            throw new ArgumentException($"File exceeds max size of {MaxFileSizeBytes / 1024 / 1024} MB.");
+            throw new PayloadTooLargeException($"File exceeds max size of {MaxFileSizeBytes / 1024 / 1024} MB.");
 
         if (string.IsNullOrWhiteSpace(slug))
             throw new ArgumentException("Slug is required.");
@@ -68,42 +71,63 @@ public class ImageService(IWebHostEnvironment environment) : IImageService
         }
 
         var folder = ownerType == ImageOwnerType.Category ? "categories" : "products";
-        var uploadsPath = Path.Combine(environment.ContentRootPath, "Uploads", folder);
-        Directory.CreateDirectory(uploadsPath);
-
-        var safeSlug = Path.GetFileNameWithoutExtension(slug); // guards against path traversal / accidental extensions
+        var safeSlug = Path.GetFileNameWithoutExtension(slug); 
         var fileName = $"{safeSlug}{ext}";
-        var fileNameWithPath = Path.Combine(uploadsPath, fileName);
+        var key = $"{folder}/{fileName}";
 
-        // Deterministic naming: same slug -> overwrite (this is a re-upload/update of that entity's image)
-        using var outStream = new FileStream(fileNameWithPath, FileMode.Create, FileAccess.Write);
+        using var outStream = new MemoryStream();
+        string contentType;
         if (ext is ".jpg" or ".jpeg")
+        {
             await image.SaveAsJpegAsync(outStream, new JpegEncoder { Quality = 85 }, cancellationToken);
+            contentType = "image/jpeg";
+        }
         else
+        {
             await image.SaveAsPngAsync(outStream, new PngEncoder(), cancellationToken);
+            contentType = "image/png";
+        }
+        outStream.Position = 0;
 
-        return Path.Combine(folder, fileName).Replace('\\', '/'); 
+        var request = new PutObjectRequest
+        {
+            BucketName = _bucketName,
+            Key = key,
+            InputStream = outStream,
+            ContentType = contentType
+        };
+
+        try
+        {
+            await s3Client.PutObjectAsync(request, cancellationToken);
+        }
+        catch (AmazonS3Exception ex)
+        {
+            throw new InvalidOperationException($"S3 upload failed: {ex.Message}", ex);
+        }
+
+        return key;
     }
 
-    public void DeleteFile(string fileNameWithExtension, ImageOwnerType ownerType)
+    public async Task DeleteFileAsync(string fileNameWithExtension, ImageOwnerType ownerType, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(fileNameWithExtension))
             throw new ArgumentNullException(nameof(fileNameWithExtension));
 
         var folder = ownerType == ImageOwnerType.Category ? "categories" : "products";
-        var uploadsPath = Path.Combine(environment.ContentRootPath, "Uploads", folder);
-        var fullUploadsPath = Path.GetFullPath(uploadsPath);
+        var safeName = Path.GetFileName(fileNameWithExtension); 
+        var key = $"{folder}/{safeName}";
 
-        var safeName = Path.GetFileName(fileNameWithExtension);
-        var fullTargetPath = Path.GetFullPath(Path.Combine(uploadsPath, safeName));
-
-        if (!fullTargetPath.StartsWith(fullUploadsPath, StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("Invalid file path.");
-
-        if (!File.Exists(fullTargetPath))
+        try
+        {
+            await s3Client.GetObjectMetadataAsync(_bucketName, key, cancellationToken);
+        }
+        catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
             throw new FileNotFoundException("Invalid file path");
+        }
 
-        File.Delete(fullTargetPath);
+        await s3Client.DeleteObjectAsync(_bucketName, key, cancellationToken);
     }
 
     private static bool HasValidSignature(Stream stream, List<byte[]> validSignatures)

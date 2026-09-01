@@ -1,4 +1,5 @@
-﻿using EcommerceAPI.Application.Interfaces;
+﻿using Amazon.S3;
+using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Email;
 using EcommerceAPI.Application.Interfaces.Image;
@@ -67,6 +68,7 @@ public static class DependencyInjection
         services.AddScoped<IProductSearchService, ElasticProductSearchService>();
         services.AddJwtAuthentication(configuration);
 
+        services.AddAWSService<IAmazonS3>();
         return services;
     }
 
