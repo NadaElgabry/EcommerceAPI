@@ -304,9 +304,9 @@ namespace EcommerceAPI.Application.Services.CategoryService
                 var oldFileName = Path.GetFileName(
                     oldImageUrl);
 
-                _imageService.DeleteFile(
+               await _imageService.DeleteFileAsync(
                     oldFileName,
-                    ImageOwnerType.Category);
+                    ImageOwnerType.Category,cancellationToken);
             }
 
             return _categoryMapper.toCategoryResponse(
@@ -326,9 +326,9 @@ namespace EcommerceAPI.Application.Services.CategoryService
             var fileName = Path.GetFileName(
                 category.ImageUrl);
 
-            _imageService.DeleteFile(
+            await _imageService.DeleteFileAsync(
                 fileName,
-                ImageOwnerType.Category);
+                ImageOwnerType.Category,cancellationToken);
 
             await _unitOfWork.ExecuteInTransactionAsync(
                 async () =>
