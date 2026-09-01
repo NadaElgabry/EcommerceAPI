@@ -146,7 +146,9 @@ namespace EcommerceAPI.Application.Services.ProductService
         {
             var product = await _productRepository.GetByAsync(
                 predicate: p => p.Slug == slug,
-                include: query => query.Include(p => p.ProductTags),
+                include: query => query
+                .Include(p => p.Category)
+                .Include(p => p.ProductTags),
                 cancellationToken: cancellationToken)
                 ?? throw new NotFoundException($"Product '{slug}' not found.");
 
