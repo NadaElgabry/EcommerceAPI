@@ -20,6 +20,7 @@ namespace EcommerceAPI.Application.Services.OrderService
         private readonly IRepository<Cart> _cartRepository;
         private readonly IRepository<Order> _orderRepository;
         private readonly IRepository<Product> _productRepository;
+        private readonly IUserActivityService _userActivityService;
         private readonly IOrderMapper _orderMapper;
         private readonly IUnitOfWork _unitOfWork;
 
@@ -29,6 +30,7 @@ namespace EcommerceAPI.Application.Services.OrderService
             IRepository<Cart> cartRepository,
             IRepository<Order> orderRepository,
             IRepository<Product> productRepository,
+            IUserActivityService userActivityService,
             IOrderMapper orderMapper,
             IUnitOfWork unitOfWork)
         {
@@ -37,6 +39,7 @@ namespace EcommerceAPI.Application.Services.OrderService
             _cartRepository = cartRepository;
             _orderRepository = orderRepository;
             _productRepository = productRepository;
+            _userActivityService = userActivityService;
             _orderMapper = orderMapper;
             _unitOfWork = unitOfWork;
         }
@@ -87,6 +90,12 @@ namespace EcommerceAPI.Application.Services.OrderService
                 {
                     item.Product.StockQuantity -= item.Quantity;
                     _productRepository.Update(item.Product);
+
+                    await _userActivityService.LogActivityAsync(
+                        userId: user.Id,
+                        productId: item.Product.Id,
+                        actionType: UserActionType.PlaceOrder,
+                        cancellationToken: cancellationToken);
                 }
 
                 await _orderRepository.AddAsync(order, cancellationToken);
