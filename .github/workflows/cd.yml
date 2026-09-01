@@ -57,11 +57,14 @@ jobs:
             if [ ! -f ./certs/aspnetapp.pfx ]; then
               openssl req -x509 -newkey rsa:2048 -nodes \
                 -keyout /tmp/key.pem -out /tmp/cert.pem \
-                -days 3650 -subj "/CN=localhost"
+                -days 3650 \
+                -subj "/CN=63.183.213.35" \
+                -addext "subjectAltName=IP:63.183.213.35"
               openssl pkcs12 -export \
                 -out ./certs/aspnetapp.pfx \
                 -inkey /tmp/key.pem -in /tmp/cert.pem \
                 -password pass:${{ secrets.CERT_PASSWORD }}
+              openssl x509 -in /tmp/cert.pem -out ./certs/server-public.crt
               rm /tmp/key.pem /tmp/cert.pem
             fi
 
