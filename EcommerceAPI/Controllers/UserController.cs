@@ -39,7 +39,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpGet("{userId}")]
-        [Authorize]
+        [Authorize(Policy = "UsersRead")]
         public async Task<IActionResult> Profile([FromRoute] Guid userId, CancellationToken cancellationToken)
         {
             var userProfile = await _userService.GetUserProfileAsync(userId, cancellationToken);

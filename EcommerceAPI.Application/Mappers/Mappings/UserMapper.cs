@@ -16,6 +16,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Email = user.Email,
+                BirthDate = user.BirthDate,
                 Role = user.Role,
                 PhoneNumber = user.PhoneNumber,
                 IsActive = user.IsActive,
