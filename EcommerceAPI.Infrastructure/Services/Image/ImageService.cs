@@ -1,20 +1,23 @@
-﻿using EcommerceAPI.Application.Interfaces.Image;
-using EcommerceAPI.Domain.Enums;
-using Amazon.S3;
+﻿using Amazon.S3;
 using Amazon.S3.Model;
+using EcommerceAPI.Application.Exceptions;
+using EcommerceAPI.Application.Interfaces.Image;
+using EcommerceAPI.Domain.Enums;
+using EcommerceAPI.Infrastructure.Settings;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Processing;
 
-public class ImageService(IAmazonS3 s3Client, IConfiguration configuration) : IImageService
+public class ImageService(IAmazonS3 s3Client, IOptions<AwsSettings> awsSettings) : IImageService
 {
     private const long MaxFileSizeBytes = 5 * 1024 * 1024;
     private const int MaxDimension = 4096;
     private const int MinDimension = 4;
-    private readonly string _bucketName = configuration["AWS:S3:BucketName"]
-        ?? throw new InvalidOperationException("AWS:S3:BucketName is not configured.");
+    private readonly string _bucketName = awsSettings.Value.S3.BucketName;
 
     private static readonly Dictionary<string, List<byte[]>> Signatures = new()
     {

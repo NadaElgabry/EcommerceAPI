@@ -68,7 +68,10 @@ public static class DependencyInjection
         services.AddScoped<IProductSearchService, ElasticProductSearchService>();
         services.AddJwtAuthentication(configuration);
 
+        services.Configure<AwsSettings>(configuration.GetSection("AWS"));
+        services.AddDefaultAWSOptions(configuration.GetAWSOptions());
         services.AddAWSService<IAmazonS3>();
+
         return services;
     }
 
