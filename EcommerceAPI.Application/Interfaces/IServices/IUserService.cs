@@ -16,7 +16,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>Profile of a user</returns>
         public Task<UserResponse> GetUserProfileAsync(Guid guid, CancellationToken cancellationToken);
-        public Task UpdateProfileAsync(
+        public Task<UserResponse> UpdateProfileAsync(
            Guid userId, UpdateProfileRequest request, CancellationToken cancellationToken = default);
         public Task<OffsetPagedResult<UserResponse>> GetAllUsersAsync(
             OffsetPageRequest request, CancellationToken cancellationToken = default);
