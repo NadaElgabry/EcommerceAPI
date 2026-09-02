@@ -224,11 +224,51 @@ namespace EcommerceAPI.Application.Services.ProductService
             return _productMapper.ToProductResponse(product);
         }
 
+
         ///<inheritdoc/>
         public async Task<CursorPagedResult<ProductSummaryResponse>> SearchProductsAsync(
-        ProductQueryParamsRequest queryParams, CancellationToken cancellationToken)
+            ProductQueryParamsRequest queryParams, CancellationToken cancellationToken)
         {
-            return await _searchService.SearchProductsAsync(queryParams, cancellationToken);
+            var result = await _searchService.SearchProductsAsync(queryParams, cancellationToken);
+
+            var userId = _currentUserService.UserGuid;
+
+            _ = LogSearchActivitiesAsync(userId, result.Data, CancellationToken.None);
+
+            return result;
+        }
+
+        private async Task LogSearchActivitiesAsync(Guid userId, IEnumerable<ProductSummaryResponse> products, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var user = await _userRepository.GetByAsync(predicate: u => u.Guid == userId, cancellationToken: cancellationToken);
+                
+
+                var slugs = products.Select(p => p.Slug).ToList();
+                var productEntities = await _productRepository.GetAllAsync(
+                    predicate: p => slugs.Contains(p.Slug),
+                    cancellationToken: cancellationToken);
+
+                var idBySlug = productEntities.ToDictionary(p => p.Slug, p => p.Id);
+
+                foreach (var product in products)
+                {
+                    if (idBySlug.TryGetValue(product.Slug, out var productId))
+                    {
+                        await _userActivityService.LogActivityAsync(
+                            user.Id,
+                            productId,
+                            UserActionType.SearchProduct,
+                            cancellationToken
+                        );
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to log search activities for user {UserId}", userId);
+            }
         }
 
         public async Task DeleteProductAsync(string slug, CancellationToken cancellationToken)
