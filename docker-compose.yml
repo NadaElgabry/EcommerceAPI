@@ -68,15 +68,15 @@ services:
 
       Elasticsearch__Url: "http://elasticsearch:9200"
       Elasticsearch__ProductsIndex: "products"
-
       Elasticsearch__ProductPrefixFields__0: "name.ngram^2"
-
       Elasticsearch__ProductSemanticFields__0: "name.stemmed^3"
       Elasticsearch__ProductSemanticFields__1: "tags.stemmed^1.5"
       Elasticsearch__ProductSemanticFields__2: "description.stemmed"
-
       Elasticsearch__ProductExactFields__0: "name^3"
       Elasticsearch__ProductExactFields__1: "tags^1.5"
+      
+      AWS__Region: "${AWS_REGION}"
+      AWS__S3__BucketName: "ecommerce-interns-bucket"
     ports:
       - "5223:8080"
     volumes:
