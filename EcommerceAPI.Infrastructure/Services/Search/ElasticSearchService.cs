@@ -184,6 +184,18 @@ namespace EcommerceAPI.Infrastructure.Services.Search
         }
 
         ///<inheritdoc/>
+        public async Task DeleteAllAsync(string indexName, CancellationToken cancellationToken = default)
+        {
+            var response = await _client.DeleteByQueryAsync<TDocument>(indexName, d => d
+                .Query(q => q.MatchAll(m => { })), cancellationToken);
+
+            if (!response.IsValidResponse)
+            {
+                throw new InvalidOperationException($"Clearing index '{indexName}' failed: {response.DebugInformation}");
+            }
+        }
+
+        ///<inheritdoc/>
         public async Task IndexManyAsync(
             string indexName,
             IEnumerable<(string Id, TDocument Document)> documents,

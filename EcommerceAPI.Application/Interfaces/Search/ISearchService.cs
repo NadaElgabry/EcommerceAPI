@@ -32,6 +32,13 @@ namespace EcommerceAPI.Application.Interfaces.Search
         Task DeleteOneAsync(string indexName, string id, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Deletes all documents from the specified index.
+        /// </summary>
+        /// <param name="indexName">The name of the index to clear.</param>
+        /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
+        Task DeleteAllAsync(string indexName, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Indexes multiple documents in the specified index.
         /// </summary>
         /// <param name="indexName">The name of the index to write to.</param>
