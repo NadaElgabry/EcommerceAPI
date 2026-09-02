@@ -106,6 +106,7 @@ namespace EcommerceAPI.Application.Services.OrderService
 
             return _orderMapper.ToOrderResponse(order);
         }
+
         public async Task<CursorPagedResult<OrderSummary>> GetOrdersAsync(Guid userGuid, GetOrdersRequest request, CancellationToken cancellationToken)
         {
             if (_currentUserService.Role != "Admin")
@@ -115,13 +116,15 @@ namespace EcommerceAPI.Application.Services.OrderService
                     throw new UnauthorizedAccessException("You are not authorized to access this resource.");
                 }
             }
+
             var user = await _userRepository.GetByAsync(predicate: u => u.Guid == userGuid
             , cancellationToken) ?? throw new NotFoundException("User not found");
 
             var lastOrderId = string.IsNullOrEmpty(request.Cursor) ? 0 : CursorHelper.Decode<int>(request.Cursor);
             var take = Math.Clamp(request.Limit, 1, 50);
             var orders = await _orderRepository.GetPagedAsync(predicate: o => o.UserId == user.Id && o.Id > lastOrderId,
-                orderBy: o => o.CreationDate, take: take + 1, include: query => query.Include(c => c.Items)
+                orderBy: o => o.CreationDate, take: take + 1, include: query => query.Include(c => c.Items),
+                cancellationToken: cancellationToken
             );
 
             var hasNext = orders.Count > request.Limit;
@@ -130,6 +133,7 @@ namespace EcommerceAPI.Application.Services.OrderService
             {
                 orders.RemoveAt(orders.Count - 1);
             }
+
             string? nextCursor = null;
 
             if (hasNext && orders.Count > 0)
@@ -137,6 +141,7 @@ namespace EcommerceAPI.Application.Services.OrderService
                 nextCursor = CursorHelper.Encode(
                     orders[^1].CreationDate);
             }
+
             var ordersummaries = orders.Select(o => _orderMapper.ToOrderSummary(o)).ToList();
 
             return new CursorPagedResult<OrderSummary>
@@ -163,6 +168,71 @@ namespace EcommerceAPI.Application.Services.OrderService
                 ?? throw new NotFoundException("Order not found");
 
             return _orderMapper.ToOrderResponse(order);
+        }
+
+        public async Task<OrderResponse> UpdateOrderStatusAsync(
+            Guid orderGuid,
+            UpdateOrderStatusRequest request,
+            CancellationToken cancellationToken)
+        {
+            var order = await _orderRepository.GetByAsync(
+                predicate: o => o.Guid == orderGuid,
+                include: query => query.Include(o => o.Items).ThenInclude(i => i.Product),
+                cancellationToken: cancellationToken)
+                ?? throw new NotFoundException("Order not found");
+
+            if (!Enum.TryParse<OrderStatus>(
+                request.Status,
+                ignoreCase: true,
+                out var newStatus))
+            {
+                throw new BadRequestException("Invalid order status.");
+            }
+
+            if (!IsValidStatusTransition(order.Status, newStatus))
+            {
+                throw new BadRequestException(
+                    $"Order status cannot be changed from {order.Status} to {newStatus}.");
+            }
+
+            order.Status = newStatus;
+
+            if (newStatus == OrderStatus.Delivered)
+            {
+                order.DeliveryTime = DateTime.UtcNow;
+            }
+
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                _orderRepository.Update(order);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }, cancellationToken);
+
+            return _orderMapper.ToOrderResponse(order);
+        }
+
+        private static bool IsValidStatusTransition(
+            OrderStatus currentStatus,
+            OrderStatus newStatus)
+        {
+            return currentStatus switch
+            {
+                OrderStatus.Pending =>
+                    newStatus == OrderStatus.Placed,
+
+                OrderStatus.Placed =>
+                    newStatus == OrderStatus.Shipped ||
+                    newStatus == OrderStatus.Cancelled,
+
+                OrderStatus.Shipped =>
+                    newStatus == OrderStatus.Delivered,
+
+                OrderStatus.Delivered => false,
+
+                OrderStatus.Cancelled => false,
+
+                _ => false
+            };
         }
 
         private async Task<User> GetActiveUserAsync(CancellationToken cancellationToken)
