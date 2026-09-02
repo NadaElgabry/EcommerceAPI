@@ -181,7 +181,7 @@ namespace EcommerceAPI.Application.Services.ProductService
 
             if (request.Image != null)
             { 
-                product.ProductImage = await _imageService.SaveFileAsync(request.Image, slug, ImageOwnerType.Product, cancellationToken);
+                product.ProductImage = await _imageService.SaveFileAsync(request.Image, product.Slug, ImageOwnerType.Product, cancellationToken);
             }
 
             _productMapper.UpdateProductFromRequest(product, request);
