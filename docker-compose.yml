@@ -97,6 +97,9 @@ services:
       Elasticsearch__ProductSearchFields__3: "tags^1.5"
       Elasticsearch__ProductSearchFields__4: "description"
 
+      AWS__Region: "${AWS_REGION}"
+      AWS__S3__BucketName: "ecommerce-interns-bucket"
+      
     ports:
 
       - "5223:8080"
