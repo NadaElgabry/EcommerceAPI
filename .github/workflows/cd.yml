@@ -7,14 +7,11 @@ on:
 jobs:
   docker-build-and-push:
     runs-on: self-hosted
-
     permissions:
       contents: read
       packages: write
-
     outputs:
       image: ${{ steps.image.outputs.name }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,7 +21,6 @@ jobs:
         run: |
           REPO=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
           SHA=sha-$(echo '${{ github.sha }}' | cut -c1-7)
-
           echo "name=ghcr.io/${REPO}:${SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GitHub Container Registry
@@ -42,12 +38,13 @@ jobs:
           push: true
           tags: ${{ steps.image.outputs.name }}
 
-    deploy:
+  deploy:
     runs-on: self-hosted
     needs: docker-build-and-push
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Fix logs permissions
         run: sudo chown -R $USER:$USER ./logs || true
 
@@ -83,15 +80,18 @@ jobs:
           MAIL_SENDER_EMAIL=${{ secrets.MAIL_SENDER_EMAIL }}
           CERT_PASSWORD=${{ secrets.CERT_PASSWORD }}
           EOF
+
       - name: Log in to GHCR
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | \
             docker login ghcr.io \
-            -u "${{ github.actor }}" \
-            --password-stdin
+              -u "${{ github.actor }}" \
+              --password-stdin
+
       - name: Pull image
         run: |
           docker pull "${{ needs.docker-build-and-push.outputs.image }}"
+
       - name: Deploy with Docker Compose
         run: |
-            docker compose up -d --pull always --remove-orphans
+          docker compose up -d --pull always --remove-orphans
