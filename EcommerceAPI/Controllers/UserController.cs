@@ -48,7 +48,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "UsersRead")]
         public async Task<IActionResult> GetAllUsers([FromQuery] OffsetPageRequest request, CancellationToken cancellationToken)
         {
             var result = await _userService.GetAllUsersAsync(request, cancellationToken);
