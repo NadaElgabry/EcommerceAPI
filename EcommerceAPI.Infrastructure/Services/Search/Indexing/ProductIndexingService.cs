@@ -30,6 +30,8 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
         ///<inheritdoc/>
         public async Task ReindexAllProductsAsync(CancellationToken cancellationToken = default)
         {
+            await _search.DeleteAllAsync(_settings.ProductsIndex, cancellationToken);
+
             int? lastId = null;
 
             while (true)
