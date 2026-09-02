@@ -8,6 +8,7 @@ using EcommerceAPI.Application.Services.CategoryService;
 using EcommerceAPI.Application.Services.FavoritesService;
 using EcommerceAPI.Application.Services.OrderService;
 using EcommerceAPI.Application.Services.ProductService;
+using EcommerceAPI.Application.Services.RagService;
 using EcommerceAPI.Application.Services.TagService;
 using EcommerceAPI.Application.Services.UserService;
 using EcommerceAPI.Application.Validators;
@@ -40,7 +41,7 @@ public static class DependencyInjection
         services.AddScoped<ICartMapper, CartMapper>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IOrderMapper, OrderMapper>();
-
+        services.AddScoped<IRagService, RagService>();
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateProfileRequestValidator>();

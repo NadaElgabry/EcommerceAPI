@@ -2,11 +2,13 @@
 using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Email;
+using EcommerceAPI.Application.Interfaces.ExternalServices.Rag;
 using EcommerceAPI.Application.Interfaces.Image;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Interfaces.Search;
 using EcommerceAPI.Application.Interfaces.Slug;
 using EcommerceAPI.Infrastructure.Contexts;
+using EcommerceAPI.Infrastructure.ExternalServices.Rag;
 using EcommerceAPI.Infrastructure.Persistence;
 using EcommerceAPI.Infrastructure.Persistence.Repositories;
 using EcommerceAPI.Infrastructure.Services.Auth;
@@ -71,6 +73,7 @@ public static class DependencyInjection
         services.Configure<AwsSettings>(configuration.GetSection("AWS"));
         services.AddDefaultAWSOptions(configuration.GetAWSOptions());
         services.AddAWSService<IAmazonS3>();
+        services.AddHttpClient<IRagClient, RagClient>();
 
         return services;
     }
