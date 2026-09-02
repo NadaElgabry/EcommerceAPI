@@ -44,10 +44,25 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
                                     .TokenChars(new[] { TokenChar.Letter, TokenChar.Digit })
                                 )
                             )
+                            .TokenFilters(tf => tf
+                                .Stemmer("english_stemmer", st => st
+                                    .Language("english"))
+                                .SynonymGraph("product_synonyms", sy => sy
+                                    .SynonymsPath("analysis/synonyms.txt")
+                                    .Updateable(true))
+                            )
                             .Analyzers(an => an
                                 .Custom("edge_ngram_analyzer", ca => ca
                                     .Tokenizer("edge_ngram_tokenizer")
                                     .Filter(new[] { "lowercase" })
+                                )
+                                .Custom("product_index_analyzer", ca => ca
+                                    .Tokenizer("standard")
+                                    .Filter(new[] { "lowercase", "english_stemmer" })
+                                )
+                                .Custom("product_search_analyzer", ca => ca
+                                    .Tokenizer("standard")
+                                    .Filter(new[] { "lowercase", "product_synonyms", "english_stemmer" })
                                 )
                             )
                         )
@@ -62,10 +77,26 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
                                     .Text("ngram", tt => tt
                                         .Analyzer("edge_ngram_analyzer")
                                         .SearchAnalyzer("standard"))
+                                    .Text("stemmed", tt => tt
+                                        .Analyzer("product_index_analyzer")
+                                        .SearchAnalyzer("product_search_analyzer"))
                                 ))
-                            .Text(d => d.Description)
+                            .Text(d => d.Description, t => t
+                                .Fields(f => f
+                                    .Text("stemmed", tt => tt
+                                        .Analyzer("product_index_analyzer")
+                                        .SearchAnalyzer("product_search_analyzer"))
+                                ))
                             .Text(d => d.Brand, t => t
-                                .Fields(f => f.Keyword("keyword")))
+                                .Fields(f => f
+                                    .Keyword("keyword")
+                                    .Text("ngram", tt => tt
+                                        .Analyzer("edge_ngram_analyzer")
+                                        .SearchAnalyzer("standard"))
+                                    .Text("stemmed", tt => tt
+                                        .Analyzer("product_index_analyzer")
+                                        .SearchAnalyzer("product_search_analyzer"))
+                                ))
                             .DoubleNumber(d => d.Price)
                             .IntegerNumber(d => d.StockQuantity)
                             .Keyword(d => d.ProductImage, k => k.Index(false))
@@ -73,7 +104,12 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
                             .Date(d => d.CreationDate)
                             .Keyword(d => d.CategorySlug)
                             .Text(d => d.Tags, t => t
-                                .Fields(f => f.Keyword("keyword")))
+                                .Fields(f => f
+                                    .Keyword("keyword")
+                                    .Text("stemmed", tt => tt
+                                        .Analyzer("product_index_analyzer")
+                                        .SearchAnalyzer("product_search_analyzer"))
+                                ))
                         )
                     )
             );

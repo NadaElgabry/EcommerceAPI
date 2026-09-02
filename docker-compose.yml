@@ -30,86 +30,61 @@ services:
       - "9200:9200"
     volumes:
       - es-data:/usr/share/elasticsearch/data
+      - ./analysis/synonyms.txt:/usr/share/elasticsearch/config/analysis/synonyms.txt:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"' || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
-      start_period: 60s
+          test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"' || exit 1"]
+          interval: 10s
+          timeout: 5s
+          retries: 40
+          start_period: 180s
     networks:
       - ecommerce-network
 
   api:
-
     image: ${IMAGE}
-
     container_name: ecommerce-api
-
     depends_on:
-
       sqlserver:
-
         condition: service_healthy
-
       elasticsearch:
-
         condition: service_healthy
-
     environment:
-
       ASPNETCORE_ENVIRONMENT: "Development"
-
       ASPNETCORE_URLS: "https://+:8080"
-
       ASPNETCORE_Kestrel__Certificates__Default__Path: "/https/aspnetapp.pfx"
-
       ASPNETCORE_Kestrel__Certificates__Default__Password: "${CERT_PASSWORD}"
-
       ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=EcommerceDb;User Id=sa;Password=${DB_SA_PASSWORD};TrustServerCertificate=True"
-
       Jwt__Key: "${JWT_KEY}"
-
       Jwt__Issuer: "${JWT_ISSUER}"
-
       Jwt__Audience: "${JWT_AUDIENCE}"
-
       Jwt__ExpiryMinutes: "${JWT_EXPIRY_MINUTES}"
-
       Jwt__RefreshTokenExpiryDays: "${JWT_REFRESH_TOKEN_EXPIRY_DAYS}"
-
       EmailSettings__Host: "${MAIL_HOST}"
-
       EmailSettings__Port: "${MAIL_PORT}"
-
       EmailSettings__Username: "${MAIL_USERNAME}"
-
       EmailSettings__Password: "${MAIL_PASSWORD}"
-
       EmailSettings__SenderName: "${MAIL_SENDER_NAME}"
-
       EmailSettings__SenderEmail: "${MAIL_SENDER_EMAIL}"
 
       Elasticsearch__Url: "http://elasticsearch:9200"
       Elasticsearch__ProductsIndex: "products"
-      Elasticsearch__ProductSearchFields__0: "name^3"
-      Elasticsearch__ProductSearchFields__1: "name.ngram^1"
-      Elasticsearch__ProductSearchFields__2: "brand^2"
-      Elasticsearch__ProductSearchFields__3: "tags^1.5"
-      Elasticsearch__ProductSearchFields__4: "description"
 
+      Elasticsearch__ProductPrefixFields__0: "name.ngram^2"
+
+      Elasticsearch__ProductSemanticFields__0: "name.stemmed^3"
+      Elasticsearch__ProductSemanticFields__1: "tags.stemmed^1.5"
+      Elasticsearch__ProductSemanticFields__2: "description.stemmed"
+
+      Elasticsearch__ProductExactFields__0: "name^3"
+      Elasticsearch__ProductExactFields__1: "tags^1.5"
     ports:
-
       - "5223:8080"
-
     volumes:
-
       - /var/log/ecommerce-api:/app/logs
-
       - ./certs:/https:ro
-
     networks:
-
       - ecommerce-network
+
   dozzle:
     image: amir20/dozzle:latest
     container_name: ecommerce-dozzle
