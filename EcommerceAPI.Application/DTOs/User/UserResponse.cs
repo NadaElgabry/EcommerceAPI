@@ -1,7 +1,5 @@
 ﻿using EcommerceAPI.Domain.Enums;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using EcommerceAPI.Domain.Entities;
 
 namespace EcommerceAPI.Application.DTOs.User
 {
@@ -14,6 +12,7 @@ namespace EcommerceAPI.Application.DTOs.User
         public string Email { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public DateTime BirthDate { get; set; }
+        public List<FavoriteCategory> PreferredCategories { get; set; }
         public Role Role { get; set; }
         public bool IsActive {  get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
