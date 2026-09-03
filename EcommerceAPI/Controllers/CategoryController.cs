@@ -23,6 +23,8 @@ namespace EcommerceAPI.Controllers
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [RequestSizeLimit(6 * 1024 * 1024)]
+        [ProducesResponseType(typeof(ApiResponse<CategoryResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> CreateCategory(
             [FromForm] CreateCategoryRequest request,
             CancellationToken cancellationToken)
@@ -41,6 +43,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(typeof(ApiResponse<List<CategoryResponse>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetCategories(
             [FromQuery] GetCategoriesRequest request,
             CancellationToken cancellationToken)
@@ -60,6 +63,8 @@ namespace EcommerceAPI.Controllers
 
         [HttpGet("{slug}")]
         [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(ApiResponse<CategoryResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetCategoryDetails(
             string slug,
             CancellationToken cancellationToken)
@@ -78,6 +83,8 @@ namespace EcommerceAPI.Controllers
 
         [HttpGet("{slug}/products")]
         [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(ApiResponse<List<ProductResponse>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetCategoryProducts(
             string slug,
             [FromQuery] GetCategoriesRequest request,
@@ -100,6 +107,9 @@ namespace EcommerceAPI.Controllers
         [HttpPut("{slug}")]
         [Authorize(Roles = "Admin")]
         [RequestSizeLimit(6 * 1024 * 1024)]
+        [ProducesResponseType(typeof(ApiResponse<CategoryResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> UpdateCategory(
             string slug,
             [FromForm] UpdateCategoryRequest request,

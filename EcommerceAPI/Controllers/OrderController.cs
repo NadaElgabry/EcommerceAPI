@@ -21,6 +21,7 @@ namespace EcommerceAPI.Controllers
         [HttpPost]
         [Authorize]
         [Idempotent(ExpiresInMilliseconds = 1000 * 20)]
+        [ProducesResponseType(typeof(ApiResponse<OrderResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> PlaceOrder([FromBody] PlaceOrderRequest request,
             CancellationToken cancellationToken)
         {
@@ -31,6 +32,7 @@ namespace EcommerceAPI.Controllers
 
         [HttpGet("{guid}")]
         [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<OrderResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetOrder([FromRoute] Guid guid, CancellationToken cancellationToken)
         {
             var response = await _orderService.GetOrderByGuidAsync(guid, cancellationToken);
@@ -42,6 +44,7 @@ namespace EcommerceAPI.Controllers
 
         [HttpGet("user/{guid}")]
         [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<CursorPagedResult<OrderSummary>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetOrdersList([FromRoute] Guid guid,[FromQuery] GetOrdersRequest request,CancellationToken cancellationToken)
         {
             var response = await _orderService.GetOrdersAsync(guid,request,cancellationToken);
