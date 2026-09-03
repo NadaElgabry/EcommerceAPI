@@ -24,6 +24,8 @@ namespace EcommerceAPI.Controllers
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [RequestSizeLimit(6 * 1024 * 1024)]
+        [ProducesResponseType(typeof(ApiResponse<ProductResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateProduct([FromForm] CreateProductRequest request, CancellationToken cancellationToken)
         {
             var productResponse = await _productService.CreateProductAsync(request, cancellationToken);
@@ -36,6 +38,8 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpGet("{slug}")]
+        [ProducesResponseType(typeof(ApiResponse<ProductResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetProductDetails([FromRoute] string slug, CancellationToken cancellationToken)
         {
 
@@ -50,6 +54,7 @@ namespace EcommerceAPI.Controllers
 
         [HttpPut("{slug}")]
         [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(ApiResponse<ProductResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateProduct(
             [FromRoute] string slug, [FromForm] UpdateProductRequest request, CancellationToken cancellationToken)
         {
@@ -66,6 +71,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(typeof(ApiResponse<CursorPagedResult<ProductSummaryResponse>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> SearchProducts([FromQuery] ProductQueryParamsRequest request, CancellationToken cancellationToken)
         {
             var result = await _productService.SearchProductsAsync(request, cancellationToken);
@@ -77,6 +83,7 @@ namespace EcommerceAPI.Controllers
 
         [HttpDelete("{slug}")]
         [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status204NoContent)]
         public async Task<IActionResult> DeleteProduct(
             [FromRoute] string slug, CancellationToken cancellationToken)
         {

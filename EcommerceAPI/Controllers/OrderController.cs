@@ -22,8 +22,8 @@ namespace EcommerceAPI.Controllers
         [HttpPost]
         [Authorize]
         [Idempotent(ExpiresInMilliseconds = 1000 * 20)]
-        public async Task<IActionResult> PlaceOrder(
-            [FromBody] PlaceOrderRequest request,
+        [ProducesResponseType(typeof(ApiResponse<OrderResponse>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> PlaceOrder([FromBody] PlaceOrderRequest request,
             CancellationToken cancellationToken)
         {
             var idempotencyKey = Request.Headers["IdempotencyKey"].ToString();
@@ -42,9 +42,8 @@ namespace EcommerceAPI.Controllers
 
         [HttpGet("{guid}")]
         [Authorize]
-        public async Task<IActionResult> GetOrder(
-            [FromRoute] Guid guid,
-            CancellationToken cancellationToken)
+        [ProducesResponseType(typeof(ApiResponse<OrderResponse>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetOrder([FromRoute] Guid guid, CancellationToken cancellationToken)
         {
             var response = await _orderService.GetOrderByGuidAsync(
                 guid,
@@ -59,10 +58,8 @@ namespace EcommerceAPI.Controllers
 
         [HttpGet("user/{guid}")]
         [Authorize]
-        public async Task<IActionResult> GetOrdersList(
-            [FromRoute] Guid guid,
-            [FromQuery] GetOrdersRequest request,
-            CancellationToken cancellationToken)
+        [ProducesResponseType(typeof(ApiResponse<CursorPagedResult<OrderSummary>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetOrdersList([FromRoute] Guid guid,[FromQuery] GetOrdersRequest request,CancellationToken cancellationToken)
         {
             var response = await _orderService.GetOrdersAsync(
                 guid,
@@ -78,6 +75,7 @@ namespace EcommerceAPI.Controllers
 
         [HttpPut("{guid}/status")]
         [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(ApiResponse<OrderResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateOrderStatus(
             [FromRoute] Guid guid,
             [FromBody] UpdateOrderStatusRequest request,
