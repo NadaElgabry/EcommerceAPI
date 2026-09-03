@@ -20,5 +20,10 @@ namespace EcommerceAPI.Application.Interfaces.Auth
         /// Checks whether the user is authenticated or not.
         /// </summary>
         public bool IsAuthenticated { get; }
+
+        /// <summary>
+        /// Checks whether the current identity possesses a specific claim type and value.
+        /// </summary>
+        public bool HasClaim(string type, string value);
     }
 }

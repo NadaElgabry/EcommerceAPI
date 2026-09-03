@@ -9,9 +9,11 @@ using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Interfaces.Search;
 using EcommerceAPI.Application.Interfaces.Slug;
+using EcommerceAPI.Application.Interfaces.VisualSearch;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Domain.Enums;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
@@ -31,6 +33,8 @@ namespace EcommerceAPI.Application.Services.ProductService
         private readonly IUnitOfWork _unitOfWork;
         private readonly ISlugGenerator _slugGenerator;
 
+        private readonly IVisualSearchService _visualSearchService;
+
         private readonly IProductSearchService _searchService;
         private readonly IProductIndexingService _indexingService;
 
@@ -46,6 +50,7 @@ namespace EcommerceAPI.Application.Services.ProductService
             ICurrentUserService currentUserService,
             IUnitOfWork unitOfWork,
             ISlugGenerator slugGenerator,
+            IVisualSearchService visualSearchService,
             IProductSearchService searchService,
             IProductIndexingService indexingService,
             ILogger<ProductService> logger)
@@ -60,6 +65,7 @@ namespace EcommerceAPI.Application.Services.ProductService
             _currentUserService = currentUserService;
             _unitOfWork = unitOfWork;
             _slugGenerator = slugGenerator;
+            _visualSearchService = visualSearchService;
             _searchService = searchService;
             _indexingService = indexingService;
             _logger = logger ;
@@ -229,6 +235,24 @@ namespace EcommerceAPI.Application.Services.ProductService
         ProductQueryParamsRequest queryParams, CancellationToken cancellationToken)
         {
             return await _searchService.SearchProductsAsync(queryParams, cancellationToken);
+        }
+
+        public async Task<List<ProductSummaryResponse>> VisualSearchAsync(IFormFile image, int? topK, CancellationToken ct)
+        {
+            var clampedTopK = Math.Clamp(topK ?? DefaultTopK, 1, MaxTopK);
+
+            var slugs = await _visualSearchService.SearchByImageAsync(image, clampedTopK, ct);
+
+            var products = await _productRepository.GetAllAsync(
+                predicate: p => slugs.Contains(p.Slug),
+                cancellationToken: ct);
+
+            var bySlug = products.ToDictionary(p => p.Slug);
+            var ordered = slugs
+                .Select(s => bySlug.TryGetValue(s, out var p) ? p : null)
+                .Where(p => p != null);
+
+            return ordered.Select(_productMapper.ToProductSummaryResponse).ToList()!;
         }
 
         public async Task DeleteProductAsync(string slug, CancellationToken cancellationToken)
