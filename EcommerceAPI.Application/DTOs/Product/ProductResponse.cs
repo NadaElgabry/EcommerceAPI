@@ -10,6 +10,7 @@ namespace EcommerceAPI.Application.DTOs.Product
         public decimal Price { get; set; }
         public int StockQuantity { get; set; }
         public string ProductImageUrl { get; set; }
+        public bool IsFavorited { get; set; } = false;
         public string AltText { get; set; }
         public DateTime CreationDate { get; set; }
         public string CategorySlug { get; set; }
