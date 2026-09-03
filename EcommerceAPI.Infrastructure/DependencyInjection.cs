@@ -72,6 +72,8 @@ public static class DependencyInjection
         services.AddDefaultAWSOptions(configuration.GetAWSOptions());
         services.AddAWSService<IAmazonS3>();
 
+        services.Configure<GrocerySeedSettings>(configuration.GetSection("GrocerySeed"));
+
         return services;
     }
 
