@@ -8,6 +8,8 @@
         InitiateCheckout = 4,
         PlaceOrder = 5,
         AddedToFavorites = 6,
-        RemovedFromFavorites =7
+        RemovedFromFavorites =7,
+        SearchProduct = 8,
+
     }
 }
