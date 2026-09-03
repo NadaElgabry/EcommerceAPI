@@ -22,6 +22,7 @@ namespace EcommerceAPI.Controllers
 
 
         [HttpPost("login")]
+        [ProducesResponseType(typeof(ApiResponse<AuthResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> Login(
             [FromBody] LoginRequest request,
             CancellationToken cancellationToken)
@@ -32,6 +33,7 @@ namespace EcommerceAPI.Controllers
 
         [Authorize]
         [HttpPost("change-password")]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status204NoContent)]
         public async Task<IActionResult> ResetPassword(
             [FromBody] ChangePasswordRequest request,
             CancellationToken cancellationToken)
@@ -47,6 +49,8 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("register")]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Register(
             [FromBody] RegisterRequest request,
             CancellationToken cancellationToken)
@@ -61,6 +65,7 @@ namespace EcommerceAPI.Controllers
 
         [HttpPost("resend-email")]
         [Idempotent(ExpiresInMilliseconds = 10*1000)]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ResendEmail(
             [FromBody] ResendEmailRequest request,
             CancellationToken cancellationToken)
@@ -70,6 +75,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("activate-account")]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ActivateAccount([FromBody] ActivateEmailRequest request, CancellationToken cancellationToken)
         {
             var result = await _authService.ActivateEmailAsync(request, cancellationToken);
@@ -77,6 +83,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("is-email-available")]
+        [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
         public async Task<IActionResult> IsEmailAvailable([FromBody] EmailRequest request, CancellationToken cancellationToken)
         {
             var isAvailable = await _authService.IsEmailAvailable(request, cancellationToken);
@@ -84,6 +91,8 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("refresh")]
+        [ProducesResponseType(typeof(ApiResponse<AuthResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
         { 
             var response = await _authService.Refresh(request, cancellationToken);
@@ -91,6 +100,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("logout")]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Logout([FromBody] LogoutRequest request, CancellationToken cancellationToken) 
         { 
             await _authService.Logout(request, cancellationToken);
@@ -98,6 +108,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("forgot-password")]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ForgotPassword([FromBody] EmailRequest request, CancellationToken cancellationToken)
         {
             await _authService.ForgotPasswordAsync(request, cancellationToken);
@@ -107,6 +118,8 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("verify-reset-code")]
+        [ProducesResponseType(typeof(ApiResponse<VerifyResetCodeResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<VerifyResetCodeResponse>> VerifyResetCode(
         [FromBody] VerifyResetCodeRequest request, CancellationToken cancellationToken)
         {
@@ -115,6 +128,8 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("reset-password")]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ResetPasswordFromOTP([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
         {
             await _authService.ResetPasswordFromOTPAsync(request, cancellationToken);

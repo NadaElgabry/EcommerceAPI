@@ -23,6 +23,7 @@ namespace EcommerceAPI.Application.Services.ProductService
         private readonly IRepository<Product> _productRepository;
         private readonly IRepository<Category> _categoryRepository;
         private readonly IRepository<User> _userRepository;
+        private readonly IRepository<FavoriteProduct> _favoriteProductRepository;
         private readonly IRepository<Tag> _tagRepository;
         private readonly IProductMapper _productMapper;
         private readonly IImageService _imageService;
@@ -39,6 +40,7 @@ namespace EcommerceAPI.Application.Services.ProductService
             IRepository<Product> productRepository,
             IRepository<Category> categoryRepository,
             IRepository<User> userRepository,
+            IRepository<FavoriteProduct> favoriteProductRepository,
             IRepository<Tag> tagRepository,
             IProductMapper productMapper,
             IImageService imageService,
@@ -53,6 +55,7 @@ namespace EcommerceAPI.Application.Services.ProductService
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
             _userRepository = userRepository;
+            _favoriteProductRepository = favoriteProductRepository;
             _tagRepository = tagRepository;
             _productMapper = productMapper;
             _imageService = imageService;
@@ -138,7 +141,10 @@ namespace EcommerceAPI.Application.Services.ProductService
                 );
             }
 
-            return _productMapper.ToProductResponse(product);
+            var response = _productMapper.ToProductResponse(product);
+            var favoritedSlugs = await GetFavoritedProductSlugsAsync([product.Slug], cancellationToken);
+            response.IsFavorited = favoritedSlugs.Contains(product.Slug);
+            return response;
         }
 
         public async Task<ProductResponse> UpdateProductAsync(
@@ -226,9 +232,17 @@ namespace EcommerceAPI.Application.Services.ProductService
 
         ///<inheritdoc/>
         public async Task<CursorPagedResult<ProductSummaryResponse>> SearchProductsAsync(
-        ProductQueryParamsRequest queryParams, CancellationToken cancellationToken)
+            ProductQueryParamsRequest queryParams, CancellationToken cancellationToken)
         {
-            return await _searchService.SearchProductsAsync(queryParams, cancellationToken);
+            var result = await _searchService.SearchProductsAsync(queryParams, cancellationToken);
+
+            var favoritedSlugs = await GetFavoritedProductSlugsAsync(result.Data.Select(p => p.Slug), cancellationToken);
+            foreach (var item in result.Data)
+            {
+                item.IsFavorited = favoritedSlugs.Contains(item.Slug);
+            }
+
+            return result;
         }
 
         public async Task DeleteProductAsync(string slug, CancellationToken cancellationToken)
@@ -251,6 +265,23 @@ namespace EcommerceAPI.Application.Services.ProductService
             {
                 _logger.LogError(ex, "Failed to remove product {ProductId} from search index after delete. Product data is out of sync with search until next reindex.", product.Id);
             }
+        }
+
+        private async Task<HashSet<string>> GetFavoritedProductSlugsAsync(IEnumerable<string> slugs, CancellationToken cancellationToken)
+        {
+            if (!_currentUserService.IsAuthenticated) return [];
+
+            var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid, cancellationToken);
+            if (user == null) return [];
+
+            var slugSet = slugs.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var favorites = await _favoriteProductRepository.GetAllAsync(
+                f => f.UserId == user.Id && slugSet.Contains(f.Product.Slug),
+                include: q => q.Include(f => f.Product),
+                cancellationToken: cancellationToken);
+
+            return favorites.Select(f => f.Product.Slug).ToHashSet(StringComparer.OrdinalIgnoreCase);
         }
 
 
