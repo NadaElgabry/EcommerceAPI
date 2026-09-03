@@ -30,7 +30,7 @@ public static class DependencyInjection
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<IUserMapper, UserMapper>();
         services.AddScoped<IProductService, ProductService>();
-        services.AddScoped<IProductMapper,ProductMapper>();
+        services.AddScoped<IProductMapper, ProductMapper>();
         services.AddScoped<ICategoryMapper, CategoryMapper>();
         services.AddScoped<ITagMapper, TagMapper>();
         services.AddScoped<ICategoryService, CategoryService>();
@@ -38,14 +38,16 @@ public static class DependencyInjection
         services.AddScoped<IUserActivityService, UserActivityService>();
         services.AddScoped<ICartService, CartService>();
         services.AddScoped<ICartMapper, CartMapper>();
-        services.AddScoped<IOrderService,OrderService>();
+        services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IOrderMapper, OrderMapper>();
+
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateProfileRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<ProductQueryParamsRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<AddToCartRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateCartRequestValidator>();
+
         return services;
     }
 }

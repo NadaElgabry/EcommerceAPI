@@ -1,4 +1,5 @@
-﻿using EcommerceAPI.Application.Interfaces;
+﻿using Amazon.S3;
+using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Email;
 using EcommerceAPI.Application.Interfaces.Image;
@@ -66,6 +67,12 @@ public static class DependencyInjection
 
         services.AddScoped<IProductSearchService, ElasticProductSearchService>();
         services.AddJwtAuthentication(configuration);
+
+        services.Configure<AwsSettings>(configuration.GetSection("AWS"));
+        services.AddDefaultAWSOptions(configuration.GetAWSOptions());
+        services.AddAWSService<IAmazonS3>();
+
+        services.Configure<GrocerySeedSettings>(configuration.GetSection("GrocerySeed"));
 
         return services;
     }
