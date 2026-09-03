@@ -1,4 +1,5 @@
 ﻿using EcommerceAPI.Domain.Entities;
+using EcommerceAPI.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 
 namespace EcommerceAPI.Infrastructure.Contexts
@@ -22,6 +23,8 @@ namespace EcommerceAPI.Infrastructure.Contexts
         public DbSet<FavoriteCategory> FavoriteCategories { get; set; }
         public DbSet<FavoriteProduct> FavoriteProducts { get; set; }
         public DbSet<UserActivity> UserActivities { get; set; }
+        public DbSet<ServiceClient> ServiceClients => Set<ServiceClient>();
+
         protected override void OnModelCreating(
             ModelBuilder modelBuilder)
         {
@@ -29,6 +32,9 @@ namespace EcommerceAPI.Infrastructure.Contexts
 
             modelBuilder.ApplyConfigurationsFromAssembly(
                 typeof(AppDbContext).Assembly);
+
+            modelBuilder.ApplyConfiguration
+                (new ServiceClientConfiguration());
         }
     }
 }

@@ -41,7 +41,10 @@ namespace EcommerceAPI.Application.Services.UserService
         /// <inheritdoc />
         public async Task<UserResponse> GetUserProfileAsync(Guid userGuid, CancellationToken cancellationToken = default)
         {
-            if (_currentUserService.Role != "Admin")
+            bool hasUserReadScope = _currentUserService.HasClaim("scope", "users:read");
+            bool isAdmin = string.Equals(_currentUserService.Role, "Admin", StringComparison.OrdinalIgnoreCase);
+
+            if (!isAdmin && !hasUserReadScope)
             {
                 if (_currentUserService.UserGuid != userGuid)
                 {

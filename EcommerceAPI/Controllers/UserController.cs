@@ -40,7 +40,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpGet("{userId}")]
-        [Authorize]
+        [Authorize(Policy = "UsersRead")]
         [ProducesResponseType(typeof(ApiResponse<UserResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> Profile([FromRoute] Guid userId, CancellationToken cancellationToken)
         {
@@ -50,7 +50,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "UsersRead")]
         [ProducesResponseType(typeof(ApiResponse<OffsetPagedResult<UserResponse>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllUsers([FromQuery] OffsetPageRequest request, CancellationToken cancellationToken)
         {
