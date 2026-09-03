@@ -75,6 +75,7 @@ namespace EcommerceAPI.Controllers
 
         [HttpPut("{guid}/status")]
         [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(ApiResponse<OrderResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateOrderStatus(
             [FromRoute] Guid guid,
             [FromBody] UpdateOrderStatusRequest request,
