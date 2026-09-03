@@ -36,6 +36,22 @@ namespace EcommerceAPI.Infrastructure.Persistence.Seed
             var existingTags = await context.Tags.ToListAsync(cancellationToken);
             var tagsBySlug = existingTags.ToDictionary(t => t.Slug, t => t, StringComparer.OrdinalIgnoreCase);
 
+            foreach (var leaf in GroceryCatalogWalker.WalkCatalog(catalogJsonPath))
+            {
+                foreach (var tagName in leaf.Path[1..^1])
+                {
+                    var tagSlug = slugGenerator.GenerateSlug(tagName);
+                    if (!tagsBySlug.ContainsKey(tagSlug))
+                    {
+                        var tag = new Tag { Name = tagName, Slug = tagSlug };
+                        tagsBySlug[tagSlug] = tag;
+                        context.Tags.Add(tag);
+                    }
+                }
+            }
+            await context.SaveChangesAsync(cancellationToken);
+
+            // phase 2: create products, referencing the now-persisted tags
             var random = Random.Shared;
 
             foreach (var leaf in GroceryCatalogWalker.WalkCatalog(catalogJsonPath))
@@ -69,12 +85,7 @@ namespace EcommerceAPI.Infrastructure.Persistence.Seed
                 foreach (var tagName in leaf.Path[1..^1])
                 {
                     var tagSlug = slugGenerator.GenerateSlug(tagName);
-                    if (!tagsBySlug.TryGetValue(tagSlug, out var tag))
-                    {
-                        tag = new Tag { Name = tagName, Slug = tagSlug };
-                        tagsBySlug[tagSlug] = tag;
-                    }
-                    product.ProductTags.Add(new ProductTag { Tag = tag });
+                    product.ProductTags.Add(new ProductTag { Tag = tagsBySlug[tagSlug] });
                 }
 
                 var localFileName = leaf.ImageRelativePath.Replace('/', '_');
