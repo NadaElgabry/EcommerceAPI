@@ -9,6 +9,11 @@ namespace EcommerceAPI.Infrastructure.Services.VisualSearch
     {
         private readonly HttpClient _httpClient;
 
+        public VisualSearchService(HttpClient httpClient)
+        {
+            _httpClient = httpClient;
+        }
+
         public async Task<List<string>> SearchByImageAsync(IFormFile image, int topK, CancellationToken ct)
         {
             using var content = new MultipartFormDataContent();

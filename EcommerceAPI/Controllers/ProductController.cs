@@ -90,10 +90,13 @@ namespace EcommerceAPI.Controllers
 
         [HttpPost("visual-search")]
         [ProducesResponseType(typeof(ApiResponse<List<ProductSummaryResponse>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> VisualSearch([FromForm] IFormFile file, [FromQuery] int? top_k, CancellationToken ct)
+        public async Task<IActionResult> VisualSearch([FromForm] IFormFile file, [FromQuery] int? top_k, CancellationToken cancellationToken)
         {
-            var results = await _productService.VisualSearchAsync(file, top_k, ct);
-            return Ok(ApiResponse<List<ProductSummaryResponse>>.SuccessResponse(200, "Visual search results.", results));
+            var results = await _productService.VisualSearchAsync(file, top_k, cancellationToken);
+            return Ok(ApiResponse<List<ProductSummaryResponse>>.SuccessResponse(
+                statusCode: 200,
+                message: "Visual search completed successfully.",
+                data: results));
         }
 
         [HttpDelete("{slug}")]
