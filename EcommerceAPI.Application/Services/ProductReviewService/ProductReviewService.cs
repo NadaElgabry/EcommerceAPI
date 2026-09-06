@@ -1,3 +1,5 @@
+using EcommerceAPI.Application.Common;
+using EcommerceAPI.Application.DTOs.Common;
 using EcommerceAPI.Application.DTOs.ProductReview;
 using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces;
@@ -85,36 +87,81 @@ namespace EcommerceAPI.Application.Services.ProductReviewService
             review.User = user;
             review.Product = product;
 
-            await _reviewRepository.AddAsync(
-                review,
-                cancellationToken);
+            await _unitOfWork.ExecuteInTransactionAsync(
+                async () =>
+                {
+                    await _reviewRepository.AddAsync(
+                        review,
+                        cancellationToken);
 
-            await _unitOfWork.SaveChangesAsync(
+                    await _unitOfWork.SaveChangesAsync(
+                        cancellationToken);
+                },
                 cancellationToken);
 
             return _reviewMapper.ToResponse(review);
         }
 
-        public async Task<List<ProductReviewResponse>> GetProductReviewsAsync(
+        public async Task<CursorPagedResult<ProductReviewResponse>> GetProductReviewsAsync(
             string productSlug,
+            GetProductReviewsRequest request,
             CancellationToken cancellationToken)
         {
             var product = await GetProductAsync(
                 productSlug,
                 cancellationToken);
 
-            var reviews = await _reviewRepository.GetAllAsync(
-                predicate: review =>
-                    review.ProductId == product.Id,
-                include: query =>
-                    query.Include(review => review.User),
-                cancellationToken: cancellationToken);
+            var lastReviewId =
+                string.IsNullOrWhiteSpace(request.Cursor)
+                    ? int.MaxValue
+                    : CursorHelper.Decode<int>(request.Cursor);
 
-            return reviews
-                .OrderByDescending(review => review.CreatedAt)
+            var take = Math.Clamp(
+                request.Limit,
+                1,
+                100);
+
+            var reviews =
+                await _reviewRepository.GetPagedDescendingAsync(
+                    predicate: review =>
+                        review.ProductId == product.Id &&
+                        review.Id < lastReviewId,
+                    orderBy: review => review.Id,
+                    take: take + 1,
+                    include: query =>
+                        query.Include(review => review.User),
+                    cancellationToken: cancellationToken);
+
+            var hasNext = reviews.Count > take;
+
+            if (hasNext)
+            {
+                reviews.RemoveAt(reviews.Count - 1);
+            }
+
+            string? nextCursor = null;
+
+            if (hasNext && reviews.Count > 0)
+            {
+                nextCursor = CursorHelper.Encode(
+                    reviews[^1].Id);
+            }
+
+            var reviewResponses = reviews
                 .Select(review =>
                     _reviewMapper.ToResponse(review))
                 .ToList();
+
+            return new CursorPagedResult<ProductReviewResponse>
+            {
+                Data = reviewResponses,
+                Pagination = new CursorPageInfo
+                {
+                    NextCursor = nextCursor,
+                    HasNext = hasNext,
+                    PageSize = reviewResponses.Count
+                }
+            };
         }
 
         public async Task<List<AiProductReviewResponse>> GetReviewsForAiAsync(
@@ -170,9 +217,14 @@ namespace EcommerceAPI.Application.Services.ProductReviewService
                 review,
                 request);
 
-            _reviewRepository.Update(review);
+            await _unitOfWork.ExecuteInTransactionAsync(
+                async () =>
+                {
+                    _reviewRepository.Update(review);
 
-            await _unitOfWork.SaveChangesAsync(
+                    await _unitOfWork.SaveChangesAsync(
+                        cancellationToken);
+                },
                 cancellationToken);
 
             return _reviewMapper.ToResponse(review);
@@ -203,9 +255,14 @@ namespace EcommerceAPI.Application.Services.ProductReviewService
                     "You can only delete your own review.");
             }
 
-            _reviewRepository.Delete(review);
+            await _unitOfWork.ExecuteInTransactionAsync(
+                async () =>
+                {
+                    _reviewRepository.Delete(review);
 
-            await _unitOfWork.SaveChangesAsync(
+                    await _unitOfWork.SaveChangesAsync(
+                        cancellationToken);
+                },
                 cancellationToken);
         }
 

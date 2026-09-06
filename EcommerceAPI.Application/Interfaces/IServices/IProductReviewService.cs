@@ -1,3 +1,4 @@
+using EcommerceAPI.Application.DTOs.Common;
 using EcommerceAPI.Application.DTOs.ProductReview;
 
 namespace EcommerceAPI.Application.Interfaces.IServices
@@ -9,8 +10,9 @@ namespace EcommerceAPI.Application.Interfaces.IServices
             CreateProductReviewRequest request,
             CancellationToken cancellationToken);
 
-        Task<List<ProductReviewResponse>> GetProductReviewsAsync(
+        Task<CursorPagedResult<ProductReviewResponse>> GetProductReviewsAsync(
             string productSlug,
+            GetProductReviewsRequest request,
             CancellationToken cancellationToken);
 
         Task<List<AiProductReviewResponse>> GetReviewsForAiAsync(

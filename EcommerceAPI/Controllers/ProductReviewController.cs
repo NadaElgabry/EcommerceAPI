@@ -1,4 +1,5 @@
 using EcommerceAPI.Application.Common;
+using EcommerceAPI.Application.DTOs.Common;
 using EcommerceAPI.Application.DTOs.ProductReview;
 using EcommerceAPI.Application.Interfaces.IServices;
 using Microsoft.AspNetCore.Authorization;
@@ -56,25 +57,31 @@ namespace EcommerceAPI.Controllers
 
         [HttpGet]
         [ProducesResponseType(
-            typeof(ApiResponse<List<ProductReviewResponse>>),
+            typeof(ApiResponse<CursorPagedResult<ProductReviewResponse>>),
             StatusCodes.Status200OK)]
+        [ProducesResponseType(
+            typeof(ApiResponse<string>),
+            StatusCodes.Status400BadRequest)]
         [ProducesResponseType(
             typeof(ApiResponse<string>),
             StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetProductReviews(
             [FromRoute] string productSlug,
+            [FromQuery] GetProductReviewsRequest request,
             CancellationToken cancellationToken)
         {
             var reviews =
                 await _productReviewService.GetProductReviewsAsync(
                     productSlug,
+                    request,
                     cancellationToken);
 
             return Ok(
-                ApiResponse<List<ProductReviewResponse>>.SuccessResponse(
-                    statusCode: 200,
-                    message: "Product reviews retrieved successfully.",
-                    data: reviews));
+                ApiResponse<CursorPagedResult<ProductReviewResponse>>
+                    .SuccessResponse(
+                        statusCode: 200,
+                        message: "Product reviews retrieved successfully.",
+                        data: reviews));
         }
 
         [HttpPut("{reviewId:int}")]

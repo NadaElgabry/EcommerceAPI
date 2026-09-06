@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using EcommerceAPI.Application.Common;
 using EcommerceAPI.Application.DTOs.ProductReview;
 using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces;
@@ -28,6 +29,14 @@ namespace EcommerceAPI.Application.Tests.Services
 
         public ProductReviewServiceTests()
         {
+            _unitOfWork
+                .Setup(unitOfWork =>
+                    unitOfWork.ExecuteInTransactionAsync(
+                        It.IsAny<Func<Task>>(),
+                        It.IsAny<CancellationToken>()))
+                .Returns<Func<Task>, CancellationToken>(
+                    (operation, _) => operation());
+
             _sut = new ProductReviewService(
                 _currentUserService.Object,
                 _userRepository.Object,
@@ -115,6 +124,13 @@ namespace EcommerceAPI.Application.Tests.Services
 
             _unitOfWork.Verify(
                 unitOfWork =>
+                    unitOfWork.ExecuteInTransactionAsync(
+                        It.IsAny<Func<Task>>(),
+                        It.IsAny<CancellationToken>()),
+                Times.Once);
+
+            _unitOfWork.Verify(
+                unitOfWork =>
                     unitOfWork.SaveChangesAsync(
                         It.IsAny<CancellationToken>()),
                 Times.Once);
@@ -174,6 +190,13 @@ namespace EcommerceAPI.Application.Tests.Services
                         It.IsAny<ProductReview>(),
                         It.IsAny<CancellationToken>()),
                 Times.Never);
+
+            _unitOfWork.Verify(
+                unitOfWork =>
+                    unitOfWork.ExecuteInTransactionAsync(
+                        It.IsAny<Func<Task>>(),
+                        It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         [Fact]
@@ -214,6 +237,13 @@ namespace EcommerceAPI.Application.Tests.Services
                 repository =>
                     repository.AddAsync(
                         It.IsAny<ProductReview>(),
+                        It.IsAny<CancellationToken>()),
+                Times.Never);
+
+            _unitOfWork.Verify(
+                unitOfWork =>
+                    unitOfWork.ExecuteInTransactionAsync(
+                        It.IsAny<Func<Task>>(),
                         It.IsAny<CancellationToken>()),
                 Times.Never);
         }
@@ -267,6 +297,13 @@ namespace EcommerceAPI.Application.Tests.Services
 
             _unitOfWork.Verify(
                 unitOfWork =>
+                    unitOfWork.ExecuteInTransactionAsync(
+                        It.IsAny<Func<Task>>(),
+                        It.IsAny<CancellationToken>()),
+                Times.Once);
+
+            _unitOfWork.Verify(
+                unitOfWork =>
                     unitOfWork.SaveChangesAsync(
                         It.IsAny<CancellationToken>()),
                 Times.Once);
@@ -310,6 +347,13 @@ namespace EcommerceAPI.Application.Tests.Services
                     repository.Update(
                         It.IsAny<ProductReview>()),
                 Times.Never);
+
+            _unitOfWork.Verify(
+                unitOfWork =>
+                    unitOfWork.ExecuteInTransactionAsync(
+                        It.IsAny<Func<Task>>(),
+                        It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         [Fact]
@@ -345,6 +389,13 @@ namespace EcommerceAPI.Application.Tests.Services
 
             _reviewRepository.Verify(
                 repository => repository.Delete(review),
+                Times.Once);
+
+            _unitOfWork.Verify(
+                unitOfWork =>
+                    unitOfWork.ExecuteInTransactionAsync(
+                        It.IsAny<Func<Task>>(),
+                        It.IsAny<CancellationToken>()),
                 Times.Once);
 
             _unitOfWork.Verify(
@@ -386,10 +437,108 @@ namespace EcommerceAPI.Application.Tests.Services
                     repository.Delete(
                         It.IsAny<ProductReview>()),
                 Times.Never);
+
+            _unitOfWork.Verify(
+                unitOfWork =>
+                    unitOfWork.ExecuteInTransactionAsync(
+                        It.IsAny<Func<Task>>(),
+                        It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         [Fact]
-        public async Task GetProductReviewsAsync_ReturnsNewestReviewsFirst()
+        public async Task GetProductReviewsAsync_WhenMoreReviewsExist_ReturnsPagedReviewsAndNextCursor()
+        {
+            var product = CreateProduct(10);
+            var firstUser = CreateUser(1);
+            var secondUser = CreateUser(2);
+            var thirdUser = CreateUser(3);
+
+            SetupProduct(product);
+
+            var newestReview = new ProductReview
+            {
+                Id = 30,
+                UserId = firstUser.Id,
+                User = firstUser,
+                ProductId = product.Id,
+                Product = product,
+                Rating = 5,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var secondReview = new ProductReview
+            {
+                Id = 20,
+                UserId = secondUser.Id,
+                User = secondUser,
+                ProductId = product.Id,
+                Product = product,
+                Rating = 4,
+                CreatedAt = DateTime.UtcNow.AddMinutes(-1)
+            };
+
+            var thirdReview = new ProductReview
+            {
+                Id = 10,
+                UserId = thirdUser.Id,
+                User = thirdUser,
+                ProductId = product.Id,
+                Product = product,
+                Rating = 3,
+                CreatedAt = DateTime.UtcNow.AddMinutes(-2)
+            };
+
+            _reviewRepository
+                .Setup(repository =>
+                    repository.GetPagedDescendingAsync(
+                        It.IsAny<Expression<Func<ProductReview, bool>>>(),
+                        It.IsAny<Expression<Func<ProductReview, int>>>(),
+                        3,
+                        It.IsAny<Func<IQueryable<ProductReview>,
+                            IIncludableQueryable<ProductReview, object>>?>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<ProductReview>
+                {
+                    newestReview,
+                    secondReview,
+                    thirdReview
+                });
+
+            var request = new GetProductReviewsRequest
+            {
+                Limit = 2
+            };
+
+            var result = await _sut.GetProductReviewsAsync(
+                product.Slug,
+                request,
+                CancellationToken.None);
+
+            Assert.Equal(2, result.Data.Count);
+            Assert.Equal(newestReview.Id, result.Data[0].Id);
+            Assert.Equal(secondReview.Id, result.Data[1].Id);
+
+            Assert.True(result.Pagination.HasNext);
+            Assert.Equal(2, result.Pagination.PageSize);
+            Assert.Equal(
+                CursorHelper.Encode(secondReview.Id),
+                result.Pagination.NextCursor);
+
+            _reviewRepository.Verify(
+                repository =>
+                    repository.GetPagedDescendingAsync(
+                        It.IsAny<Expression<Func<ProductReview, bool>>>(),
+                        It.IsAny<Expression<Func<ProductReview, int>>>(),
+                        3,
+                        It.IsAny<Func<IQueryable<ProductReview>,
+                            IIncludableQueryable<ProductReview, object>>?>(),
+                        It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task GetProductReviewsAsync_WhenNoMoreReviewsExist_ReturnsPageWithoutNextCursor()
         {
             var product = CreateProduct(10);
             var firstUser = CreateUser(1);
@@ -397,49 +546,132 @@ namespace EcommerceAPI.Application.Tests.Services
 
             SetupProduct(product);
 
-            var olderReview = new ProductReview
+            var newestReview = new ProductReview
             {
-                Id = 1,
+                Id = 20,
                 UserId = firstUser.Id,
                 User = firstUser,
-                ProductId = product.Id,
-                Product = product,
-                Rating = 4,
-                CreatedAt = DateTime.UtcNow.AddDays(-2)
-            };
-
-            var newerReview = new ProductReview
-            {
-                Id = 2,
-                UserId = secondUser.Id,
-                User = secondUser,
                 ProductId = product.Id,
                 Product = product,
                 Rating = 5,
                 CreatedAt = DateTime.UtcNow
             };
 
+            var olderReview = new ProductReview
+            {
+                Id = 10,
+                UserId = secondUser.Id,
+                User = secondUser,
+                ProductId = product.Id,
+                Product = product,
+                Rating = 4,
+                CreatedAt = DateTime.UtcNow.AddMinutes(-1)
+            };
+
             _reviewRepository
                 .Setup(repository =>
-                    repository.GetAllAsync(
-                        It.IsAny<Expression<Func<ProductReview, bool>>?>(),
+                    repository.GetPagedDescendingAsync(
+                        It.IsAny<Expression<Func<ProductReview, bool>>>(),
+                        It.IsAny<Expression<Func<ProductReview, int>>>(),
+                        3,
                         It.IsAny<Func<IQueryable<ProductReview>,
                             IIncludableQueryable<ProductReview, object>>?>(),
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<ProductReview>
                 {
-                    olderReview,
-                    newerReview
+                    newestReview,
+                    olderReview
                 });
 
-            var result =
-                await _sut.GetProductReviewsAsync(
-                    product.Slug,
-                    CancellationToken.None);
+            var request = new GetProductReviewsRequest
+            {
+                Limit = 2
+            };
 
-            Assert.Equal(2, result.Count);
-            Assert.Equal(newerReview.Id, result[0].Id);
-            Assert.Equal(olderReview.Id, result[1].Id);
+            var result = await _sut.GetProductReviewsAsync(
+                product.Slug,
+                request,
+                CancellationToken.None);
+
+            Assert.Equal(2, result.Data.Count);
+            Assert.Equal(newestReview.Id, result.Data[0].Id);
+            Assert.Equal(olderReview.Id, result.Data[1].Id);
+
+            Assert.False(result.Pagination.HasNext);
+            Assert.Null(result.Pagination.NextCursor);
+            Assert.Equal(2, result.Pagination.PageSize);
+        }
+
+        [Fact]
+        public async Task GetProductReviewsAsync_WithCursor_UsesCursorForNextPage()
+        {
+            var product = CreateProduct(10);
+            var user = CreateUser(1);
+
+            SetupProduct(product);
+
+            var review = new ProductReview
+            {
+                Id = 10,
+                UserId = user.Id,
+                User = user,
+                ProductId = product.Id,
+                Product = product,
+                Rating = 5,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var cursor = CursorHelper.Encode(20);
+
+            _reviewRepository
+                .Setup(repository =>
+                    repository.GetPagedDescendingAsync(
+                        It.IsAny<Expression<Func<ProductReview, bool>>>(),
+                        It.IsAny<Expression<Func<ProductReview, int>>>(),
+                        21,
+                        It.IsAny<Func<IQueryable<ProductReview>,
+                            IIncludableQueryable<ProductReview, object>>?>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<ProductReview>
+                {
+                    review
+                });
+
+            var request = new GetProductReviewsRequest
+            {
+                Cursor = cursor,
+                Limit = 20
+            };
+
+            var result = await _sut.GetProductReviewsAsync(
+                product.Slug,
+                request,
+                CancellationToken.None);
+
+            Assert.Single(result.Data);
+            Assert.Equal(review.Id, result.Data[0].Id);
+
+            _reviewRepository.Verify(
+                repository =>
+                    repository.GetPagedDescendingAsync(
+                        It.Is<Expression<Func<ProductReview, bool>>>(
+                            predicate =>
+                                predicate.Compile()(new ProductReview
+                                {
+                                    Id = 10,
+                                    ProductId = product.Id
+                                }) &&
+                                !predicate.Compile()(new ProductReview
+                                {
+                                    Id = 25,
+                                    ProductId = product.Id
+                                })),
+                        It.IsAny<Expression<Func<ProductReview, int>>>(),
+                        21,
+                        It.IsAny<Func<IQueryable<ProductReview>,
+                            IIncludableQueryable<ProductReview, object>>?>(),
+                        It.IsAny<CancellationToken>()),
+                Times.Once);
         }
 
         private void SetupCurrentUser(User user)
@@ -517,6 +749,3 @@ namespace EcommerceAPI.Application.Tests.Services
         }
     }
 }
-
-
-
