@@ -241,6 +241,12 @@ namespace EcommerceAPI.Application.Services.ProductService
 
             _ = LogSearchActivitiesAsync(userId, result.Data, CancellationToken.None);
 
+            var favoritedSlugs = await GetFavoritedProductSlugsAsync(result.Data.Select(p => p.Slug), cancellationToken);
+            foreach (var item in result.Data)
+            {
+                item.IsFavorited = favoritedSlugs.Contains(item.Slug);
+            }
+
             return result;
         }
 
@@ -275,16 +281,7 @@ namespace EcommerceAPI.Application.Services.ProductService
             {
                 _logger.LogError(ex, "Failed to log search activities for user {UserId}", userId);
             }
-        {
-            var result = await _searchService.SearchProductsAsync(queryParams, cancellationToken);
-
-            var favoritedSlugs = await GetFavoritedProductSlugsAsync(result.Data.Select(p => p.Slug), cancellationToken);
-            foreach (var item in result.Data)
-            {
-                item.IsFavorited = favoritedSlugs.Contains(item.Slug);
-            }
-
-            return result;
+       
         }
 
         public async Task DeleteProductAsync(string slug, CancellationToken cancellationToken)
