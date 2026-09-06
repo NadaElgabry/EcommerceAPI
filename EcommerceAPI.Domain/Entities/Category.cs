@@ -17,5 +17,6 @@ namespace EcommerceAPI.Domain.Entities
         public List<Product> Products{ get; set; } = new();
     
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt {  get; set; }
     }
 }

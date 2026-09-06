@@ -47,6 +47,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 CategorySlug = product.Category.Slug,
                 ProductImageUrl = product.ProductImage,
                 CreationDate = product.CreationDate,
+                UpdatedAt = product.UpdatedAt,
                 Tags = product.ProductTags.Select(pt => pt.Tag.Name).ToList()
             };
         }
@@ -61,6 +62,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 CategorySlug = product.Category.Slug,
                 AltText = product.AltText,
                 ProductImageUrl = product.ProductImage,
+                UpdatedAt= product.UpdatedAt,
             };
         }
 

@@ -203,10 +203,11 @@ namespace EcommerceAPI.Application.Services.ProductService
                 product.ProductTags.Add(new ProductTag { ProductId = product.Id, TagId = tag.Id });
             }
 
-            _productRepository.Update(product);
+           product.UpdatedAt = DateTime.UtcNow;
 
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
+                _productRepository.Update(product);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
 
