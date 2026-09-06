@@ -240,7 +240,7 @@ namespace EcommerceAPI.Application.Services.ProductService
 
             var userId = _currentUserService.UserGuid;
 
-            _ = LogSearchActivitiesAsync(userId, result.Data, CancellationToken.None);
+            await LogSearchActivitiesAsync(userId, result.Data, cancellationToken);
 
             var favoritedSlugs = await GetFavoritedProductSlugsAsync(result.Data.Select(p => p.Slug), cancellationToken);
             foreach (var item in result.Data)
