@@ -6,6 +6,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
     {
         Task<CreateServiceClientResponse> CreateAsync(CreateServiceClientRequest request, CancellationToken cancellationToken);
         Task<ServiceTokenResponse> IssueTokenAsync(ServiceTokenRequest request, CancellationToken cancellationToken);
+        Task UpdateScopesAsync(string clientId, UpdateServiceClientScopesRequest request, CancellationToken cancellationToken);
         Task RevokeAsync(string clientId, CancellationToken cancellationToken);
     }
 }
