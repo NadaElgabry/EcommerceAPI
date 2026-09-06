@@ -4,6 +4,7 @@ using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces.Search;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
+using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
 using System.Text;
 using SearchRequest = EcommerceAPI.Application.Interfaces.Search.SearchRequest;
@@ -14,10 +15,11 @@ namespace EcommerceAPI.Infrastructure.Services.Search
         where TDocument : class
     {
         private readonly ElasticsearchClient _client;
-
-        public ElasticSearchService(ElasticsearchClient client)
+        private readonly ILogger<ElasticSearchService<ElasticProductSearchService>> _logger;
+        public ElasticSearchService(ElasticsearchClient client,ILogger<ElasticSearchService<ElasticProductSearchService>> logger)
         {
             _client = client;
+            _logger = logger; 
         }
 
         ///<inheritdoc/>
@@ -68,38 +70,66 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                             b.Filter(filterActions.ToArray());
                         }
 
-                        if (hasSearchText && request.SearchFields is { Length: > 0 })
+                        if (hasSearchText)
                         {
-                            var fuzzyFields = request.SearchFields
-                                .Where(f => !f.StartsWith("description", StringComparison.OrdinalIgnoreCase))
-                                .ToArray();
-                            var exactFields = request.SearchFields
-                                .Where(f => f.StartsWith("description", StringComparison.OrdinalIgnoreCase))
-                                .ToArray();
+                            var hasPrefixFields = request.PrefixFields is { Length: > 0 };
+                            var hasSemanticFields = request.SemanticFields is { Length: > 0 };
+                            var hasExactFields = request.ExactFields is { Length: > 0 };
 
-                            b.Must(m => m.Bool(inner =>
+                            if (hasPrefixFields || hasSemanticFields || hasExactFields)
                             {
-                                inner.MinimumShouldMatch(1);
+                                // The real matching clauses require at least one hit
+                                // (MinimumShouldMatch(1) below). That requirement sits as one
+                                // option in an outer should, alongside a MatchAll clause with a
+                                // tiny fixed boost. The outer MinimumShouldMatch(0) means neither
+                                // option is mandatory, but MatchAll always matches, so every
+                                // document that passes the hard Filters always scores and is
+                                // returned — genuine matches rank first (extra relevance score
+                                // stacked on top), everything else fills out the rest of the
+                                // page instead of the response ever coming back empty.
+                                const float catchAllBoost = 0.001f;
 
-                                if (fuzzyFields.Length > 0)
-                                {
-                                    inner.Should(sh => sh.MultiMatch(mm => mm
-                                        .Query(searchText)
-                                        .Fields(fuzzyFields)
-                                        .Type(TextQueryType.BestFields)
-                                        .Fuzziness(new Fuzziness("AUTO"))
-                                        .PrefixLength(2)
-                                        .MinimumShouldMatch("75%")));
-                                }
+                                b.Should(
+                                    sh => sh.Bool(inner =>
+                                    {
+                                        inner.MinimumShouldMatch(1);
 
-                                if (exactFields.Length > 0)
-                                {
-                                    inner.Should(sh => sh.MultiMatch(mm => mm
-                                        .Query(searchText)
-                                        .Fields(exactFields)
-                                        .Type(TextQueryType.BestFields)));
-                                }
-                            }));
+                                        var innerShoulds = new List<Action<QueryDescriptor<TDocument>>>();
+
+                                        if (hasPrefixFields)
+                                        {
+                                            innerShoulds.Add(s2 => s2.MultiMatch(mm => mm
+                                                .Query(searchText)
+                                                .Fields(request.PrefixFields)
+                                                .Type(TextQueryType.BestFields)));
+                                        }
+
+                                        if (hasSemanticFields)
+                                        {
+                                            innerShoulds.Add(s2 => s2.MultiMatch(mm => mm
+                                                .Query(searchText)
+                                                .Fields(request.SemanticFields)
+                                                .Type(TextQueryType.BestFields)
+                                                .MinimumShouldMatch("75%")));
+                                        }
+
+                                        if (hasExactFields)
+                                        {
+                                            innerShoulds.Add(s2 => s2.MultiMatch(mm => mm
+                                                .Query(searchText)
+                                                .Fields(request.ExactFields)
+                                                .Type(TextQueryType.BestFields)
+                                                .Fuzziness(new Fuzziness("AUTO"))
+                                                .PrefixLength(2)
+                                                .MinimumShouldMatch("75%")));
+                                        }
+
+                                        inner.Should(innerShoulds.ToArray());
+                                    }),
+                                    sh => sh.MatchAll(ma => ma.Boost(catchAllBoost))
+                                );
+                                b.MinimumShouldMatch(0);
+                            }
                         }
                     }))
                     .Sort(
@@ -122,7 +152,11 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                     s.SearchAfter(cursor.Values.Select(v => FieldValue.String(v)).ToList());
                 }
             }, cancellationToken);
-
+            if (response.ApiCallDetails?.RequestBodyInBytes != null)
+            {
+                var requestJson = System.Text.Encoding.UTF8.GetString(response.ApiCallDetails.RequestBodyInBytes);
+                _logger.LogInformation("ES request body: {RequestJson}", requestJson);
+            }
             if (!response.IsValidResponse)
             {
                 throw new InvalidOperationException($"Search on '{indexName}' failed: {response.DebugInformation}");
@@ -171,7 +205,7 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                 throw new InvalidOperationException($"Indexing document '{id}' in '{indexName}' failed: {response.DebugInformation}");
             }
         }
-        
+
         ///<inheritdoc/>
         public async Task DeleteOneAsync(string indexName, string id, CancellationToken cancellationToken = default)
         {

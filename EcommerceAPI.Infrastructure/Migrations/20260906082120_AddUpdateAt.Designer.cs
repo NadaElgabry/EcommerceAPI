@@ -4,6 +4,7 @@ using EcommerceAPI.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EcommerceAPI.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260906082120_AddUpdateAt")]
+    partial class AddUpdateAt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -44,7 +47,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Cart", (string)null);
+                    b.ToTable("Cart");
 
                     b.HasData(
                         new
@@ -86,7 +89,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.HasIndex("CartId", "ProductId")
                         .IsUnique();
 
-                    b.ToTable("CartItem", (string)null);
+                    b.ToTable("CartItem");
 
                     b.HasData(
                         new
@@ -142,7 +145,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.HasIndex("Slug")
                         .IsUnique();
 
-                    b.ToTable("Categories", (string)null);
+                    b.ToTable("Categories");
 
                     b.HasData(
                         new
@@ -189,7 +192,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.HasIndex("UserId", "CategoryId")
                         .IsUnique();
 
-                    b.ToTable("FavoriteCategories", (string)null);
+                    b.ToTable("FavoriteCategories");
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.FavoriteProduct", b =>
@@ -216,7 +219,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.HasIndex("UserId", "ProductId")
                         .IsUnique();
 
-                    b.ToTable("FavoriteProducts", (string)null);
+                    b.ToTable("FavoriteProducts");
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.Order", b =>
@@ -274,7 +277,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Order", (string)null);
+                    b.ToTable("Order");
 
                     b.HasData(
                         new
@@ -331,7 +334,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderItem", (string)null);
+                    b.ToTable("OrderItem");
 
                     b.HasData(
                         new
@@ -412,7 +415,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.HasIndex("Slug")
                         .IsUnique();
 
-                    b.ToTable("Products", (string)null);
+                    b.ToTable("Products");
 
                     b.HasData(
                         new
@@ -460,7 +463,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
 
                     b.HasIndex("TagId");
 
-                    b.ToTable("ProductTags", (string)null);
+                    b.ToTable("ProductTags");
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.RefreshToken", b =>
@@ -501,7 +504,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens", (string)null);
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.ServiceClient", b =>
@@ -574,7 +577,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.HasIndex("Slug")
                         .IsUnique();
 
-                    b.ToTable("Tags", (string)null);
+                    b.ToTable("Tags");
 
                     b.HasData(
                         new
@@ -654,7 +657,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.HasIndex("Guid")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
 
                     b.HasData(
                         new
@@ -701,7 +704,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserActivities", (string)null);
+                    b.ToTable("UserActivities");
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.UserAddress", b =>
@@ -723,7 +726,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserAddresses", (string)null);
+                    b.ToTable("UserAddresses");
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.VerificationToken", b =>
@@ -763,7 +766,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("VerificationTokens", (string)null);
+                    b.ToTable("VerificationTokens");
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.Cart", b =>

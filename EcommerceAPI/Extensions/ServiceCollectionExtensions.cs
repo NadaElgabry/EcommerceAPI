@@ -43,7 +43,7 @@ public static class ServiceCollectionExtensions
                 "http://localhost:3000",
                 "http://localhost:4200",
                 "http://localhost:5173",
-                "https://grocery-ecommerce-qs48.vercel.app")
+                "https://grocery-ecommerce-fawn.vercel.app")
                       .AllowAnyHeader()
                       .AllowAnyMethod());
         });

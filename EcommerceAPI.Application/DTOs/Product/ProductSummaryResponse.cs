@@ -10,5 +10,7 @@
         public string CategorySlug { get; set; }
         public decimal Price { get; set; }
         public string? ProductImageUrl { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public List<string> Tags { get; set; } = new();
     }
 }
