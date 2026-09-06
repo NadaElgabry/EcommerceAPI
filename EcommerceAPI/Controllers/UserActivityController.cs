@@ -20,6 +20,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(typeof(ApiResponse<CursorPagedResult<UserActivitiesResponse>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetUserActivities([FromQuery] Guid? userId, [FromQuery] string? cursor, [FromQuery] int pageSize, CancellationToken cancellationToken)
         {
             var result = await _userActivityService.GetAllActivitiesAsync(userId, cursor, pageSize, cancellationToken);

@@ -22,14 +22,6 @@ namespace EcommerceAPI.Application.Validators.Product
             RuleFor(request => request.StockQuantity)
                 .GreaterThanOrEqualTo(0)
                 .WithMessage("Stock quantity cannot be negative.");
-
-            RuleFor(request => request.AltText)
-                .MaximumLength(255)
-                .When(request => !string.IsNullOrWhiteSpace(request.AltText));
-
-            RuleFor(request => request.Image)
-                .NotEmpty()
-                .WithMessage("Image is required.");
         }
     }
 }

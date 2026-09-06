@@ -23,6 +23,7 @@ namespace EcommerceAPI.Controllers
 
         [HttpPut("{userId}")]
         [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<UserResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateUser(
             [FromRoute] Guid userId, [FromBody] UpdateProfileRequest request, CancellationToken cancellationToken)
         {
@@ -39,7 +40,8 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpGet("{userId}")]
-        [Authorize]
+        [Authorize(Policy = "UsersRead")]
+        [ProducesResponseType(typeof(ApiResponse<UserResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> Profile([FromRoute] Guid userId, CancellationToken cancellationToken)
         {
             var userProfile = await _userService.GetUserProfileAsync(userId, cancellationToken);
@@ -48,7 +50,8 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "UsersRead")]
+        [ProducesResponseType(typeof(ApiResponse<OffsetPagedResult<UserResponse>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllUsers([FromQuery] OffsetPageRequest request, CancellationToken cancellationToken)
         {
             var result = await _userService.GetAllUsersAsync(request, cancellationToken);

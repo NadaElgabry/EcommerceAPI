@@ -13,6 +13,7 @@ namespace EcommerceAPI.Controllers
     public class OrderController : ControllerBase
     {
         private readonly IOrderService _orderService;
+
         public OrderController(IOrderService orderService)
         {
             _orderService = orderService;
@@ -21,34 +22,75 @@ namespace EcommerceAPI.Controllers
         [HttpPost]
         [Authorize]
         [Idempotent(ExpiresInMilliseconds = 1000 * 20)]
+        [ProducesResponseType(typeof(ApiResponse<OrderResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> PlaceOrder([FromBody] PlaceOrderRequest request,
             CancellationToken cancellationToken)
         {
             var idempotencyKey = Request.Headers["IdempotencyKey"].ToString();
-            var orderResponse = await _orderService.PlaceOrderAsync(request,idempotencyKey, cancellationToken);
-            return Ok(ApiResponse<OrderResponse>.SuccessResponse(data: orderResponse, message: $"Order #{orderResponse.OrderNumber} placed successfully!", statusCode: 200));
+
+            var orderResponse = await _orderService.PlaceOrderAsync(
+                request,
+                idempotencyKey,
+                cancellationToken);
+
+            return Ok(
+                ApiResponse<OrderResponse>.SuccessResponse(
+                    data: orderResponse,
+                    message: $"Order #{orderResponse.OrderNumber} placed successfully!",
+                    statusCode: 200));
         }
 
         [HttpGet("{guid}")]
         [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<OrderResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetOrder([FromRoute] Guid guid, CancellationToken cancellationToken)
         {
-            var response = await _orderService.GetOrderByGuidAsync(guid, cancellationToken);
-            return Ok(ApiResponse<OrderResponse>.SuccessResponse(
-                data: response,
-                message: "Order retrieved successfully",
-                statusCode: 200));
+            var response = await _orderService.GetOrderByGuidAsync(
+                guid,
+                cancellationToken);
+
+            return Ok(
+                ApiResponse<OrderResponse>.SuccessResponse(
+                    data: response,
+                    message: "Order retrieved successfully",
+                    statusCode: 200));
         }
 
         [HttpGet("user/{guid}")]
         [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<CursorPagedResult<OrderSummary>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetOrdersList([FromRoute] Guid guid,[FromQuery] GetOrdersRequest request,CancellationToken cancellationToken)
         {
-            var response = await _orderService.GetOrdersAsync(guid,request,cancellationToken);
-            return Ok(ApiResponse<CursorPagedResult<OrderSummary>>.SuccessResponse(
-                data: response,
-                message: "Orders retrieved successfully",
-                statusCode: 200));
+            var response = await _orderService.GetOrdersAsync(
+                guid,
+                request,
+                cancellationToken);
+
+            return Ok(
+                ApiResponse<CursorPagedResult<OrderSummary>>.SuccessResponse(
+                    data: response,
+                    message: "Orders retrieved successfully",
+                    statusCode: 200));
+        }
+
+        [HttpPut("{guid}/status")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(ApiResponse<OrderResponse>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> UpdateOrderStatus(
+            [FromRoute] Guid guid,
+            [FromBody] UpdateOrderStatusRequest request,
+            CancellationToken cancellationToken)
+        {
+            var response = await _orderService.UpdateOrderStatusAsync(
+                guid,
+                request,
+                cancellationToken);
+
+            return Ok(
+                ApiResponse<OrderResponse>.SuccessResponse(
+                    data: response,
+                    message: "Order status updated successfully.",
+                    statusCode: 200));
         }
     }
 }

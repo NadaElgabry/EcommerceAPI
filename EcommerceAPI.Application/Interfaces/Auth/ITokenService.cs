@@ -23,7 +23,7 @@ namespace EcommerceAPI.Application.Interfaces.Auth
         /// <param name="user">The user for whom to generate the refresh token.</param>
         /// <returns>A tuple containing the raw token and the associated refresh token entity.</returns>
         public (string RawToken, RefreshToken Entity) GenerateRefreshToken(User user);
-      
+        public AccessTokenResult GenerateServiceToken(string clientId, IEnumerable<string> scopes);
         public string Hash(string refreshToken);
 
         public string GenerateHighEntropyToken();
