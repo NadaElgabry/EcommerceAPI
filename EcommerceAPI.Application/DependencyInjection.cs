@@ -43,7 +43,6 @@ public static class DependencyInjection
         services.AddScoped<IOrderMapper, OrderMapper>();
         services.AddScoped<IServiceClientService, ServiceClientService>();
         services.AddScoped<IServiceClientMapper, ServiceClientMapper>();
-
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateProfileRequestValidator>();

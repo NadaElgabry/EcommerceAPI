@@ -281,7 +281,7 @@ namespace EcommerceAPI.Application.Services.CategoryService
             {
                 category.ImageUrl = newImageUrl;
             }
-
+            category.UpdatedAt = DateTime.UtcNow;
             await _unitOfWork.ExecuteInTransactionAsync(
                 async () =>
                 {

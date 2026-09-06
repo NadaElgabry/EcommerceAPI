@@ -20,6 +20,7 @@ namespace EcommerceAPI.Controllers
         [HttpPost]
         [Authorize]
         [Idempotent(ExpiresInMilliseconds =1000*20)]
+        [ProducesResponseType(typeof(ApiResponse<CartResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> AddtoCart([FromBody] AddToCartRequest request,CancellationToken cancellationToken)
         {
             var itemCount = await _cartService.AddToCart(request, cancellationToken);
@@ -28,6 +29,7 @@ namespace EcommerceAPI.Controllers
 
         [HttpGet]
         [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<CartResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetCart(CancellationToken cancellationToken) 
         {
             var result = await _cartService.GetCart(cancellationToken);
@@ -36,6 +38,7 @@ namespace EcommerceAPI.Controllers
 
         [HttpPut]
         [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<CartResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateCart([FromBody] UpdateCartRequest request,CancellationToken cancellationToken)
         {
             var result = await _cartService.UpdateCart(request, cancellationToken);

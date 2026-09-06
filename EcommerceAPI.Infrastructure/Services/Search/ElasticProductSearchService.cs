@@ -4,6 +4,7 @@ using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces.Search;
 using EcommerceAPI.Infrastructure.Services.Search.Documents;
 using EcommerceAPI.Infrastructure.Settings;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace EcommerceAPI.Infrastructure.Services.Search
@@ -12,13 +13,16 @@ namespace EcommerceAPI.Infrastructure.Services.Search
     {
         private readonly ISearchService<ProductSearchDocument> _search;
         private readonly ElasticsearchSettings _settings;
+        private readonly ILogger<ElasticProductSearchService> _logger;
 
         public ElasticProductSearchService(
             ISearchService<ProductSearchDocument> search,
-            IOptions<ElasticsearchSettings> settings)
+            IOptions<ElasticsearchSettings> settings,
+            ILogger<ElasticProductSearchService> logger)
         {
             _search = search;
             _settings = settings.Value;
+            _logger = logger;
         }
 
         ///<inheritdoc/>
@@ -31,7 +35,9 @@ namespace EcommerceAPI.Infrastructure.Services.Search
             var request = new SearchRequest
             {
                 SearchText = queryParams.Search,
-                SearchFields = _settings.ProductSearchFields,
+                PrefixFields = _settings.ProductPrefixFields,
+                SemanticFields = _settings.ProductSemanticFields,
+                ExactFields = _settings.ProductExactFields,
                 SortField = ResolveSortField(queryParams.SortBy, hasSearchText),
                 SortDir = string.Equals(queryParams.SortDir, "asc", StringComparison.OrdinalIgnoreCase)
                     ? SearchSortDirection.Asc
@@ -50,9 +56,13 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                 StockQuantity = doc.StockQuantity,
                 ProductImageUrl = doc.ProductImage,
                 AltText = doc.AltText,
-                CategorySlug = doc.CategorySlug
+                CategorySlug = doc.CategorySlug,
+                Tags = doc.Tags
             }).ToList();
-
+            _logger.LogInformation("Prefix: {P} | Semantic: {S} | Exact: {E}",
+                string.Join(",", request.PrefixFields ?? Array.Empty<string>()),
+                string.Join(",", request.SemanticFields ?? Array.Empty<string>()),
+                string.Join(",", request.ExactFields ?? Array.Empty<string>()));
             return new CursorPagedResult<ProductSummaryResponse>
             {
                 Data = items,

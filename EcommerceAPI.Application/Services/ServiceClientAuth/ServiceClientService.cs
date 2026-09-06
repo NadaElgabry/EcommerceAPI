@@ -70,6 +70,18 @@ namespace EcommerceAPI.Application.Services.ServiceClientAuth
                 ExpiresAtUtc = token.ExpiresAtUtc
             };
         }
+        /// <inheritdoc />
+        public async Task UpdateScopesAsync(
+            string clientId, UpdateServiceClientScopesRequest request, CancellationToken cancellationToken)
+        {
+            var client = await _serviceClientRepository.GetByAsync(
+                c => c.ClientId == clientId, cancellationToken)
+                ?? throw new NotFoundException("Service client not found.");
+
+            client.ScopesCsv = string.Join(',', request.Scopes);
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         /// <inheritdoc />
         public async Task RevokeAsync(string clientId, CancellationToken cancellationToken)

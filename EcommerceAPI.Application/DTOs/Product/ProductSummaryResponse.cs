@@ -6,8 +6,11 @@
         public required string Slug { get; set; }
         public int StockQuantity { get; set; }
         public string? AltText { get; set; }
+        public bool IsFavorited { get; set; } = false;
         public string CategorySlug { get; set; }
         public decimal Price { get; set; }
         public string? ProductImageUrl { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public List<string> Tags { get; set; } = new();
     }
 }

@@ -1,0 +1,281 @@
+# General commerce
+discount, sale, deal, offer, promo, promotion, clearance
+new, new arrival, latest, just in, new in
+best seller, bestseller, top seller, popular, trending
+free shipping, free delivery
+gift, present
+bundle, kit, set, combo
+refurbished, renewed, reconditioned, used, pre-owned, second hand
+authentic, genuine, original
+warranty, guarantee
+limited edition, exclusive
+
+# Electronics - general
+electric, electrical, electronic, electronics, electronically
+wireless, cordless, bluetooth, wifi, wi-fi
+smart, connected, iot
+charger, charging cable, power adapter, adapter
+battery, batteries, power bank, portable charger
+cable, cord, wire, lead
+remote, remote control, controller
+
+# Computers & accessories
+laptop, notebook, netbook, ultrabook
+desktop, desktop computer, pc, tower
+monitor, display, screen
+keyboard, keypad
+mouse, mice, trackpad
+webcam, web camera, camera
+printer, all in one printer
+router, modem, wifi router, access point
+hard drive, hdd, ssd, solid state drive, storage drive, external drive
+usb drive, flash drive, thumb drive, pen drive, memory stick
+ram, memory, ram module
+graphics card, gpu, video card
+motherboard, mainboard
+processor, cpu, chip
+
+# Mobile & audio
+phone, mobile, mobile phone, cell phone, cellphone, smartphone
+tablet, ipad, slate
+smartwatch, smart watch, fitness watch, fitness tracker, activity tracker
+earbuds, earphones, headphones, in-ear headphones, wireless earbuds, ear buds
+speaker, bluetooth speaker, portable speaker
+soundbar, sound bar
+tv, television, smart tv, telly
+projector, beamer
+
+# Home appliances
+fridge, refrigerator, icebox
+freeze, froze, frozen, freezing, freezer, deep freezer, chest freezer
+oven, stove, cooker, range
+microwave, microwave oven
+dishwasher, dish washer
+washing machine, washer, laundry machine
+dryer, tumble dryer, clothes dryer
+air conditioner, ac, aircon, air conditioning unit
+heater, space heater, room heater
+fan, ceiling fan, electric fan
+vacuum, vacuum cleaner, hoover
+iron, clothes iron, steam iron
+kettle, electric kettle, water kettle
+toaster, toaster oven
+blender, mixer, food processor
+coffee maker, coffee machine, espresso machine
+air fryer, airfryer
+water heater, geyser, boiler
+humidifier, dehumidifier
+
+# Kitchen & dining
+plate, dish, plates
+bowl, bowls
+cup, mug, cups
+cutlery, silverware, flatware, utensils
+pan, frying pan, skillet
+pot, cooking pot, saucepan
+knife, knives
+cookware, pots and pans
+container, storage container, food container, tupperware
+thermos, flask, insulated bottle
+lunch box, lunchbox, bento box
+
+# Furniture & home
+sofa, couch, settee
+armchair, chair, seat
+table, desk
+bed, bed frame
+mattress, mattress topper
+wardrobe, closet, armoire
+shelf, shelving, bookshelf, bookcase
+drawer, chest of drawers, dresser
+cabinet, cupboard
+rug, carpet, mat
+curtain, drape, drapery
+pillow, cushion
+blanket, throw
+lamp, light, lighting fixture
+led, led light, led bulb
+bulb, light bulb
+
+# Clothing & apparel
+shirt, t-shirt, tshirt, tee
+pants, trousers, slacks
+jeans, denim
+shorts, short pants
+jacket, coat, outerwear
+sweater, jumper, pullover
+hoodie, hooded sweatshirt
+dress, gown
+skirt
+suit, blazer
+underwear, undergarments, briefs
+socks, hosiery
+pajamas, pyjamas, sleepwear, nightwear
+swimsuit, swimwear, bathing suit
+activewear, sportswear, athleisure
+
+# Footwear
+shoes, footwear
+sneakers, trainers, running shoes
+boots, booties
+sandals, flip flops, slippers
+heels, high heels, pumps
+
+# Bags & accessories
+bag, handbag, purse
+backpack, rucksack, knapsack
+wallet, billfold
+belt
+scarf
+hat, cap, beanie
+gloves, mittens
+sunglasses, shades, eyewear
+
+# Jewelry & watches
+jewelry, jewellery
+necklace, chain
+bracelet, bangle
+earrings, studs
+ring, band
+watch, wristwatch
+
+# Beauty & personal care
+makeup, cosmetics
+lipstick, lip color, lip colour
+foundation, base makeup
+mascara
+skincare, skin care
+moisturizer, moisturiser, lotion, cream
+sunscreen, sunblock, spf
+shampoo, hair wash
+conditioner, hair conditioner
+soap, bar soap, body wash
+perfume, fragrance, cologne, scent
+deodorant, antiperspirant
+razor, shaver
+toothbrush, tooth brush
+toothpaste, tooth paste
+hair dryer, blow dryer
+straightener, flat iron, hair straightener
+trimmer, clipper, hair clipper
+
+# Health & wellness
+vitamins, supplements, multivitamin
+protein powder, protein shake
+first aid kit, medical kit
+thermometer
+blood pressure monitor, bp monitor
+mask, face mask
+sanitizer, hand sanitizer, disinfectant
+wheelchair
+crutches
+
+# Baby & kids
+diaper, nappy
+stroller, pram, buggy
+crib, cot
+baby monitor
+pacifier, dummy, soother
+baby bottle, feeding bottle
+car seat, child car seat
+
+# Toys & games
+toy, toys
+doll
+action figure
+puzzle, jigsaw
+board game, boardgame
+building blocks, bricks, construction set
+remote control car, rc car
+video game, videogame, game
+console, gaming console
+
+# Sports & outdoors
+bicycle, bike, cycle
+treadmill, running machine
+dumbbell, dumbbells, hand weight
+yoga mat, exercise mat
+tent, camping tent
+sleeping bag
+hiking backpack, trekking bag
+fishing rod, fishing pole
+football, soccer ball
+basketball
+tennis racket, racquet
+helmet
+gym gloves, workout gloves
+
+# Automotive
+car, automobile, vehicle, motorcar
+tire, tyre
+car battery, automotive battery
+car charger, in-car charger
+dash cam, dashcam, dashboard camera
+car cover, vehicle cover
+motor oil, engine oil
+windshield wiper, wiper blade
+
+# Office & stationery
+pen, ballpoint pen
+pencil
+notebook, notepad, journal
+binder, folder
+stapler
+scissors
+tape, adhesive tape
+office chair, desk chair
+filing cabinet
+
+# Tools & hardware
+drill, power drill, cordless drill
+screwdriver
+hammer
+wrench, spanner
+saw, hand saw
+tool kit, toolkit, tool set
+ladder, step ladder
+flashlight, torch
+extension cord, power strip, surge protector
+
+# Pet supplies
+pet food, animal food
+dog food
+cat food
+leash, lead
+pet bed, dog bed, cat bed
+litter box, litter tray
+aquarium, fish tank
+
+# Colors
+gray, grey
+color, colour
+black, jet black, ebony
+white, ivory, cream, off white
+navy, navy blue, dark blue
+maroon, burgundy, wine red
+
+# Materials
+stainless steel, steel, inox
+leather, genuine leather
+faux leather, pu leather, synthetic leather, vegan leather
+cotton, 100% cotton
+polyester, poly
+wood, wooden
+plastic, acrylic
+glass, tempered glass
+aluminum, aluminium
+silicone, rubber
+
+# Sizes / units (explicit mapping - controlled unit-of-measure normalization)
+xs, extra small => extra small
+sm, small => small
+md, medium => medium
+lg, large => large
+xl, extra large => extra large
+xxl, 2xl => xxl
+inch, inches, in => inch
+centimeter, centimetre, cm => centimeter
+kilogram, kg, kilo => kilogram
+gram, g, gm => gram
+liter, litre, l => liter
+milliliter, millilitre, ml => milliliter
