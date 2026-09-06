@@ -63,6 +63,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 AltText = product.AltText,
                 ProductImageUrl = product.ProductImage,
                 UpdatedAt= product.UpdatedAt,
+                Tags = product.ProductTags.Select(pt => pt.Tag.Name).ToList()
             };
         }
 
