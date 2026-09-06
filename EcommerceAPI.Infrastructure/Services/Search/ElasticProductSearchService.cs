@@ -56,7 +56,8 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                 StockQuantity = doc.StockQuantity,
                 ProductImageUrl = doc.ProductImage,
                 AltText = doc.AltText,
-                CategorySlug = doc.CategorySlug
+                CategorySlug = doc.CategorySlug,
+                Tags = doc.Tags
             }).ToList();
             _logger.LogInformation("Prefix: {P} | Semantic: {S} | Exact: {E}",
                 string.Join(",", request.PrefixFields ?? Array.Empty<string>()),
