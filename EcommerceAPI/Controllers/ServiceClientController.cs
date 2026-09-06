@@ -28,6 +28,16 @@ namespace EcommerceAPI.Controllers
                 data: result));
         }
 
+        [HttpPut("{clientId}/scopes")]
+        public async Task<IActionResult> UpdateScopes(
+            [FromRoute] string clientId,
+            [FromBody] UpdateServiceClientScopesRequest request,
+            CancellationToken cancellationToken)
+        {
+            await _serviceClientService.UpdateScopesAsync(clientId, request, cancellationToken);
+            return NoContent();
+        }
+
         [HttpDelete("{clientId}")]
         public async Task<IActionResult> Revoke([FromRoute] string clientId, CancellationToken cancellationToken)
         {
