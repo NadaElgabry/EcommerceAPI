@@ -47,6 +47,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 CategorySlug = product.Category.Slug,
                 ProductImageUrl = product.ProductImage,
                 CreationDate = product.CreationDate,
+                Tags = product.ProductTags.Select(pt => pt.Tag.Name).ToList()
             };
         }
         public ProductSummaryResponse ToProductSummaryResponse(Product product)
