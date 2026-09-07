@@ -238,9 +238,11 @@ namespace EcommerceAPI.Application.Services.ProductService
         {
             var result = await _searchService.SearchProductsAsync(queryParams, cancellationToken);
 
-            var userId = _currentUserService.UserGuid;
-
-            await LogSearchActivitiesAsync(userId, result.Data, cancellationToken);
+            if (_currentUserService.IsAuthenticated)
+            {
+                var userId = _currentUserService.UserGuid;
+                await LogSearchActivitiesAsync(userId, result.Data, cancellationToken);
+            }
 
             var favoritedSlugs = await GetFavoritedProductSlugsAsync(result.Data.Select(p => p.Slug), cancellationToken);
             foreach (var item in result.Data)
