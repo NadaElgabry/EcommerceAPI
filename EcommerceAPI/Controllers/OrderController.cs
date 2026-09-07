@@ -73,6 +73,16 @@ namespace EcommerceAPI.Controllers
                     statusCode: 200));
         }
 
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(ApiResponse<CursorPagedResult<OrderSummary>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAllOrders([FromQuery] GetAllOrdersRequest request, CancellationToken cancellationToken)
+        {
+            var response = await _orderService.GetAllOrdersAsync(request, cancellationToken);
+            return Ok(ApiResponse<CursorPagedResult<OrderSummary>>.SuccessResponse(
+                data: response, message: "Orders retrieved successfully", statusCode: 200));
+        }
+
         [HttpPut("{guid}/status")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(ApiResponse<OrderResponse>), StatusCodes.Status200OK)]

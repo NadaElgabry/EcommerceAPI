@@ -8,6 +8,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         public Task<OrderResponse> PlaceOrderAsync(PlaceOrderRequest request, string idempotencyKey, CancellationToken cancellationToken);
         public Task<CursorPagedResult<OrderSummary>> GetOrdersAsync(Guid userGuid, GetOrdersRequest request, CancellationToken cancellationToken);
         public Task<OrderResponse> GetOrderByGuidAsync(Guid orderGuid, CancellationToken cancellationToken);
+        public Task<CursorPagedResult<OrderSummary>> GetAllOrdersAsync(GetAllOrdersRequest request, CancellationToken cancellationToken);
         public Task<OrderResponse> UpdateOrderStatusAsync(Guid orderGuid, UpdateOrderStatusRequest request, CancellationToken cancellationToken);
     }
 }

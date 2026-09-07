@@ -10,6 +10,7 @@ using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace EcommerceAPI.Application.Services.OrderService
 {
@@ -159,17 +160,56 @@ namespace EcommerceAPI.Application.Services.OrderService
 
         public async Task<OrderResponse> GetOrderByGuidAsync(Guid orderGuid, CancellationToken cancellationToken)
         {
-            var user = await GetActiveUserAsync(cancellationToken);
+            var isAdmin = _currentUserService.Role == "Admin";
+
+            Expression<Func<Order, bool>> predicate = isAdmin
+                ? o => o.Guid == orderGuid
+                : o => o.Guid == orderGuid && o.User.Guid == _currentUserService.UserGuid;
 
             var order = await _orderRepository.GetByAsync(
-                predicate: o => o.Guid == orderGuid && o.UserId == user.Id,
-                include: query => query.Include(o => o.Items).ThenInclude(i => i.Product),
+                predicate: predicate,
+                include: query => query.Include(o => o.Items),
                 cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("Order not found");
 
             return _orderMapper.ToOrderResponse(order);
         }
+        public async Task<CursorPagedResult<OrderSummary>> GetAllOrdersAsync(GetAllOrdersRequest request, CancellationToken cancellationToken)
+        {
+            OrderStatus? statusFilter = null;
+            if (!string.IsNullOrWhiteSpace(request.Status))
+            {
+                if (!Enum.TryParse<OrderStatus>(request.Status, ignoreCase: true, out var parsed))
+                    throw new BadRequestException("Invalid order status.");
+                statusFilter = parsed;
+            }
 
+            var lastId = string.IsNullOrEmpty(request.Cursor) ? 0 : CursorHelper.Decode<int>(request.Cursor);
+            var take = Math.Clamp(request.Limit, 1, 50);
+
+            var orders = await _orderRepository.GetPagedAsync(
+                predicate: o => o.Id > lastId && (statusFilter == null || o.Status == statusFilter),
+                orderBy: o => o.Id,
+                take: take + 1,
+                include: query => query.Include(o => o.Items),
+                cancellationToken: cancellationToken);
+
+            var hasNext = orders.Count > take;
+            if (hasNext) orders.RemoveAt(orders.Count - 1);
+
+            var summaries = orders.Select(o => _orderMapper.ToOrderSummary(o)).ToList();
+
+            return new CursorPagedResult<OrderSummary>
+            {
+                Data = summaries,
+                Pagination = new CursorPageInfo
+                {
+                    NextCursor = hasNext && summaries.Count > 0 ? CursorHelper.Encode(orders[^1].Id) : null,
+                    HasNext = hasNext,
+                    PageSize = summaries.Count
+                }
+            };
+        }
         public async Task<OrderResponse> UpdateOrderStatusAsync(
             Guid orderGuid,
             UpdateOrderStatusRequest request,
@@ -177,7 +217,7 @@ namespace EcommerceAPI.Application.Services.OrderService
         {
             var order = await _orderRepository.GetByAsync(
                 predicate: o => o.Guid == orderGuid,
-                include: query => query.Include(o => o.Items).ThenInclude(i => i.Product),
+                include: query => query.Include(o => o.Items),
                 cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("Order not found");
 
