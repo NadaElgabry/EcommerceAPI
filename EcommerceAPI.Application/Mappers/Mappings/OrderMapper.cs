@@ -22,7 +22,12 @@ namespace EcommerceAPI.Application.Mappers
                     ProductId = i.ProductId,
                     Product = i.Product,
                     Quantity = i.Quantity,
-                    UnitPrice = i.UnitPrice
+                    UnitPrice = i.UnitPrice,
+                    ProductName = i.Product.Name,
+                    ProductSlug = i.Product.Slug,
+                    ProductDescription = i.Product.Description,
+                    ProductImageUrl = i.Product.ProductImage,
+                    ProductAltText = i.Product.AltText
                 }).ToList()
             };
         }
@@ -30,13 +35,13 @@ namespace EcommerceAPI.Application.Mappers
         {
             return new OrderItemResponse
             {
-                Slug = item.Product.Slug,
-                Name = item.Product.Name,
+                Slug = item.ProductSlug,
+                Name = item.ProductName,
                 Quantity = item.Quantity,
-                ProductImage = item.Product.ProductImage,
-                AltText = item.Product.AltText,
+                ProductImage = item.ProductImageUrl,
+                AltText = item.ProductAltText,
                 UnitPrice = item.UnitPrice,
-                Description = item.Product.Description,
+                Description = item.ProductDescription,
             };
         }
 
