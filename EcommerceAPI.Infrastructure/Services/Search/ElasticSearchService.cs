@@ -198,7 +198,10 @@ namespace EcommerceAPI.Infrastructure.Services.Search
         ///<inheritdoc/>
         public async Task IndexOneAsync(string indexName, string id, TDocument document, CancellationToken cancellationToken = default)
         {
-            var response = await _client.IndexAsync(document, i => i.Index(indexName).Id(id), cancellationToken);
+            var response = await _client.IndexAsync(document, i => i
+                .Index(indexName)
+                .Id(id)
+                .Refresh(Elastic.Clients.Elasticsearch.Refresh.WaitFor), cancellationToken);
 
             if (!response.IsValidResponse)
             {
@@ -209,8 +212,9 @@ namespace EcommerceAPI.Infrastructure.Services.Search
         ///<inheritdoc/>
         public async Task DeleteOneAsync(string indexName, string id, CancellationToken cancellationToken = default)
         {
-            var response = await _client.DeleteAsync<TDocument>(id, d => d.Index(indexName), cancellationToken);
-
+            var response = await _client.DeleteAsync<TDocument>(id, d => d
+                                .Index(indexName)
+                                .Refresh(Elastic.Clients.Elasticsearch.Refresh.WaitFor), cancellationToken);
             if (!response.IsValidResponse && response.ApiCallDetails.HttpStatusCode != 404)
             {
                 throw new InvalidOperationException($"Deleting document '{id}' from '{indexName}' failed: {response.DebugInformation}");
@@ -222,7 +226,7 @@ namespace EcommerceAPI.Infrastructure.Services.Search
         {
             var response = await _client.DeleteByQueryAsync<TDocument>(indexName, d => d
                 .Query(q => q.MatchAll(m => { })), cancellationToken);
-
+                
             if (!response.IsValidResponse)
             {
                 throw new InvalidOperationException($"Clearing index '{indexName}' failed: {response.DebugInformation}");
