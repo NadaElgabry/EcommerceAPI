@@ -68,6 +68,9 @@ namespace EcommerceAPI.Application.Mappers
                 Address = order.Address,
                 CreationDate = order.CreationDate,
                 DeliveryTime = order.DeliveryTime,
+                UserId = order.User.Guid,
+                FirstName = order.User.FirstName,
+                LastName = order.User.LastName,
                 Status = order.Status.ToString(),
                 TotalItems = order.Items.Count()
             };
