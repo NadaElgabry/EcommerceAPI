@@ -111,8 +111,8 @@ namespace EcommerceAPI.Application.Services.ProductService
             {
                 await _productRepository.AddAsync(newProduct, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
+                await _indexingService.IndexProductAsync(newProduct, cancellationToken);
             }, cancellationToken);
-            await _indexingService.IndexProductAsync(newProduct, cancellationToken);
 
             return _productMapper.ToProductResponse(newProduct);
 
@@ -209,24 +209,17 @@ namespace EcommerceAPI.Application.Services.ProductService
             {
                 _productRepository.Update(product);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                var productForIndexing = await _productRepository.GetByAsync(
+                                               p => p.Id == product.Id,
+                                               include: query => query
+                                                   .Include(p => p.Category)
+                                                   .Include(p => p.ProductTags)
+                                                       .ThenInclude(pt => pt.Tag),
+                                               cancellationToken: cancellationToken);
+                await _indexingService.IndexProductAsync(productForIndexing!, cancellationToken);
             }, cancellationToken);
 
-            var productForIndexing = await _productRepository.GetByAsync(
-                                        p => p.Id == product.Id,
-                                        include: query => query
-                                            .Include(p => p.Category)
-                                            .Include(p => p.ProductTags)
-                                                .ThenInclude(pt => pt.Tag),
-                                        cancellationToken: cancellationToken);
-
-            try
-            {
-                await _indexingService.IndexProductAsync(productForIndexing!, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to index product {ProductId} after save. Product data is out of sync with search until next reindex.", product.Id);
-            }
 
             return _productMapper.ToProductResponse(product);
         }
@@ -297,16 +290,8 @@ namespace EcommerceAPI.Application.Services.ProductService
             {
                 _productRepository.Delete(product);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
-            }, cancellationToken);
-
-            try
-            {
                 await _indexingService.DeleteProductAsync(product.Id, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to remove product {ProductId} from search index after delete. Product data is out of sync with search until next reindex.", product.Id);
-            }
+            }, cancellationToken);
         }
 
         private async Task<HashSet<string>> GetFavoritedProductSlugsAsync(IEnumerable<string> slugs, CancellationToken cancellationToken)
