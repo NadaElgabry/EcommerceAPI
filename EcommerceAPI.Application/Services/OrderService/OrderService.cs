@@ -331,7 +331,9 @@ namespace EcommerceAPI.Application.Services.OrderService
             return await _cartRepository.GetByAsync(
                 predicate: c => c.UserId == userId,
                 cancellationToken: cancellationToken,
-                include: query => query.Include(c => c.Items).ThenInclude(i => i.Product));
+                include: query => query
+                    .Include(c => c.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Category)
+                    .Include(c => c.Items).ThenInclude(i => i.Product).ThenInclude(p => p.ProductTags).ThenInclude(pt => pt.Tag));
         }
     }
 }
