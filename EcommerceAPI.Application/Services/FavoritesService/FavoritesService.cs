@@ -147,7 +147,7 @@ namespace EcommerceAPI.Application.Services.FavoritesService
             var favorites = await _favoriteProductRepository.GetPagedAsync(
                 predicate: string.IsNullOrWhiteSpace(cursor)
                     ? f => f.UserId == user.Id
-                    : f => f.UserId == user.Id && f.Id < CursorHelper.Decode<int>(cursor),
+                    : f => f.UserId == user.Id && f.Id > CursorHelper.Decode<int>(cursor),
                 orderBy: f => f.Id,
                 include: query => query.Include(f => f.Product),
                 take: pageSize + 1,
