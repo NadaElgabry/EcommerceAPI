@@ -143,7 +143,8 @@ namespace EcommerceAPI.Application.Services.OrderService
             var lastOrderId = string.IsNullOrEmpty(request.Cursor) ? 0 : CursorHelper.Decode<int>(request.Cursor);
             var take = Math.Clamp(request.Limit, 1, 50);
             var orders = await _orderRepository.GetPagedAsync(predicate: o => o.UserId == user.Id && o.Id > lastOrderId,
-                orderBy: o => o.CreationDate, take: take + 1, include: query => query.Include(c => c.Items),
+                include: query => query.Include(o=>o.Items).Include(o => o.User),
+                orderBy: o => o.CreationDate, take: take + 1,
                 cancellationToken: cancellationToken
             );
 
@@ -210,7 +211,7 @@ namespace EcommerceAPI.Application.Services.OrderService
                 predicate: o => o.Id > lastId && (statusFilter == null || o.Status == statusFilter),
                 orderBy: o => o.Id,
                 take: take + 1,
-                include: query => query.Include(o => o.Items),
+                include: query => query.Include(o => o.Items).Include(o=>o.User),
                 cancellationToken: cancellationToken);
 
             var hasNext = orders.Count > take;
