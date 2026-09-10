@@ -24,6 +24,7 @@ namespace EcommerceAPI.Application.Services.ProductService
         private readonly IRepository<Category> _categoryRepository;
         private readonly IRepository<User> _userRepository;
         private readonly IRepository<FavoriteProduct> _favoriteProductRepository;
+        private readonly IRepository<ProductReview> _productReviewRepository;
         private readonly IRepository<Tag> _tagRepository;
         private readonly IProductMapper _productMapper;
         private readonly IImageService _imageService;
@@ -41,6 +42,7 @@ namespace EcommerceAPI.Application.Services.ProductService
             IRepository<Category> categoryRepository,
             IRepository<User> userRepository,
             IRepository<FavoriteProduct> favoriteProductRepository,
+            IRepository<ProductReview> productReviewRepository,
             IRepository<Tag> tagRepository,
             IProductMapper productMapper,
             IImageService imageService,
@@ -56,6 +58,7 @@ namespace EcommerceAPI.Application.Services.ProductService
             _categoryRepository = categoryRepository;
             _userRepository = userRepository;
             _favoriteProductRepository = favoriteProductRepository;
+            _productReviewRepository = productReviewRepository;
             _tagRepository = tagRepository;
             _productMapper = productMapper;
             _imageService = imageService;
@@ -144,6 +147,12 @@ namespace EcommerceAPI.Application.Services.ProductService
             var response = _productMapper.ToProductResponse(product);
             var favoritedSlugs = await GetFavoritedProductSlugsAsync([product.Slug], cancellationToken);
             response.IsFavorited = favoritedSlugs.Contains(product.Slug);
+
+            var reviews = await _productReviewRepository.GetAllAsync(
+                predicate: r => r.ProductId == product.Id,
+                cancellationToken: cancellationToken);
+            response.ReviewCount = reviews.Count;
+            response.AverageRating = reviews.Count > 0 ? reviews.Average(r => r.Rating) : 0;
             return response;
         }
 
