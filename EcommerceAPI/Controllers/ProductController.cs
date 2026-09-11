@@ -100,32 +100,6 @@ namespace EcommerceAPI.Controllers
                 ApiResponse<string>.SuccessResponse(message: "Product deleted successfully",
                 statusCode: 204));
         }
-        [HttpPost("reindex")]
-        [Authorize(Roles = "Admin")]
-        public IActionResult ReindexAll()
-        {
-            _ = RunReindexInBackgroundAsync();
-
-            return Accepted(
-                ApiResponse<string>.SuccessResponse(
-                    statusCode: 202,
-                    message: "Product reindex started."));
-        }
-        private async Task RunReindexInBackgroundAsync()
-        {
-            // New DI scope because this outlives the HTTP request that kicked it off.
-            using var scope = _scopeFactory.CreateScope();
-            var indexingService = scope.ServiceProvider.GetRequiredService<IProductIndexingService>();
-
-            try
-            {
-                await indexingService.ReindexAllProductsAsync();
-                _logger.LogInformation("Product reindex completed successfully.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Product reindex failed.");
-            }
-        }
+        
     }
 }
