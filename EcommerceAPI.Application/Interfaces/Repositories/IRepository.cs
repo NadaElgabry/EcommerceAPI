@@ -12,6 +12,7 @@ namespace EcommerceAPI.Application.Interfaces.Repositories
         /// <param name="entity">The entity to add.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         public Task AddAsync(T entity,CancellationToken cancellationToken = default);
+        public Task AddRangeAsync(IEnumerable<T> entities, CancellationToken cancellationToken);
         /// <summary>
         /// Gets all entities of requested type.
         /// </summary>
