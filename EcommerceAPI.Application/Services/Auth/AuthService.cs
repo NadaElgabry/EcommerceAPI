@@ -254,7 +254,7 @@ namespace EcommerceAPI.Application.Services.Auth
                 Role = user.Role,
                 UserId = user.Guid
             };
-        }}
+        }
 
         /// <inheritdoc />
         public async Task Logout(LogoutRequest request, CancellationToken cancellationToken = default)
