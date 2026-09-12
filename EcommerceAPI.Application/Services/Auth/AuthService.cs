@@ -10,9 +10,6 @@ using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Net.Mail;
-using System.Runtime;
-using System.Diagnostics;
 
 namespace EcommerceAPI.Application.Services.Auth
 {
@@ -228,48 +225,25 @@ namespace EcommerceAPI.Application.Services.Auth
         }
 
         /// <inheritdoc />
-public async Task<AuthResponse> Login
-            (LoginRequest request, CancellationToken cancellationToken)
+        public async Task<AuthResponse> Login(LoginRequest request, CancellationToken cancellationToken)
         {
-            var stopwatch = Stopwatch.StartNew();
-            long lastCheckpoint = 0;
-
             var user = await _userRepository.GetByAsync(u => u.Email == request.Email.Trim().ToLower(), cancellationToken)
                 ?? throw new UnauthorizedException("Invalid credentials");
-            _logger.LogInformation("[Login] Fetched user - took {StepMs}ms (total {TotalMs}ms)",
-                stopwatch.ElapsedMilliseconds - lastCheckpoint, stopwatch.ElapsedMilliseconds);
-            lastCheckpoint = stopwatch.ElapsedMilliseconds;
 
             if (!user.IsActive)
                 throw new ForbiddenException("User is not Activated");
 
             if (!_passwordHasher.Verify(request.Password, user.HashedPassword))
                 throw new UnauthorizedException("Invalid credentials");
-            _logger.LogInformation("[Login] Password verified - took {StepMs}ms (total {TotalMs}ms)",
-                stopwatch.ElapsedMilliseconds - lastCheckpoint, stopwatch.ElapsedMilliseconds);
-            lastCheckpoint = stopwatch.ElapsedMilliseconds;
 
             var accesstoken = _tokenService.GenerateAccessToken(user);
-            _logger.LogInformation("[Login] Access token generated - took {StepMs}ms (total {TotalMs}ms)",
-                stopwatch.ElapsedMilliseconds - lastCheckpoint, stopwatch.ElapsedMilliseconds);
-            lastCheckpoint = stopwatch.ElapsedMilliseconds;
-
             var (rawToken, newRefreshToken) = _tokenService.GenerateRefreshToken(user);
-            _logger.LogInformation("[Login] Refresh token generated - took {StepMs}ms (total {TotalMs}ms)",
-                stopwatch.ElapsedMilliseconds - lastCheckpoint, stopwatch.ElapsedMilliseconds);
-            lastCheckpoint = stopwatch.ElapsedMilliseconds;
 
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
                 await _refreshTokenRepository.AddAsync(newRefreshToken, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
-            _logger.LogInformation("[Login] Refresh token saved - took {StepMs}ms (total {TotalMs}ms)",
-                stopwatch.ElapsedMilliseconds - lastCheckpoint, stopwatch.ElapsedMilliseconds);
-            lastCheckpoint = stopwatch.ElapsedMilliseconds;
-
-            stopwatch.Stop();
-            _logger.LogInformation("[Login] Completed - total {TotalMs}ms", stopwatch.ElapsedMilliseconds);
 
             return new AuthResponse
             {
@@ -280,7 +254,7 @@ public async Task<AuthResponse> Login
                 Role = user.Role,
                 UserId = user.Guid
             };
-        }
+        }}
 
         /// <inheritdoc />
         public async Task Logout(LogoutRequest request, CancellationToken cancellationToken = default)
