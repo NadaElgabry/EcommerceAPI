@@ -94,17 +94,10 @@ namespace EcommerceAPI.Application.Services.OrderService
 
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-
                 foreach (var item in cart.Items)
                 {
                     item.Product.StockQuantity -= item.Quantity;
                     _productRepository.Update(item.Product);
-
-                    await _userActivityService.LogActivityAsync(
-                        userId: user.Id,
-                        productId: item.Product.Id,
-                        actionType: UserActionType.PlaceOrder,
-                        cancellationToken: cancellationToken);
                 }
 
                 await _orderRepository.AddAsync(order, cancellationToken);
@@ -112,16 +105,33 @@ namespace EcommerceAPI.Application.Services.OrderService
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
-            foreach (var item in cart.Items)
+
+            try
             {
-                try
+                await _productIndexingService.IndexProductsAsync(
+                    cart.Items.Select(i => i.Product), cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to reindex products for order {OrderNumber} after placement. Stock data is out of sync with search until next reindex.", order.OrderNumber);
+            }
+
+            try
+            {
+                foreach (var item in cart.Items)
                 {
-                    await _productIndexingService.IndexProductAsync(item.Product, cancellationToken);
+                    await _userActivityService.LogActivityAsync(
+                        userId: user.Id,
+                        productId: item.Product.Id,
+                        actionType: UserActionType.PlaceOrder,
+                        cancellationToken: cancellationToken);
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to reindex product {ProductId} after order placement. Stock data is out of sync with search until next reindex.", item.Product.Id);
-                }
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to log PlaceOrder activity for order {OrderNumber}.", order.OrderNumber);
             }
 
             return _orderMapper.ToOrderResponse(order);
@@ -279,15 +289,15 @@ namespace EcommerceAPI.Application.Services.OrderService
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
 
-            foreach (var product in restockedProducts)
+            if (restockedProducts.Count > 0)
             {
                 try
                 {
-                    await _productIndexingService.IndexProductAsync(product, cancellationToken);
+                    await _productIndexingService.IndexProductsAsync(restockedProducts, cancellationToken);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to reindex product {ProductId} after order cancellation. Stock data is out of sync with search until next reindex.", product.Id);
+                    _logger.LogError(ex, "Failed to reindex products for order {OrderNumber} after cancellation. Stock data is out of sync with search until next reindex.", order.OrderNumber);
                 }
             }
 
