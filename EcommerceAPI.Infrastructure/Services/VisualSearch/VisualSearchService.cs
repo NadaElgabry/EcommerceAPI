@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 using EcommerceAPI.Application.Interfaces.VisualSearch;
 
 
@@ -23,7 +24,17 @@ namespace EcommerceAPI.Infrastructure.Services.VisualSearch
             var response = await _httpClient.PostAsync($"/search?top_k={topK}", content, ct);
             response.EnsureSuccessStatusCode();
 
-            return await response.Content.ReadFromJsonAsync<List<string>>(cancellationToken: ct) ?? [];
+            var result = await response.Content.ReadFromJsonAsync<VisualSearchApiResponse>(cancellationToken: ct);
+            return result?.Products ?? [];
+        }
+
+        private sealed class VisualSearchApiResponse
+        {
+            [JsonPropertyName("top_k")]
+            public int TopK { get; set; }
+
+            [JsonPropertyName("products")]
+            public List<string> Products { get; set; } = [];
         }
     }
 }
