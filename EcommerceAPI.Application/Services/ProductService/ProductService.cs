@@ -245,7 +245,8 @@ namespace EcommerceAPI.Application.Services.ProductService
         {
             var clampedTopK = Math.Clamp(topK ?? DefaultTopK, 1, MaxTopK);
 
-            var slugs = await _visualSearchService.SearchByImageAsync(image, clampedTopK, cancellationToken);
+            var names = await _visualSearchService.SearchByImageAsync(image, clampedTopK, cancellationToken);
+            var slugs = names.Select(_slugGenerator.GenerateSlug).ToList();
 
             var products = await _productRepository.GetAllAsync(
                 predicate: p => slugs.Contains(p.Slug),
