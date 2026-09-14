@@ -8,42 +8,50 @@ using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace EcommerceAPI.Application.Services.CartService
 {
     public class CartService : ICartService
     {
-        private readonly ICurrentUserService _currentUserService ;
-        private readonly IRepository<Product> _productRepository ;
-        private readonly IRepository<User> _userRepository ;
+        private readonly ICurrentUserService _currentUserService;
+        private readonly IRepository<Product> _productRepository;
+        private readonly IRepository<User> _userRepository;
         private readonly IRepository<Cart> _cartRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IUserActivityService _userActivityService;
+        private readonly ICartMapper _cartMapper;
+        private readonly ILogger<CartService> _logger;
 
-        private readonly ICartMapper _cartMapper ;
-
-        public CartService(ICurrentUserService currentUserService,IRepository<Product> productRepository,
+        public CartService(ICurrentUserService currentUserService, IRepository<Product> productRepository,
             IRepository<User> userSerivce, IUnitOfWork unitOfWork, IRepository<Cart> cartRepository,
-            IUserActivityService userActivityService, ICartMapper cartMapper)
+            IUserActivityService userActivityService, ICartMapper cartMapper, ILogger<CartService> logger)
         {
             _currentUserService = currentUserService;
             _cartRepository = cartRepository;
             _productRepository = productRepository;
             _unitOfWork = unitOfWork;
             _userRepository = userSerivce;
-            _userActivityService= userActivityService;
+            _userActivityService = userActivityService;
             _cartMapper = cartMapper;
+            _logger = logger;
         }
 
         public async Task<int> AddToCart(AddToCartRequest request, CancellationToken cancellationToken)
         {
             bool newCart = false;
+
             var user = await GetActiveUserAsync(cancellationToken);
+
+
             var product = await GetProductBySlugAsync(request.ProductSlug, cancellationToken);
+
             var cart = await GetCartWithItemsAsync(user.Id, cancellationToken);
+
             var existingItem = cart?.Items.FirstOrDefault(i => i.ProductId == product.Id);
             var requestedTotal = request.Quantity + (existingItem?.Quantity ?? 0);
 
@@ -58,12 +66,13 @@ namespace EcommerceAPI.Application.Services.CartService
 
             if (existingItem is not null)
             {
-                existingItem.Quantity += request.Quantity;
+                existingItem.Quantity += (int) request.Quantity;
                 existingItem.RefreshPrice(product.Price);
             }
             else
-                cart.Items.Add(new CartItem { ProductId = product.Id, Quantity = request.Quantity, UnitPrice = product.Price });
+                cart.Items.Add(new CartItem { ProductId = product.Id, Quantity = (int) request.Quantity, UnitPrice = product.Price });
             cart.UpdatedAt = DateTime.UtcNow;
+
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
                 if (newCart)
@@ -77,8 +86,8 @@ namespace EcommerceAPI.Application.Services.CartService
                 await _userActivityService.LogActivityAsync(user.Id, product.Id, UserActionType.AddToCart, cancellationToken);
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
-            }
-            ,cancellationToken);
+            }, cancellationToken);
+
 
             return cart.Items.Sum(i => i.Quantity);
         }
@@ -86,10 +95,15 @@ namespace EcommerceAPI.Application.Services.CartService
         public async Task<CartResponse> GetCart(CancellationToken cancellationToken)
         {
             var user = await GetActiveUserAsync(cancellationToken);
+
             var cart = await GetCartWithItemsAsync(user.Id, cancellationToken);
 
             if (cart is null)
+            {
+
                 return new CartResponse { Items = new List<CartItemResponse>() };
+            }
+
             var changedItemIds = new List<int>();
 
             foreach (var item in cart.Items)
@@ -103,16 +117,24 @@ namespace EcommerceAPI.Application.Services.CartService
                 cart.UpdatedAt = DateTime.UtcNow;
                 _cartRepository.Update(cart);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
+
             }
 
             return _cartMapper.ToCartResponse(cart, changedItemIds);
         }
+
         public async Task<CartItemResponse?> UpdateCart(UpdateCartRequest request, CancellationToken cancellationToken)
         {
             var user = await GetActiveUserAsync(cancellationToken);
+
+
             var product = await GetProductBySlugAsync(request.ProductSlug, cancellationToken);
+
+
             var cart = await GetCartWithItemsAsync(user.Id, cancellationToken)
                 ?? throw new NotFoundException("Cart not Found");
+
+
 
             var existingItem = cart.Items.FirstOrDefault(i => i.ProductId == product.Id)
                 ?? throw new NotFoundException("Item not Found in cart");
@@ -126,8 +148,8 @@ namespace EcommerceAPI.Application.Services.CartService
             }
             else
             {
-                EnsureSufficientStock(request.Quantity, product.StockQuantity);
-                existingItem.Quantity = request.Quantity;
+                EnsureSufficientStock((int) request.Quantity, product.StockQuantity);
+                existingItem.Quantity = (int) request.Quantity;
                 existingItem.RefreshPrice(product.Price);
             }
 
@@ -136,7 +158,7 @@ namespace EcommerceAPI.Application.Services.CartService
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
                 _cartRepository.Update(cart);
-                if(isRemoval)
+                if (isRemoval)
                     await _userActivityService.LogActivityAsync(
                                                 user.Id,
                                                 product.Id,
@@ -147,6 +169,7 @@ namespace EcommerceAPI.Application.Services.CartService
 
             return existingItem is null ? null : _cartMapper.ToCartItemResponse(existingItem);
         }
+
         private async Task<User> GetActiveUserAsync(CancellationToken cancellationToken)
         {
             return await _userRepository.GetByAsync(
