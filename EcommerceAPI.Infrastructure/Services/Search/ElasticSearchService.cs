@@ -78,57 +78,38 @@ namespace EcommerceAPI.Infrastructure.Services.Search
 
                             if (hasPrefixFields || hasSemanticFields || hasExactFields)
                             {
-                                // The real matching clauses require at least one hit
-                                // (MinimumShouldMatch(1) below). That requirement sits as one
-                                // option in an outer should, alongside a MatchAll clause with a
-                                // tiny fixed boost. The outer MinimumShouldMatch(0) means neither
-                                // option is mandatory, but MatchAll always matches, so every
-                                // document that passes the hard Filters always scores and is
-                                // returned — genuine matches rank first (extra relevance score
-                                // stacked on top), everything else fills out the rest of the
-                                // page instead of the response ever coming back empty.
-                                const float catchAllBoost = 0.001f;
+                                var innerShoulds = new List<Action<QueryDescriptor<TDocument>>>();
 
-                                b.Should(
-                                    sh => sh.Bool(inner =>
-                                    {
-                                        inner.MinimumShouldMatch(1);
+                                if (hasPrefixFields)
+                                {
+                                    innerShoulds.Add(s2 => s2.MultiMatch(mm => mm
+                                        .Query(searchText)
+                                        .Fields(request.PrefixFields)
+                                        .Type(TextQueryType.BestFields)));
+                                }
 
-                                        var innerShoulds = new List<Action<QueryDescriptor<TDocument>>>();
+                                if (hasSemanticFields)
+                                {
+                                    innerShoulds.Add(s2 => s2.MultiMatch(mm => mm
+                                        .Query(searchText)
+                                        .Fields(request.SemanticFields)
+                                        .Type(TextQueryType.BestFields)
+                                        .MinimumShouldMatch("75%")));
+                                }
 
-                                        if (hasPrefixFields)
-                                        {
-                                            innerShoulds.Add(s2 => s2.MultiMatch(mm => mm
-                                                .Query(searchText)
-                                                .Fields(request.PrefixFields)
-                                                .Type(TextQueryType.BestFields)));
-                                        }
+                                if (hasExactFields)
+                                {
+                                    innerShoulds.Add(s2 => s2.MultiMatch(mm => mm
+                                        .Query(searchText)
+                                        .Fields(request.ExactFields)
+                                        .Type(TextQueryType.BestFields)
+                                        .Fuzziness(new Fuzziness("AUTO"))
+                                        .PrefixLength(2)
+                                        .MinimumShouldMatch("75%")));
+                                }
 
-                                        if (hasSemanticFields)
-                                        {
-                                            innerShoulds.Add(s2 => s2.MultiMatch(mm => mm
-                                                .Query(searchText)
-                                                .Fields(request.SemanticFields)
-                                                .Type(TextQueryType.BestFields)
-                                                .MinimumShouldMatch("75%")));
-                                        }
-
-                                        if (hasExactFields)
-                                        {
-                                            innerShoulds.Add(s2 => s2.MultiMatch(mm => mm
-                                                .Query(searchText)
-                                                .Fields(request.ExactFields)
-                                                .Type(TextQueryType.BestFields)
-                                                .Fuzziness(new Fuzziness("AUTO"))
-                                                .PrefixLength(2)
-                                                .MinimumShouldMatch("75%")));
-                                        }
-
-                                        inner.Should(innerShoulds.ToArray());
-                                    }),
-                                    sh => sh.MatchAll(ma => ma.Boost(catchAllBoost))
-                                );
-                                b.MinimumShouldMatch(0);
+                                b.Should(innerShoulds.ToArray());
+                                b.MinimumShouldMatch(1);
                             }
                         }
                     }))

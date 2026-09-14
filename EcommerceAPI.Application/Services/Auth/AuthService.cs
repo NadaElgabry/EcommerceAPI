@@ -10,7 +10,6 @@ using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 
 namespace EcommerceAPI.Application.Services.Auth
 {
@@ -219,20 +218,18 @@ namespace EcommerceAPI.Application.Services.Auth
         }
 
         /// <inheritdoc />
-        public async Task<AuthResponse> Login
-            (LoginRequest request, CancellationToken cancellationToken)
+        public async Task<AuthResponse> Login(LoginRequest request, CancellationToken cancellationToken)
         {
             var user = await _userRepository.GetByAsync(u => u.Email == request.Email.Trim().ToLower(), cancellationToken)
                 ?? throw new UnauthorizedException("Invalid credentials");
 
-            if(!user.IsActive)
+            if (!user.IsActive)
                 throw new ForbiddenException("User is not Activated");
 
             if (!_passwordHasher.Verify(request.Password, user.HashedPassword))
                 throw new UnauthorizedException("Invalid credentials");
 
             var accesstoken = _tokenService.GenerateAccessToken(user);
-            
             var (rawToken, newRefreshToken) = _tokenService.GenerateRefreshToken(user);
 
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
@@ -240,7 +237,6 @@ namespace EcommerceAPI.Application.Services.Auth
                 await _refreshTokenRepository.AddAsync(newRefreshToken, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
-            
 
             return new AuthResponse
             {

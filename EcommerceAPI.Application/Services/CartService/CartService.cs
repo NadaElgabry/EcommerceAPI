@@ -166,7 +166,10 @@ namespace EcommerceAPI.Application.Services.CartService
             return await _cartRepository.GetByAsync(
                 predicate: c => c.UserId == userId,
                 cancellationToken: cancellationToken,
-                include: query => query.Include(c => c.Items).ThenInclude(i => i.Product));
+                include: query => 
+                query.Include(c => c.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Category)
+                .Include(c => c.Items).ThenInclude(i => i.Product).ThenInclude(p => p.ProductTags)
+                .ThenInclude(pt => pt.Tag));
         }
 
         private static void EnsureSufficientStock(int requestedQuantity, int availableStock)

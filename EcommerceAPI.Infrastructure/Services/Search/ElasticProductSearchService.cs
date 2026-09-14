@@ -57,7 +57,8 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                 ProductImageUrl = doc.ProductImage,
                 AltText = doc.AltText,
                 CategorySlug = doc.CategorySlug,
-                Tags = doc.Tags
+                Tags = doc.Tags,
+                UpdatedAt = doc.UpdatedAt,
             }).ToList();
             _logger.LogInformation("Prefix: {P} | Semantic: {S} | Exact: {E}",
                 string.Join(",", request.PrefixFields ?? Array.Empty<string>()),
@@ -72,7 +73,7 @@ namespace EcommerceAPI.Infrastructure.Services.Search
 
         private static readonly Dictionary<string, string> SortFieldMap = new(StringComparer.OrdinalIgnoreCase)
         {
-            ["name"] = "name.keyword",
+            ["name"] = "name.sort",
             ["price"] = "price",
             ["newest"] = "creationDate",
             ["stock"] = "stockQuantity"

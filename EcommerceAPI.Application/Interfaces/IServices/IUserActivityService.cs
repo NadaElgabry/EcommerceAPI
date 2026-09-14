@@ -1,5 +1,6 @@
 ﻿using EcommerceAPI.Application.DTOs.Common;
 using EcommerceAPI.Application.DTOs.UserActivities;
+using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Domain.Enums;
 
 namespace EcommerceAPI.Application.Interfaces.IServices
@@ -7,6 +8,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
     public interface IUserActivityService
     {
         Task LogActivityAsync(int userId, int? productId, UserActionType actionType, CancellationToken cancellationToken);
+        public UserActivity BuildActivity(int userId, int? productId, UserActionType actionType);
         Task<CursorPagedResult<UserActivitiesResponse>> GetAllActivitiesAsync(Guid? userId, string? cursor, int pageSize, CancellationToken cancellationToken);
     }
 }
