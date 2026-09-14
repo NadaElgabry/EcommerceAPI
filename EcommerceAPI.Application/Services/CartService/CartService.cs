@@ -43,24 +43,14 @@ namespace EcommerceAPI.Application.Services.CartService
 
         public async Task<int> AddToCart(AddToCartRequest request, CancellationToken cancellationToken)
         {
-            var stopwatch = Stopwatch.StartNew();
-            long last = 0;
             bool newCart = false;
 
             var user = await GetActiveUserAsync(cancellationToken);
-            _logger.LogInformation("[AddToCart] Fetched user - took {StepMs}ms (total {TotalMs}ms)",
-                stopwatch.ElapsedMilliseconds - last, stopwatch.ElapsedMilliseconds);
-            last = stopwatch.ElapsedMilliseconds;
+
 
             var product = await GetProductBySlugAsync(request.ProductSlug, cancellationToken);
-            _logger.LogInformation("[AddToCart] Fetched product - took {StepMs}ms (total {TotalMs}ms)",
-                stopwatch.ElapsedMilliseconds - last, stopwatch.ElapsedMilliseconds);
-            last = stopwatch.ElapsedMilliseconds;
 
             var cart = await GetCartWithItemsAsync(user.Id, cancellationToken);
-            _logger.LogInformation("[AddToCart] Fetched cart - took {StepMs}ms (total {TotalMs}ms)",
-                stopwatch.ElapsedMilliseconds - last, stopwatch.ElapsedMilliseconds);
-            last = stopwatch.ElapsedMilliseconds;
 
             var existingItem = cart?.Items.FirstOrDefault(i => i.ProductId == product.Id);
             var requestedTotal = request.Quantity + (existingItem?.Quantity ?? 0);
@@ -97,11 +87,7 @@ namespace EcommerceAPI.Application.Services.CartService
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
-            _logger.LogInformation("[AddToCart] Transaction (save + activity log) - took {StepMs}ms (total {TotalMs}ms)",
-                stopwatch.ElapsedMilliseconds - last, stopwatch.ElapsedMilliseconds);
 
-            stopwatch.Stop();
-            _logger.LogInformation("[AddToCart] Completed - total {TotalMs}ms", stopwatch.ElapsedMilliseconds);
 
             return cart.Items.Sum(i => i.Quantity);
         }
@@ -156,24 +142,16 @@ namespace EcommerceAPI.Application.Services.CartService
 
         public async Task<CartItemResponse?> UpdateCart(UpdateCartRequest request, CancellationToken cancellationToken)
         {
-            var stopwatch = Stopwatch.StartNew();
-            long last = 0;
-
             var user = await GetActiveUserAsync(cancellationToken);
-            _logger.LogInformation("[UpdateCart] Fetched user - took {StepMs}ms (total {TotalMs}ms)",
-                stopwatch.ElapsedMilliseconds - last, stopwatch.ElapsedMilliseconds);
-            last = stopwatch.ElapsedMilliseconds;
+
 
             var product = await GetProductBySlugAsync(request.ProductSlug, cancellationToken);
-            _logger.LogInformation("[UpdateCart] Fetched product - took {StepMs}ms (total {TotalMs}ms)",
-                stopwatch.ElapsedMilliseconds - last, stopwatch.ElapsedMilliseconds);
-            last = stopwatch.ElapsedMilliseconds;
+
 
             var cart = await GetCartWithItemsAsync(user.Id, cancellationToken)
                 ?? throw new NotFoundException("Cart not Found");
-            _logger.LogInformation("[UpdateCart] Fetched cart - took {StepMs}ms (total {TotalMs}ms)",
-                stopwatch.ElapsedMilliseconds - last, stopwatch.ElapsedMilliseconds);
-            last = stopwatch.ElapsedMilliseconds;
+
+
 
             var existingItem = cart.Items.FirstOrDefault(i => i.ProductId == product.Id)
                 ?? throw new NotFoundException("Item not Found in cart");
@@ -205,11 +183,6 @@ namespace EcommerceAPI.Application.Services.CartService
                                                 cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
-            _logger.LogInformation("[UpdateCart] Transaction (save{ActivityLog}) - took {StepMs}ms (total {TotalMs}ms)",
-                isRemoval ? " + activity log" : "", stopwatch.ElapsedMilliseconds - last, stopwatch.ElapsedMilliseconds);
-
-            stopwatch.Stop();
-            _logger.LogInformation("[UpdateCart] Completed - total {TotalMs}ms", stopwatch.ElapsedMilliseconds);
 
             return existingItem is null ? null : _cartMapper.ToCartItemResponse(existingItem);
         }
