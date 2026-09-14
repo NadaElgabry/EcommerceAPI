@@ -38,6 +38,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
         {
             return new ProductResponse
             {
+                ProductId = product.Id,
                 Name = product.Name,
                 Slug = product.Slug,
                 Description = product.Description,
@@ -55,6 +56,7 @@ namespace EcommerceAPI.Application.Mappers.Mappings
         {
             return new ProductSummaryResponse
             {
+                ProductId = product.Id,
                 Name = product.Name,
                 Slug = product.Slug,
                 Price = product.Price,

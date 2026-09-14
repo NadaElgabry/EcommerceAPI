@@ -9,6 +9,7 @@ using EcommerceAPI.Application.Services.FavoritesService;
 using EcommerceAPI.Application.Services.OrderService;
 using EcommerceAPI.Application.Services.ProductReviewService;
 using EcommerceAPI.Application.Services.ProductService;
+using EcommerceAPI.Application.Services.RecommendationService;
 using EcommerceAPI.Application.Services.ServiceClientAuth;
 using EcommerceAPI.Application.Services.TagService;
 using EcommerceAPI.Application.Services.UserService;
@@ -47,6 +48,7 @@ public static class DependencyInjection
 
         services.AddScoped<IProductReviewService, ProductReviewService>();
         services.AddScoped<IProductReviewMapper, ProductReviewMapper>();
+        services.AddScoped<IRecommendationService, RecommendationService>();
 
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();

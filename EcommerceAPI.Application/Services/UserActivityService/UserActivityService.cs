@@ -64,6 +64,7 @@ namespace EcommerceAPI.Application.Services.UserService
                 Data = activities.Select(a => new UserActivitiesResponse
                 {
                     UserId = user?.Guid ?? a.User?.Guid ?? Guid.Empty,
+                    ProductId = a.ProductId,
                     ActionType = a.ActionType.ToString(),
                     Slug = a.Product?.Slug,
                     Timestamp = a.Timestamp
