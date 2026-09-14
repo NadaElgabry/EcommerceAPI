@@ -77,6 +77,8 @@ services:
       
       AWS__Region: "${AWS_REGION}"
       AWS__S3__BucketName: "ecommerce-interns-bucket"
+
+      VisualSearch__BaseUrl: "https://visual.54-93-65-9.sslip.io"
     ports:
       - "5223:8080"
     volumes:
