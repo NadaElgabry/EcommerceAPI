@@ -1,5 +1,6 @@
 ﻿using EcommerceAPI.Application.DTOs.Common;
 using EcommerceAPI.Application.DTOs.Product;
+using Microsoft.AspNetCore.Http;
 
 namespace EcommerceAPI.Application.Interfaces.IServices
 {
@@ -18,6 +19,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         /// <returns>A cursor-paged result of product summaries.</returns>
         public Task<CursorPagedResult<ProductSummaryResponse>> SearchProductsAsync(
             ProductQueryParamsRequest queryParams, CancellationToken cancellationToken);
+        public Task<List<ProductSummaryResponse>> VisualSearchAsync(IFormFile image, int? topK, CancellationToken cancellationToken);
 
         public Task DeleteProductAsync(string slug, CancellationToken cancellationToken);
     }

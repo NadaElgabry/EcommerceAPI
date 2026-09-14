@@ -6,6 +6,7 @@ using EcommerceAPI.Application.Interfaces.Image;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Interfaces.Search;
 using EcommerceAPI.Application.Interfaces.Slug;
+using EcommerceAPI.Application.Interfaces.VisualSearch;
 using EcommerceAPI.Infrastructure.Contexts;
 using EcommerceAPI.Infrastructure.Persistence;
 using EcommerceAPI.Infrastructure.Persistence.Repositories;
@@ -15,6 +16,7 @@ using EcommerceAPI.Infrastructure.Services.Mail;
 using EcommerceAPI.Infrastructure.Services.Search;
 using EcommerceAPI.Infrastructure.Services.Search.Indexing;
 using EcommerceAPI.Infrastructure.Services.Slug;
+using EcommerceAPI.Infrastructure.Services.VisualSearch;
 using EcommerceAPI.Infrastructure.Settings;
 using Elastic.Clients.Elasticsearch;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -58,6 +60,11 @@ public static class DependencyInjection
             .MaximumRetries(3)
             .RequestTimeout(TimeSpan.FromMinutes(2))
             .DefaultIndex(esSettings.ProductsIndex);
+
+        services.AddHttpClient<IVisualSearchService, VisualSearchService>(client =>
+        {
+            client.BaseAddress = new Uri(configuration["VisualSearch:BaseUrl"]!);
+        });
 
         services.AddSingleton(new ElasticsearchClient(esClientSettings));
 
