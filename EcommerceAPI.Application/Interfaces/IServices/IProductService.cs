@@ -20,5 +20,8 @@ namespace EcommerceAPI.Application.Interfaces.IServices
             ProductQueryParamsRequest queryParams, CancellationToken cancellationToken);
 
         public Task DeleteProductAsync(string slug, CancellationToken cancellationToken);
+
+        Task<List<AiProductResponse>> GetProductsForAiAsync(
+            CancellationToken cancellationToken);
     }
 }

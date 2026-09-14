@@ -36,6 +36,65 @@ namespace EcommerceAPI.Application.Services.UserService
             await _activityRepository.AddAsync(activity, cancellationToken);
         }
 
+        public async Task<CursorPagedResult<AiUserActivityResponse>> GetActivitiesForAiAsync(
+            Guid? userId,
+            string? cursor,
+            int pageSize,
+            CancellationToken cancellationToken)
+        {
+            if (pageSize <= 0 || pageSize > 100)
+                pageSize = 20;
+
+            int? cursorId =
+                string.IsNullOrWhiteSpace(cursor)
+                    ? null
+                    : CursorHelper.Decode<int>(cursor);
+
+            User? user = null;
+
+            if (userId.HasValue)
+            {
+                user = await _userRepository.GetByAsync(
+                    u => u.Guid == userId,
+                    cancellationToken)
+                    ?? throw new NotFoundException("User not found.");
+            }
+
+            var activities =
+                await _activityRepository.GetPagedDescendingAsync(
+                    predicate: a =>
+                        (!userId.HasValue || a.UserId == user!.Id) &&
+                        (!cursorId.HasValue || a.Id < cursorId),
+                    include: q => q.Include(a => a.User),
+                    orderBy: a => a.Id,
+                    take: pageSize + 1,
+                    cancellationToken: cancellationToken);
+
+            bool hasNext = activities.Count > pageSize;
+
+            if (hasNext)
+                activities = activities.Take(pageSize).ToList();
+
+            return new CursorPagedResult<AiUserActivityResponse>
+            {
+                Data = activities.Select(a => new AiUserActivityResponse
+                {
+                    UserId = user?.Guid ?? a.User?.Guid ?? Guid.Empty,
+                    ProductId = a.ProductId,
+                    ActionType = a.ActionType.ToString(),
+                    Timestamp = a.Timestamp
+                }).ToList(),
+                Pagination = new CursorPageInfo
+                {
+                    NextCursor =
+                        hasNext
+                            ? CursorHelper.Encode(activities[^1].Id)
+                            : null,
+                    HasNext = hasNext,
+                    PageSize = pageSize
+                }
+            };
+        }
         public async Task<CursorPagedResult<UserActivitiesResponse>> GetAllActivitiesAsync(
            Guid? userId, string? cursor, int pageSize, CancellationToken cancellationToken)
         {
@@ -64,7 +123,6 @@ namespace EcommerceAPI.Application.Services.UserService
                 Data = activities.Select(a => new UserActivitiesResponse
                 {
                     UserId = user?.Guid ?? a.User?.Guid ?? Guid.Empty,
-                    ProductId = a.ProductId,
                     ActionType = a.ActionType.ToString(),
                     Slug = a.Product?.Slug,
                     Timestamp = a.Timestamp

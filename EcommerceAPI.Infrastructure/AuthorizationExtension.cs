@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 
 namespace EcommerceAPI.Infrastructure
 {
@@ -25,6 +25,28 @@ namespace EcommerceAPI.Infrastructure
                     policy.RequireClaim(
                         "scope",
                         "reviews:read");
+                });
+
+                options.AddPolicy("ProductsRead", policy =>
+                {
+                    policy.RequireClaim(
+                        "token_type",
+                        "service");
+
+                    policy.RequireClaim(
+                        "scope",
+                        "products:read");
+                });
+
+                options.AddPolicy("ActivitiesRead", policy =>
+                {
+                    policy.RequireClaim(
+                        "token_type",
+                        "service");
+
+                    policy.RequireClaim(
+                        "scope",
+                        "activities:read");
                 });
             });
 

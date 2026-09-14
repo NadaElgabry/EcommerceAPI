@@ -8,5 +8,11 @@ namespace EcommerceAPI.Application.Interfaces.IServices
     {
         Task LogActivityAsync(int userId, int? productId, UserActionType actionType, CancellationToken cancellationToken);
         Task<CursorPagedResult<UserActivitiesResponse>> GetAllActivitiesAsync(Guid? userId, string? cursor, int pageSize, CancellationToken cancellationToken);
+
+        Task<CursorPagedResult<AiUserActivityResponse>> GetActivitiesForAiAsync(
+            Guid? userId,
+            string? cursor,
+            int pageSize,
+            CancellationToken cancellationToken);
     }
 }

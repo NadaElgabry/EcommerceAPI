@@ -2,7 +2,6 @@
 {
     public class ProductSummaryResponse
     {
-        public int ProductId { get; set; }
         public required string Name { get; set; }
         public required string Slug { get; set; }
         public int StockQuantity { get; set; }
