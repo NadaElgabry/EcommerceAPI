@@ -65,6 +65,7 @@ services:
       EmailSettings__Password: "${MAIL_PASSWORD}"
       EmailSettings__SenderName: "${MAIL_SENDER_NAME}"
       EmailSettings__SenderEmail: "${MAIL_SENDER_EMAIL}"
+      RecommendationApi__BaseUrl: "https://recommender.54-93-65-9.sslip.io"
 
       Elasticsearch__Url: "http://elasticsearch:9200"
       Elasticsearch__ProductsIndex: "products"

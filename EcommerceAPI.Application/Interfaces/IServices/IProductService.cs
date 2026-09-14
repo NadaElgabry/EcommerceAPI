@@ -22,5 +22,8 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         public Task<List<ProductSummaryResponse>> VisualSearchAsync(IFormFile image, int? topK, CancellationToken cancellationToken);
 
         public Task DeleteProductAsync(string slug, CancellationToken cancellationToken);
+
+        Task<List<AiProductResponse>> GetProductsForAiAsync(
+            CancellationToken cancellationToken);
     }
 }
