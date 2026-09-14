@@ -74,6 +74,13 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
         }
 
         ///<inheritdoc/>
+        public async Task IndexProductsAsync(IEnumerable<Product> products, CancellationToken cancellationToken = default)
+        {
+            var documents = products.Select(p => (p.Id.ToString(), MapToDocument(p)));
+            await _search.IndexManyAsync(_settings.ProductsIndex, documents, cancellationToken);
+        }
+
+        ///<inheritdoc/>
         public async Task DeleteProductAsync(int productId, CancellationToken cancellationToken = default)
         {
             await _search.DeleteOneAsync(_settings.ProductsIndex, productId.ToString(), cancellationToken);
