@@ -101,40 +101,21 @@ namespace EcommerceAPI.Application.Services.OrderService
                 item.Product.StockQuantity -= item.Quantity;
             }
 
-            await _unitOfWork.ExecuteInTransactionAsync(async () =>
-            {
-                await _orderRepository.AddAsync(order, cancellationToken);
-                _cartRepository.Delete(cart);
-
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
-            }, cancellationToken);
-
-            try
-            {
-                await _productIndexingService.IndexProductsAsync(
-                    cart.Items.Select(i => i.Product), cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to reindex products for order {OrderNumber} after placement. Stock data is out of sync with search until next reindex.", order.OrderNumber);
-            }
-
             var activities = cart.Items
                 .Select(item => _userActivityService.BuildActivity(user.Id, item.Product.Id, UserActionType.PlaceOrder))
                 .ToList();
 
-            try
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                await _unitOfWork.ExecuteInTransactionAsync(async () =>
-                {
-                    await _activityRepository.AddRangeAsync(activities, cancellationToken);
-                    await _unitOfWork.SaveChangesAsync(cancellationToken);
-                }, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to log PlaceOrder activity for order {OrderNumber}.", order.OrderNumber);
-            }
+                await _orderRepository.AddAsync(order, cancellationToken);
+                _cartRepository.Delete(cart);
+                await _activityRepository.AddRangeAsync(activities, cancellationToken);
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                await _productIndexingService.IndexProductsAsync(
+                    cart.Items.Select(i => i.Product), cancellationToken);
+            }, cancellationToken);
 
             return _orderMapper.ToOrderResponse(order);
         }
