@@ -98,8 +98,6 @@ namespace EcommerceAPI.Application.Services.CartService
 
             var cart = await GetCartWithItemsAsync(user.Id, cancellationToken);
 
-            last = stopwatch.ElapsedMilliseconds;
-
             if (cart is null)
             {
 
@@ -113,7 +111,6 @@ namespace EcommerceAPI.Application.Services.CartService
                 if (item.RefreshPrice(item.Product.Price))
                     changedItemIds.Add(item.Id);
             }
-            last = stopwatch.ElapsedMilliseconds;
 
             if (changedItemIds.Any())
             {
