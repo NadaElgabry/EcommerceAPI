@@ -20,7 +20,10 @@ namespace EcommerceAPI.Infrastructure.Persistence.Repositories
         {
             await _dbSet.AddAsync(entity, cancellationToken);
         }
-
+        public async Task AddRangeAsync(IEnumerable<T> entities, CancellationToken cancellationToken)
+        {
+            await _dbSet.AddRangeAsync(entities, cancellationToken);
+        }
         /// <inheritdoc />
         public async Task<bool> ExistByAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
         {
