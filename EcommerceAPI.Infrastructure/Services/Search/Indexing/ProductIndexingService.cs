@@ -93,6 +93,7 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
                 ProductImage = product.ProductImage,
                 AltText = product.AltText,
                 CreationDate = product.CreationDate,
+                UpdatedAt = product.UpdatedAt,
                 CategorySlug = product.Category.Slug,
                 Tags = product.ProductTags.Select(pt => pt.Tag.Slug).ToList()
             };

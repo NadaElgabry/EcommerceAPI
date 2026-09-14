@@ -4,6 +4,7 @@ using EcommerceAPI.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EcommerceAPI.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260904132746_AddProductReviews")]
+    partial class AddProductReviews
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -134,9 +137,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
                     b.HasKey("Id");
 
                     b.HasIndex("Slug")
@@ -151,8 +151,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             ImageUrl = "https://www.flaticon.com/free-icon/electronics_1555401",
                             Name = "Electronics",
-                            Slug = "electronics",
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            Slug = "electronics"
                         },
                         new
                         {
@@ -160,8 +159,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             ImageUrl = "https://www.flaticon.com/free-icon/electronics_1555401",
                             Name = "Groceries",
-                            Slug = "groceries",
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            Slug = "groceries"
                         });
                 });
 
@@ -316,26 +314,8 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
 
-                    b.Property<string>("ProductAltText")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProductDescription")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("ProductId")
+                    b.Property<int>("ProductId")
                         .HasColumnType("int");
-
-                    b.Property<string>("ProductImageUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProductName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProductSlug")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
@@ -356,12 +336,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         {
                             Id = 1,
                             OrderId = 1,
-                            ProductAltText = "Wireless Headphones",
-                            ProductDescription = "High quality noise-canceling headphones.",
                             ProductId = 1,
-                            ProductImageUrl = "https://example.com/images/wireless-headphones.jpg",
-                            ProductName = "Wireless Headphones",
-                            ProductSlug = "wireless-headphones",
                             Quantity = 1,
                             UnitPrice = 199.99m
                         },
@@ -369,12 +344,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         {
                             Id = 2,
                             OrderId = 1,
-                            ProductAltText = "Moro Dark Chocolate",
-                            ProductDescription = "Has chocolate in it.",
                             ProductId = 2,
-                            ProductImageUrl = "https://example.com/images/moro-dark-chocolate.jpg",
-                            ProductName = "Moro Dark Chocolate",
-                            ProductSlug = "moro-dark-chocolate",
                             Quantity = 1,
                             UnitPrice = 5.12m
                         },
@@ -382,12 +352,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         {
                             Id = 3,
                             OrderId = 2,
-                            ProductAltText = "Moro Dark Chocolate",
-                            ProductDescription = "Has chocolate in it.",
                             ProductId = 2,
-                            ProductImageUrl = "https://example.com/images/moro-dark-chocolate.jpg",
-                            ProductName = "Moro Dark Chocolate",
-                            ProductSlug = "moro-dark-chocolate",
                             Quantity = 1,
                             UnitPrice = 5.12m
                         });
@@ -435,9 +400,6 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.Property<int>("StockQuantity")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
@@ -459,8 +421,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                             Price = 199.99m,
                             ProductImage = "https://example.com/images/wireless-headphones.jpg",
                             Slug = "wireless-headphones",
-                            StockQuantity = 50,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            StockQuantity = 50
                         },
                         new
                         {
@@ -473,8 +434,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                             Price = 5.12m,
                             ProductImage = "https://example.com/images/moro-dark-chocolate.jpg",
                             Slug = "moro-dark-chocolate",
-                            StockQuantity = 100,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            StockQuantity = 100
                         });
                 });
 
@@ -928,7 +888,8 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.HasOne("EcommerceAPI.Domain.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Order");
 

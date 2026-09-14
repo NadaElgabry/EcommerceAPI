@@ -1,4 +1,4 @@
-﻿using EcommerceAPI.Application.Interfaces.IServices;
+using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Mappers;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Application.Mappers.Mappings;
@@ -7,6 +7,7 @@ using EcommerceAPI.Application.Services.CartService;
 using EcommerceAPI.Application.Services.CategoryService;
 using EcommerceAPI.Application.Services.FavoritesService;
 using EcommerceAPI.Application.Services.OrderService;
+using EcommerceAPI.Application.Services.ProductReviewService;
 using EcommerceAPI.Application.Services.ProductService;
 using EcommerceAPI.Application.Services.ServiceClientAuth;
 using EcommerceAPI.Application.Services.TagService;
@@ -43,6 +44,10 @@ public static class DependencyInjection
         services.AddScoped<IOrderMapper, OrderMapper>();
         services.AddScoped<IServiceClientService, ServiceClientService>();
         services.AddScoped<IServiceClientMapper, ServiceClientMapper>();
+
+        services.AddScoped<IProductReviewService, ProductReviewService>();
+        services.AddScoped<IProductReviewMapper, ProductReviewMapper>();
+
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateProfileRequestValidator>();

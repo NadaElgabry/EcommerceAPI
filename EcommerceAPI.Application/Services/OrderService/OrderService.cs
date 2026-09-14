@@ -6,10 +6,13 @@ using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Repositories;
+using EcommerceAPI.Application.Interfaces.Search;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System.Linq.Expressions;
 
 namespace EcommerceAPI.Application.Services.OrderService
 {
@@ -23,6 +26,8 @@ namespace EcommerceAPI.Application.Services.OrderService
         private readonly IUserActivityService _userActivityService;
         private readonly IOrderMapper _orderMapper;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IProductIndexingService _productIndexingService;
+        private readonly  ILogger<OrderService> _logger;
 
         public OrderService(
             ICurrentUserService currentUserService,
@@ -32,7 +37,9 @@ namespace EcommerceAPI.Application.Services.OrderService
             IRepository<Product> productRepository,
             IUserActivityService userActivityService,
             IOrderMapper orderMapper,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IProductIndexingService productIndexingService,
+            ILogger<OrderService> logger)
         {
             _currentUserService = currentUserService;
             _userRepository = userRepository;
@@ -42,6 +49,8 @@ namespace EcommerceAPI.Application.Services.OrderService
             _userActivityService = userActivityService;
             _orderMapper = orderMapper;
             _unitOfWork = unitOfWork;
+            _productIndexingService = productIndexingService;
+            _logger = logger;
         }
 
 
@@ -103,6 +112,17 @@ namespace EcommerceAPI.Application.Services.OrderService
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
+            foreach (var item in cart.Items)
+            {
+                try
+                {
+                    await _productIndexingService.IndexProductAsync(item.Product, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to reindex product {ProductId} after order placement. Stock data is out of sync with search until next reindex.", item.Product.Id);
+                }
+            }
 
             return _orderMapper.ToOrderResponse(order);
         }
@@ -123,7 +143,8 @@ namespace EcommerceAPI.Application.Services.OrderService
             var lastOrderId = string.IsNullOrEmpty(request.Cursor) ? 0 : CursorHelper.Decode<int>(request.Cursor);
             var take = Math.Clamp(request.Limit, 1, 50);
             var orders = await _orderRepository.GetPagedAsync(predicate: o => o.UserId == user.Id && o.Id > lastOrderId,
-                orderBy: o => o.CreationDate, take: take + 1, include: query => query.Include(c => c.Items),
+                include: query => query.Include(o=>o.Items).Include(o => o.User),
+                orderBy: o => o.CreationDate, take: take + 1,
                 cancellationToken: cancellationToken
             );
 
@@ -159,17 +180,56 @@ namespace EcommerceAPI.Application.Services.OrderService
 
         public async Task<OrderResponse> GetOrderByGuidAsync(Guid orderGuid, CancellationToken cancellationToken)
         {
-            var user = await GetActiveUserAsync(cancellationToken);
+            var isAdmin = _currentUserService.Role == "Admin";
+
+            Expression<Func<Order, bool>> predicate = isAdmin
+                ? o => o.Guid == orderGuid
+                : o => o.Guid == orderGuid && o.User.Guid == _currentUserService.UserGuid;
 
             var order = await _orderRepository.GetByAsync(
-                predicate: o => o.Guid == orderGuid && o.UserId == user.Id,
-                include: query => query.Include(o => o.Items).ThenInclude(i => i.Product),
+                predicate: predicate,
+                include: query => query.Include(o => o.Items),
                 cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("Order not found");
 
             return _orderMapper.ToOrderResponse(order);
         }
+        public async Task<CursorPagedResult<OrderSummary>> GetAllOrdersAsync(GetAllOrdersRequest request, CancellationToken cancellationToken)
+        {
+            OrderStatus? statusFilter = null;
+            if (!string.IsNullOrWhiteSpace(request.Status))
+            {
+                if (!Enum.TryParse<OrderStatus>(request.Status, ignoreCase: true, out var parsed))
+                    throw new BadRequestException("Invalid order status.");
+                statusFilter = parsed;
+            }
 
+            var lastId = string.IsNullOrEmpty(request.Cursor) ? 0 : CursorHelper.Decode<int>(request.Cursor);
+            var take = Math.Clamp(request.Limit, 1, 50);
+
+            var orders = await _orderRepository.GetPagedAsync(
+                predicate: o => o.Id > lastId && (statusFilter == null || o.Status == statusFilter),
+                orderBy: o => o.Id,
+                take: take + 1,
+                include: query => query.Include(o => o.Items).Include(o=>o.User),
+                cancellationToken: cancellationToken);
+
+            var hasNext = orders.Count > take;
+            if (hasNext) orders.RemoveAt(orders.Count - 1);
+
+            var summaries = orders.Select(o => _orderMapper.ToOrderSummary(o)).ToList();
+
+            return new CursorPagedResult<OrderSummary>
+            {
+                Data = summaries,
+                Pagination = new CursorPageInfo
+                {
+                    NextCursor = hasNext && summaries.Count > 0 ? CursorHelper.Encode(orders[^1].Id) : null,
+                    HasNext = hasNext,
+                    PageSize = summaries.Count
+                }
+            };
+        }
         public async Task<OrderResponse> UpdateOrderStatusAsync(
             Guid orderGuid,
             UpdateOrderStatusRequest request,
@@ -181,10 +241,7 @@ namespace EcommerceAPI.Application.Services.OrderService
                 cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("Order not found");
 
-            if (!Enum.TryParse<OrderStatus>(
-                request.Status,
-                ignoreCase: true,
-                out var newStatus))
+            if (!Enum.TryParse<OrderStatus>(request.Status, ignoreCase: true, out var newStatus))
             {
                 throw new BadRequestException("Invalid order status.");
             }
@@ -202,11 +259,37 @@ namespace EcommerceAPI.Application.Services.OrderService
                 order.DeliveryTime = DateTime.UtcNow;
             }
 
+            var restockedProducts = new List<Product>();
+
+            if (newStatus == OrderStatus.Cancelled)
+            {
+                foreach (var item in order.Items)
+                {
+                    if (item.Product == null) continue;
+
+                    item.Product.StockQuantity += item.Quantity;
+                    _productRepository.Update(item.Product);
+                    restockedProducts.Add(item.Product);
+                }
+            }
+
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
                 _orderRepository.Update(order);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
+
+            foreach (var product in restockedProducts)
+            {
+                try
+                {
+                    await _productIndexingService.IndexProductAsync(product, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to reindex product {ProductId} after order cancellation. Stock data is out of sync with search until next reindex.", product.Id);
+                }
+            }
 
             return _orderMapper.ToOrderResponse(order);
         }
@@ -248,7 +331,9 @@ namespace EcommerceAPI.Application.Services.OrderService
             return await _cartRepository.GetByAsync(
                 predicate: c => c.UserId == userId,
                 cancellationToken: cancellationToken,
-                include: query => query.Include(c => c.Items).ThenInclude(i => i.Product));
+                include: query => query
+                    .Include(c => c.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Category)
+                    .Include(c => c.Items).ThenInclude(i => i.Product).ThenInclude(p => p.ProductTags).ThenInclude(pt => pt.Tag));
         }
     }
 }

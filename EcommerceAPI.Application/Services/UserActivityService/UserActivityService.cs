@@ -35,7 +35,16 @@ namespace EcommerceAPI.Application.Services.UserService
 
             await _activityRepository.AddAsync(activity, cancellationToken);
         }
-
+        public UserActivity BuildActivity(int userId, int? productId, UserActionType actionType)
+        {
+            return new UserActivity
+            {
+                UserId = userId,
+                ProductId = productId,
+                ActionType = actionType,
+                Timestamp = DateTime.UtcNow
+            };
+        }
         public async Task<CursorPagedResult<UserActivitiesResponse>> GetAllActivitiesAsync(
            Guid? userId, string? cursor, int pageSize, CancellationToken cancellationToken)
         {

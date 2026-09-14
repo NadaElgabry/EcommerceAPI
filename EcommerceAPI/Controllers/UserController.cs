@@ -40,7 +40,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpGet("{userId}")]
-        [Authorize(Policy = "UsersRead")]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<UserResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> Profile([FromRoute] Guid userId, CancellationToken cancellationToken)
         {

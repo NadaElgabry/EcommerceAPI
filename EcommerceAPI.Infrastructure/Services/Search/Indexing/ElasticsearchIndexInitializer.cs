@@ -2,6 +2,7 @@
 using EcommerceAPI.Infrastructure.Settings;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Analysis;
+using Elastic.Clients.Elasticsearch.TransformManagement;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System;
@@ -31,93 +32,122 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
             {
                 return;
             }
+            await CreateProductsIndexAsync(client, settings.ProductsIndex);
+        }
 
+        public static async Task RecreateProductsIndexAsync(this IServiceProvider services)
+        {
+            var client = services.GetRequiredService<ElasticsearchClient>();
+            var settings = services.GetRequiredService<IOptions<ElasticsearchSettings>>().Value;
+
+            var existsResponse = await client.Indices.ExistsAsync(settings.ProductsIndex);
+            if (existsResponse.Exists)
+            {
+                var deleteResponse = await client.Indices.DeleteAsync(settings.ProductsIndex);
+                if (!deleteResponse.IsValidResponse)
+                {
+                    throw new InvalidOperationException(
+                        $"Failed to delete Elasticsearch index '{settings.ProductsIndex}': {deleteResponse.DebugInformation}");
+                }
+            }
+
+            await CreateProductsIndexAsync(client, settings.ProductsIndex);
+        }
+
+        private static async Task CreateProductsIndexAsync(ElasticsearchClient client, string indexName)
+        {
             var createResponse = await client.Indices.CreateAsync<ProductSearchDocument>(
-                settings.ProductsIndex,
-                c => c
-                    .Settings(s => s
-                        .Analysis(a => a
-                            .Tokenizers(t => t
-                                .EdgeNGram("edge_ngram_tokenizer", e => e
-                                    .MinGram(2)
-                                    .MaxGram(15)
-                                    .TokenChars(new[] { TokenChar.Letter, TokenChar.Digit })
-                                )
-                            )
-                            .TokenFilters(tf => tf
-                                .Stemmer("english_stemmer", st => st
-                                    .Language("english"))
-                                .SynonymGraph("product_synonyms", sy => sy
-                                    .SynonymsPath("analysis/synonyms.txt")
-                                    .Updateable(true))
-                            )
-                            .Analyzers(an => an
-                                .Custom("edge_ngram_analyzer", ca => ca
-                                    .Tokenizer("edge_ngram_tokenizer")
-                                    .Filter(new[] { "lowercase" })
-                                )
-                                .Custom("product_index_analyzer", ca => ca
-                                    .Tokenizer("standard")
-                                    .Filter(new[] { "lowercase", "english_stemmer" })
-                                )
-                                .Custom("product_search_analyzer", ca => ca
-                                    .Tokenizer("standard")
-                                    .Filter(new[] { "lowercase", "product_synonyms", "english_stemmer" })
-                                )
-                            )
-                        )
-                    )
-                    .Mappings(m => m
-                        .Properties(p => p
-                            .IntegerNumber(d => d.Id)
-                            .Keyword(d => d.Slug)
-                            .Text(d => d.Name, t => t
-                                .Fields(f => f
-                                    .Keyword("keyword")
-                                    .Text("ngram", tt => tt
-                                        .Analyzer("edge_ngram_analyzer")
-                                        .SearchAnalyzer("standard"))
-                                    .Text("stemmed", tt => tt
-                                        .Analyzer("product_index_analyzer")
-                                        .SearchAnalyzer("product_search_analyzer"))
-                                ))
-                            .Text(d => d.Description, t => t
-                                .Fields(f => f
-                                    .Text("stemmed", tt => tt
-                                        .Analyzer("product_index_analyzer")
-                                        .SearchAnalyzer("product_search_analyzer"))
-                                ))
-                            .Text(d => d.Brand, t => t
-                                .Fields(f => f
-                                    .Keyword("keyword")
-                                    .Text("ngram", tt => tt
-                                        .Analyzer("edge_ngram_analyzer")
-                                        .SearchAnalyzer("standard"))
-                                    .Text("stemmed", tt => tt
-                                        .Analyzer("product_index_analyzer")
-                                        .SearchAnalyzer("product_search_analyzer"))
-                                ))
-                            .DoubleNumber(d => d.Price)
-                            .IntegerNumber(d => d.StockQuantity)
-                            .Keyword(d => d.ProductImage, k => k.Index(false))
-                            .Keyword(d => d.AltText, k => k.Index(false))
-                            .Date(d => d.CreationDate)
-                            .Keyword(d => d.CategorySlug)
-                            .Text(d => d.Tags, t => t
-                                .Fields(f => f
-                                    .Keyword("keyword")
-                                    .Text("stemmed", tt => tt
-                                        .Analyzer("product_index_analyzer")
-                                        .SearchAnalyzer("product_search_analyzer"))
-                                ))
-                        )
-                    )
-            );
+                 indexName,
+                 c => c
+                     .Settings(s => s
+                         .Analysis(a => a
+                             .Tokenizers(t => t
+                                 .EdgeNGram("edge_ngram_tokenizer", e => e
+                                     .MinGram(2)
+                                     .MaxGram(15)
+                                     .TokenChars(new[] { TokenChar.Letter, TokenChar.Digit })
+                                 )
+                             )
+                             .TokenFilters(tf => tf
+                                 .Stemmer("english_stemmer", st => st
+                                     .Language("english"))
+                                 .SynonymGraph("product_synonyms", sy => sy
+                                     .SynonymsPath("analysis/synonyms.txt")
+                                     .Updateable(true))
+                             )
+                             .Normalizers(n => n
+                                 .Custom("lowercase_normalizer", c => c
+                                     .Filter(new[] { "lowercase",  }))
+                             )
+                             .Analyzers(an => an
+                                 .Custom("edge_ngram_analyzer", ca => ca
+                                     .Tokenizer("edge_ngram_tokenizer")
+                                     .Filter(new[] { "lowercase", "asciifolding" })
+                                 )
+                                 .Custom("product_index_analyzer", ca => ca
+                                     .Tokenizer("standard")
+                                     .Filter(new[] { "lowercase", "asciifolding", "english_stemmer" })
+                                 )
+                                 .Custom("product_search_analyzer", ca => ca
+                                     .Tokenizer("standard")
+                                     .Filter(new[] { "lowercase", "product_synonyms", "english_stemmer", "asciifolding" })
+                                 )
+                             )
+                         )
+                     )
+                     .Mappings(m => m
+                         .Properties(p => p
+                             .IntegerNumber(d => d.Id)
+                             .Keyword(d => d.Slug)
+                             .Text(d => d.Name, t => t
+                                 .Fields(f => f
+                                     .Keyword("keyword")
+                                     .Keyword("sort", k => k.Normalizer("lowercase_normalizer"))
+                                     .Text("ngram", tt => tt
+                                         .Analyzer("edge_ngram_analyzer")
+                                         .SearchAnalyzer("standard"))
+                                     .Text("stemmed", tt => tt
+                                         .Analyzer("product_index_analyzer")
+                                         .SearchAnalyzer("product_search_analyzer"))
+                                 ))
+                             .Text(d => d.Description, t => t
+                                 .Fields(f => f
+                                     .Text("stemmed", tt => tt
+                                         .Analyzer("product_index_analyzer")
+                                         .SearchAnalyzer("product_search_analyzer"))
+                                 ))
+                             .Text(d => d.Brand, t => t
+                                 .Fields(f => f
+                                     .Keyword("keyword")
+                                     .Text("ngram", tt => tt
+                                         .Analyzer("edge_ngram_analyzer")
+                                         .SearchAnalyzer("standard"))
+                                     .Text("stemmed", tt => tt
+                                         .Analyzer("product_index_analyzer")
+                                         .SearchAnalyzer("product_search_analyzer"))
+                                 ))
+                             .DoubleNumber(d => d.Price)
+                             .IntegerNumber(d => d.StockQuantity)
+                             .Keyword(d => d.ProductImage, k => k.Index(false))
+                             .Keyword(d => d.AltText, k => k.Index(false))
+                             .Date(d => d.CreationDate)
+                             .Date(d => d.UpdatedAt)
+                             .Keyword(d => d.CategorySlug)
+                             .Text(d => d.Tags, t => t
+                                 .Fields(f => f
+                                     .Keyword("keyword")
+                                     .Text("stemmed", tt => tt
+                                         .Analyzer("product_index_analyzer")
+                                         .SearchAnalyzer("product_search_analyzer"))
+                                 ))
+                         )
+                     )
+             );
 
             if (!createResponse.IsValidResponse)
             {
                 throw new InvalidOperationException(
-                    $"Failed to create Elasticsearch index '{settings.ProductsIndex}': {createResponse.DebugInformation}");
+                    $"Failed to create Elasticsearch index '{indexName}': {createResponse.DebugInformation}");
             }
         }
     }

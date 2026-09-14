@@ -16,5 +16,7 @@ namespace EcommerceAPI.Application.DTOs.Product
         public DateTime UpdatedAt { get; set; }
         public string CategorySlug { get; set; }
         public List<string> Tags { get; set; } = new();
+        public double AverageRating { get; set; }
+        public int ReviewCount { get; set; }
     }
 }

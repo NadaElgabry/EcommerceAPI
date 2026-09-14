@@ -34,6 +34,9 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Documents
         [JsonPropertyName("creationDate")]
         public DateTime CreationDate { get; set; }
 
+        [JsonPropertyName("updatedAt")]
+        public DateTime UpdatedAt { get; set; }
+
         [JsonPropertyName("categorySlug")]
         public string CategorySlug { get; set; } = null!;
 
