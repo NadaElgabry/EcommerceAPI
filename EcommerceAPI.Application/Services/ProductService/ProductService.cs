@@ -264,7 +264,10 @@ namespace EcommerceAPI.Application.Services.ProductService
                 item.IsFavorited = favoritedSlugs.Contains(item.Slug);
             }
 
-        public async Task<List<ProductSummaryResponse>> VisualSearchAsync(IFormFile image, int? topK, CancellationToken cancellationToken)
+            return result;
+        }
+
+        private async Task LogSearchActivitiesAsync(Guid userId, IEnumerable<ProductSummaryResponse> products, CancellationToken cancellationToken)
         {
             var user = await _userRepository.GetByAsync(predicate: u => u.Guid == userId, cancellationToken: cancellationToken);
             if (user is null)
@@ -290,11 +293,29 @@ namespace EcommerceAPI.Application.Services.ProductService
                 await _unitOfWork.ExecuteInTransactionAsync(async () =>
                 {
                     await _activityRepository.AddRangeAsync(activities, cancellationToken);
-                    var saved = await _unitOfWork.SaveChangesAsync(cancellationToken);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
                 }, cancellationToken);
             }
         }
 
+        public async Task<List<ProductSummaryResponse>> VisualSearchAsync(IFormFile image, int? topK, CancellationToken cancellationToken)
+        {
+            var clampedTopK = Math.Clamp(topK ?? DefaultTopK, 1, MaxTopK);
+
+            var names = await _visualSearchService.SearchByImageAsync(image, clampedTopK, cancellationToken);
+            var slugs = names.Select(_slugGenerator.GenerateSlug).ToList();
+
+            var products = await _productRepository.GetAllAsync(
+                predicate: p => slugs.Contains(p.Slug),
+                cancellationToken: cancellationToken);
+
+            var bySlug = products.ToDictionary(p => p.Slug);
+            var ordered = slugs
+                .Select(s => bySlug.TryGetValue(s, out var p) ? p : null)
+                .Where(p => p != null);
+
+            return ordered.Select(_productMapper.ToProductSummaryResponse).ToList()!;
+        }
 
         public async Task DeleteProductAsync(string slug, CancellationToken cancellationToken)
         {
