@@ -94,23 +94,15 @@ namespace EcommerceAPI.Application.Services.CartService
 
         public async Task<CartResponse> GetCart(CancellationToken cancellationToken)
         {
-            var stopwatch = Stopwatch.StartNew();
-            long last = 0;
-
             var user = await GetActiveUserAsync(cancellationToken);
-            _logger.LogInformation("[GetCart] Fetched user - took {StepMs}ms (total {TotalMs}ms)",
-                stopwatch.ElapsedMilliseconds - last, stopwatch.ElapsedMilliseconds);
-            last = stopwatch.ElapsedMilliseconds;
 
             var cart = await GetCartWithItemsAsync(user.Id, cancellationToken);
-            _logger.LogInformation("[GetCart] Fetched cart - took {StepMs}ms (total {TotalMs}ms)",
-                stopwatch.ElapsedMilliseconds - last, stopwatch.ElapsedMilliseconds);
+
             last = stopwatch.ElapsedMilliseconds;
 
             if (cart is null)
             {
-                stopwatch.Stop();
-                _logger.LogInformation("[GetCart] Completed (no cart) - total {TotalMs}ms", stopwatch.ElapsedMilliseconds);
+
                 return new CartResponse { Items = new List<CartItemResponse>() };
             }
 
@@ -121,8 +113,6 @@ namespace EcommerceAPI.Application.Services.CartService
                 if (item.RefreshPrice(item.Product.Price))
                     changedItemIds.Add(item.Id);
             }
-            _logger.LogInformation("[GetCart] Price refresh check ({ItemCount} items) - took {StepMs}ms (total {TotalMs}ms)",
-                cart.Items.Count, stopwatch.ElapsedMilliseconds - last, stopwatch.ElapsedMilliseconds);
             last = stopwatch.ElapsedMilliseconds;
 
             if (changedItemIds.Any())
@@ -130,12 +120,8 @@ namespace EcommerceAPI.Application.Services.CartService
                 cart.UpdatedAt = DateTime.UtcNow;
                 _cartRepository.Update(cart);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
-                _logger.LogInformation("[GetCart] Saved price changes ({ChangedCount} items) - took {StepMs}ms (total {TotalMs}ms)",
-                    changedItemIds.Count, stopwatch.ElapsedMilliseconds - last, stopwatch.ElapsedMilliseconds);
-            }
 
-            stopwatch.Stop();
-            _logger.LogInformation("[GetCart] Completed - total {TotalMs}ms", stopwatch.ElapsedMilliseconds);
+            }
 
             return _cartMapper.ToCartResponse(cart, changedItemIds);
         }
