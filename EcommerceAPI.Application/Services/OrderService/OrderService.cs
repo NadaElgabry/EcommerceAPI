@@ -23,11 +23,12 @@ namespace EcommerceAPI.Application.Services.OrderService
         private readonly IRepository<Cart> _cartRepository;
         private readonly IRepository<Order> _orderRepository;
         private readonly IRepository<Product> _productRepository;
+        private readonly IRepository<UserActivity> _activityRepository;
         private readonly IUserActivityService _userActivityService;
         private readonly IOrderMapper _orderMapper;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IProductIndexingService _productIndexingService;
-        private readonly  ILogger<OrderService> _logger;
+        private readonly ILogger<OrderService> _logger;
 
         public OrderService(
             ICurrentUserService currentUserService,
@@ -35,6 +36,7 @@ namespace EcommerceAPI.Application.Services.OrderService
             IRepository<Cart> cartRepository,
             IRepository<Order> orderRepository,
             IRepository<Product> productRepository,
+            IRepository<UserActivity> activityRepository,
             IUserActivityService userActivityService,
             IOrderMapper orderMapper,
             IUnitOfWork unitOfWork,
@@ -46,6 +48,7 @@ namespace EcommerceAPI.Application.Services.OrderService
             _cartRepository = cartRepository;
             _orderRepository = orderRepository;
             _productRepository = productRepository;
+            _activityRepository = activityRepository;
             _userActivityService = userActivityService;
             _orderMapper = orderMapper;
             _unitOfWork = unitOfWork;
@@ -92,37 +95,27 @@ namespace EcommerceAPI.Application.Services.OrderService
 
             var order = _orderMapper.ToEntity(request, cart, user.Id, idempotencyKey);
 
-            await _unitOfWork.ExecuteInTransactionAsync(async () =>
-            {
 
-                foreach (var item in cart.Items)
-                {
-                    item.Product.StockQuantity -= item.Quantity;
-                    _productRepository.Update(item.Product);
-
-                    await _userActivityService.LogActivityAsync(
-                        userId: user.Id,
-                        productId: item.Product.Id,
-                        actionType: UserActionType.PlaceOrder,
-                        cancellationToken: cancellationToken);
-                }
-
-                await _orderRepository.AddAsync(order, cancellationToken);
-                _cartRepository.Delete(cart);
-
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
-            }, cancellationToken);
             foreach (var item in cart.Items)
             {
-                try
-                {
-                    await _productIndexingService.IndexProductAsync(item.Product, cancellationToken);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to reindex product {ProductId} after order placement. Stock data is out of sync with search until next reindex.", item.Product.Id);
-                }
+                item.Product.StockQuantity -= item.Quantity;
             }
+
+            var activities = cart.Items
+                .Select(item => _userActivityService.BuildActivity(user.Id, item.Product.Id, UserActionType.PlaceOrder))
+                .ToList();
+
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                await _orderRepository.AddAsync(order, cancellationToken);
+                _cartRepository.Delete(cart);
+                await _activityRepository.AddRangeAsync(activities, cancellationToken);
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                await _productIndexingService.IndexProductsAsync(
+                    cart.Items.Select(i => i.Product), cancellationToken);
+            }, cancellationToken);
 
             return _orderMapper.ToOrderResponse(order);
         }
@@ -143,7 +136,7 @@ namespace EcommerceAPI.Application.Services.OrderService
             var lastOrderId = string.IsNullOrEmpty(request.Cursor) ? 0 : CursorHelper.Decode<int>(request.Cursor);
             var take = Math.Clamp(request.Limit, 1, 50);
             var orders = await _orderRepository.GetPagedAsync(predicate: o => o.UserId == user.Id && o.Id > lastOrderId,
-                include: query => query.Include(o=>o.Items).Include(o => o.User),
+                include: query => query.Include(o => o.Items).Include(o => o.User),
                 orderBy: o => o.CreationDate, take: take + 1,
                 cancellationToken: cancellationToken
             );
@@ -211,7 +204,7 @@ namespace EcommerceAPI.Application.Services.OrderService
                 predicate: o => o.Id > lastId && (statusFilter == null || o.Status == statusFilter),
                 orderBy: o => o.Id,
                 take: take + 1,
-                include: query => query.Include(o => o.Items).Include(o=>o.User),
+                include: query => query.Include(o => o.Items).Include(o => o.User),
                 cancellationToken: cancellationToken);
 
             var hasNext = orders.Count > take;
@@ -279,15 +272,15 @@ namespace EcommerceAPI.Application.Services.OrderService
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
 
-            foreach (var product in restockedProducts)
+            if (restockedProducts.Count > 0)
             {
                 try
                 {
-                    await _productIndexingService.IndexProductAsync(product, cancellationToken);
+                    await _productIndexingService.IndexProductsAsync(restockedProducts, cancellationToken);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to reindex product {ProductId} after order cancellation. Stock data is out of sync with search until next reindex.", product.Id);
+                    _logger.LogError(ex, "Failed to reindex products for order {OrderNumber} after cancellation. Stock data is out of sync with search until next reindex.", order.OrderNumber);
                 }
             }
 

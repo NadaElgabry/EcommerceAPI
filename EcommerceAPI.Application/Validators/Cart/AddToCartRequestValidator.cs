@@ -17,7 +17,10 @@ namespace EcommerceAPI.Application.Validators.Cart
 
             RuleFor(request => request.Quantity)
                 .GreaterThanOrEqualTo(1)
-                .WithMessage("Quantity must be a positive number");
+                .WithMessage("Quantity must be a positive number")
+                .Must(q => q % 1 == 0)
+                .WithMessage("Quantity must be a whole number, not a decimal");
+            
                              
         }
     }
