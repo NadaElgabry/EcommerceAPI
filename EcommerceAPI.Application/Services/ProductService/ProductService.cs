@@ -307,6 +307,7 @@ namespace EcommerceAPI.Application.Services.ProductService
 
             var products = await _productRepository.GetAllAsync(
                 predicate: p => slugs.Contains(p.Slug),
+                include: query => query.Include(p => p.Category),
                 cancellationToken: cancellationToken);
 
             var bySlug = products.ToDictionary(p => p.Slug);
