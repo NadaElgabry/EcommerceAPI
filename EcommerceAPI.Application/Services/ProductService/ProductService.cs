@@ -156,6 +156,8 @@ namespace EcommerceAPI.Application.Services.ProductService
                     UserActionType.ViewProduct,
                     cancellationToken
                 );
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
             }
 
             var response = _productMapper.ToProductResponse(product);
