@@ -7,7 +7,7 @@ namespace EcommerceAPI.Application.Interfaces.IServices
 {
     public interface IRagService
     {
-        Task<AnswerResponse> AskAsync(string question,CancellationToken cancellationToken);
-        Task<TerminationResult> TerminateAsync(CancellationToken cancellationToken);
+        public Task<AnswerResponse> AskAsync(string question,CancellationToken cancellationToken);
+        public Task<bool> TerminateAsync(CancellationToken cancellationToken);
     }
 }

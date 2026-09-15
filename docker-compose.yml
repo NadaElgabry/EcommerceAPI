@@ -80,6 +80,9 @@ services:
       AWS__S3__BucketName: "ecommerce-interns-bucket"
 
       VisualSearch__BaseUrl: "https://visual.54-93-65-9.sslip.io"
+      Rag__BaseUrl: "https://chatbot.54-93-65-9.sslip.io"
+      Rag__TimeoutSeconds: "60"
+
     ports:
       - "5223:8080"
     volumes:

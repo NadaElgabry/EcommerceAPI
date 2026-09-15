@@ -19,6 +19,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("chat")]
+        [Authorize]
         public async Task<ActionResult<AnswerResponse>> Ask(
             [FromBody] AskRequest request, CancellationToken cancellationToken)
         {
@@ -27,10 +28,11 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpPost("terminate")]
-        public async Task<ActionResult<TerminationResult>> Terminate(CancellationToken cancellationToken)
+        [Authorize]
+        public async Task<ActionResult<string>> Terminate(CancellationToken cancellationToken)
         {
             var result = await _ragService.TerminateAsync(cancellationToken);
-            return Ok(ApiResponse<TerminationResult>.SuccessResponse(data: result, statusCode: 200));
+            return Ok(ApiResponse<string>.SuccessResponse(message: "Terminated successfully", statusCode: 200));
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using Amazon.S3;
+﻿using Amazon;
+using Amazon.Runtime;
+using Amazon.S3;
 using EcommerceAPI.Application.Interfaces;
 using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Email;
@@ -27,6 +29,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -84,9 +87,14 @@ public static class DependencyInjection
             .RequestTimeout(TimeSpan.FromMinutes(2))
             .DefaultIndex(esSettings.ProductsIndex);
 
-        services.AddHttpClient<IVisualSearchService, VisualSearchService>(client =>
+        services.AddHttpClient<IVisualSearchService, VisualSearchService>((sp, client) =>
         {
-            client.BaseAddress = new Uri(configuration["VisualSearch:BaseUrl"]!);
+            var baseUrl = sp.GetRequiredService<IConfiguration>()["VisualSearch:BaseUrl"];
+
+            if (string.IsNullOrWhiteSpace(baseUrl))
+                throw new InvalidOperationException("VisualSearch:BaseUrl is not configured.");
+
+            client.BaseAddress = new Uri(baseUrl, UriKind.Absolute);
         });
 
         services.AddSingleton(new ElasticsearchClient(esClientSettings));
@@ -99,9 +107,55 @@ public static class DependencyInjection
         services.AddJwtAuthentication(configuration);
 
         services.Configure<AwsSettings>(configuration.GetSection("AWS"));
+
+        services.AddSingleton<IAmazonS3>(sp =>
+        {
+            var settings = sp.GetRequiredService<IOptions<AwsSettings>>().Value;
+
+            if (string.IsNullOrWhiteSpace(settings.Region))
+                throw new InvalidOperationException("AWS:Region is not configured.");
+
+            var region = RegionEndpoint.GetBySystemName(settings.Region);
+
+            var hasAny = !string.IsNullOrEmpty(settings.AccessKey)
+                      || !string.IsNullOrEmpty(settings.SecretKey)
+                      || !string.IsNullOrEmpty(settings.SessionToken);
+            var hasAll = !string.IsNullOrEmpty(settings.AccessKey)
+                      && !string.IsNullOrEmpty(settings.SecretKey)
+                      && !string.IsNullOrEmpty(settings.SessionToken);
+
+            if (hasAny && !hasAll)
+            {
+                // fail loud instead of silently dropping to a chain that will fail anyway
+                throw new InvalidOperationException(
+                    "AWS credentials partially configured — AccessKey, SecretKey and SessionToken must all be set or all be empty.");
+            }
+
+            if (hasAll)
+            {
+                var creds = new SessionAWSCredentials(settings.AccessKey, settings.SecretKey, settings.SessionToken);
+                return new AmazonS3Client(creds, region);
+            }
+
+            // Production/Docker: instance role / default chain
+            return new AmazonS3Client(region);
+        });
+
         services.AddDefaultAWSOptions(configuration.GetAWSOptions());
-        services.AddAWSService<IAmazonS3>();
-        services.AddHttpClient<IRagClient, RagClient>();
+        
+        services.Configure<RagSettings>(configuration.GetSection(RagSettings.SectionName));
+
+        services.AddHttpClient<IRagClient, RagClient>((sp, client) =>
+        {
+            var settings = sp.GetRequiredService<IOptions<RagSettings>>().Value;
+
+            if (string.IsNullOrWhiteSpace(settings.BaseUrl))
+                throw new InvalidOperationException("Rag BaseUrl is not configured.");
+            var baseUrl = settings.BaseUrl.EndsWith('/') ? settings.BaseUrl : settings.BaseUrl + "/";
+
+            client.BaseAddress = new Uri(baseUrl, UriKind.Absolute);
+            client.Timeout = TimeSpan.FromSeconds(settings.TimeoutSeconds);
+        });
 
         services.Configure<GrocerySeedSettings>(configuration.GetSection("GrocerySeed"));
 

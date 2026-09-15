@@ -18,6 +18,7 @@ using EcommerceAPI.Application.Validators;
 using EcommerceAPI.Application.Validators.Auth;
 using EcommerceAPI.Application.Validators.Cart;
 using EcommerceAPI.Application.Validators.Product;
+using EcommerceAPI.Application.Validators.Rag;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -58,6 +59,7 @@ public static class DependencyInjection
         services.AddValidatorsFromAssemblyContaining<ProductQueryParamsRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<AddToCartRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateCartRequestValidator>();
+        services.AddValidatorsFromAssemblyContaining<AskRequestValidator>();
 
         return services;
     }
