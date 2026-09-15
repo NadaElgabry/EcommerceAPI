@@ -51,31 +51,25 @@ public static class DependencyInjection
         services.AddScoped<IImageService, ImageService>();
         services.AddScoped<ISlugGenerator, SlugifySlugGenerator>();
 
-        services.Configure<EmailSettings>(
-           configuration.GetSection("EmailSettings"));
+        services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IVerificationEmailTemplateProvider, VerificationEmailTemplateProvider>();
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
-        services.Configure<RecommendationApiSettings>(
-            configuration.GetSection("RecommendationApi"));
+        services.Configure<RecommendationApiSettings>(configuration.GetSection("RecommendationApi"));
 
-        services.AddHttpClient<IRecommendationApiClient, RecommendationApiClient>(
-            client =>
-            {
-                var baseUrl = configuration["RecommendationApi:BaseUrl"];
+        services.AddHttpClient<IRecommendationApiClient, RecommendationApiClient>((sp, client) =>
+        {
+            var settings = sp.GetRequiredService<IOptions<RecommendationApiSettings>>().Value;
 
-                if (string.IsNullOrWhiteSpace(baseUrl))
-                {
-                    throw new InvalidOperationException(
-                        "Recommendation API BaseUrl is not configured.");
-                }
+            if (string.IsNullOrWhiteSpace(settings.BaseUrl))
+                throw new InvalidOperationException("RecommendationApi:BaseUrl is not configured.");
 
-                client.BaseAddress = new Uri(baseUrl);
-                client.Timeout = TimeSpan.FromSeconds(10);
-            });
+            client.BaseAddress = new Uri(settings.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
 
         services.Configure<ElasticsearchSettings>(configuration.GetSection("Elasticsearch"));
 
@@ -87,6 +81,12 @@ public static class DependencyInjection
             .RequestTimeout(TimeSpan.FromMinutes(2))
             .DefaultIndex(esSettings.ProductsIndex);
 
+        services.AddSingleton(new ElasticsearchClient(esClientSettings));
+        services.AddSingleton(typeof(ISearchService<>), typeof(ElasticSearchService<>));
+
+        services.AddScoped<IProductIndexingService, ProductIndexingService>();
+        services.AddScoped<IProductSearchService, ElasticProductSearchService>();
+
         services.AddHttpClient<IVisualSearchService, VisualSearchService>((sp, client) =>
         {
             var baseUrl = sp.GetRequiredService<IConfiguration>()["VisualSearch:BaseUrl"];
@@ -97,13 +97,6 @@ public static class DependencyInjection
             client.BaseAddress = new Uri(baseUrl, UriKind.Absolute);
         });
 
-        services.AddSingleton(new ElasticsearchClient(esClientSettings));
-
-        services.AddSingleton(typeof(ISearchService<>), typeof(ElasticSearchService<>));
-
-        services.AddScoped<IProductIndexingService, ProductIndexingService>();
-
-        services.AddScoped<IProductSearchService, ElasticProductSearchService>();
         services.AddJwtAuthentication(configuration);
 
         services.Configure<AwsSettings>(configuration.GetSection("AWS"));
@@ -126,7 +119,6 @@ public static class DependencyInjection
 
             if (hasAny && !hasAll)
             {
-                // fail loud instead of silently dropping to a chain that will fail anyway
                 throw new InvalidOperationException(
                     "AWS credentials partially configured — AccessKey, SecretKey and SessionToken must all be set or all be empty.");
             }
@@ -137,12 +129,9 @@ public static class DependencyInjection
                 return new AmazonS3Client(creds, region);
             }
 
-            // Production/Docker: instance role / default chain
             return new AmazonS3Client(region);
         });
 
-        services.AddDefaultAWSOptions(configuration.GetAWSOptions());
-        
         services.Configure<RagSettings>(configuration.GetSection(RagSettings.SectionName));
 
         services.AddHttpClient<IRagClient, RagClient>((sp, client) =>
@@ -151,6 +140,7 @@ public static class DependencyInjection
 
             if (string.IsNullOrWhiteSpace(settings.BaseUrl))
                 throw new InvalidOperationException("Rag BaseUrl is not configured.");
+
             var baseUrl = settings.BaseUrl.EndsWith('/') ? settings.BaseUrl : settings.BaseUrl + "/";
 
             client.BaseAddress = new Uri(baseUrl, UriKind.Absolute);
