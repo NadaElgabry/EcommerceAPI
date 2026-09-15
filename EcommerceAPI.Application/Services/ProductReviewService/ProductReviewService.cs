@@ -168,6 +168,7 @@ namespace EcommerceAPI.Application.Services.ProductReviewService
             CancellationToken cancellationToken)
         {
             var reviews = await _reviewRepository.GetAllAsync(
+                include: query => query.Include(review => review.User),
                 cancellationToken: cancellationToken);
 
             return reviews
@@ -176,6 +177,7 @@ namespace EcommerceAPI.Application.Services.ProductReviewService
                 {
                     ReviewId = review.Id,
                     UserId = review.UserId,
+                    UserGuid = review.User.Guid,
                     ProductId = review.ProductId,
                     Rating = review.Rating,
                     Comment = review.Comment,

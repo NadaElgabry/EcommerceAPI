@@ -156,6 +156,8 @@ namespace EcommerceAPI.Application.Services.ProductService
                     UserActionType.ViewProduct,
                     cancellationToken
                 );
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
             }
 
             var response = _productMapper.ToProductResponse(product);
@@ -316,6 +318,33 @@ namespace EcommerceAPI.Application.Services.ProductService
                 .Where(p => p != null);
 
             return ordered.Select(_productMapper.ToProductSummaryResponse).ToList()!;
+        }
+
+        public async Task<List<AiProductResponse>> GetProductsForAiAsync(
+            CancellationToken cancellationToken)
+        {
+            var products = await _productRepository.GetAllAsync(
+                predicate: product => true,
+                include: query => query
+                    .Include(product => product.Category)
+                    .Include(product => product.ProductTags)
+                        .ThenInclude(productTag => productTag.Tag),
+                cancellationToken: cancellationToken);
+
+            return products.Select(product => new AiProductResponse
+            {
+                ProductId = product.Id,
+                Name = product.Name,
+                Slug = product.Slug,
+                Description = product.Description,
+                Price = product.Price,
+                StockQuantity = product.StockQuantity,
+                CategorySlug = product.Category.Slug,
+                UpdatedAt = product.UpdatedAt,
+                Tags = product.ProductTags
+                    .Select(productTag => productTag.Tag.Name)
+                    .ToList()
+            }).ToList();
         }
 
         public async Task DeleteProductAsync(string slug, CancellationToken cancellationToken)

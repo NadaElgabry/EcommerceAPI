@@ -9,6 +9,8 @@ using EcommerceAPI.Application.Services.FavoritesService;
 using EcommerceAPI.Application.Services.OrderService;
 using EcommerceAPI.Application.Services.ProductReviewService;
 using EcommerceAPI.Application.Services.ProductService;
+using EcommerceAPI.Application.Services.RagService;
+using EcommerceAPI.Application.Services.RecommendationService;
 using EcommerceAPI.Application.Services.ServiceClientAuth;
 using EcommerceAPI.Application.Services.TagService;
 using EcommerceAPI.Application.Services.UserService;
@@ -16,6 +18,7 @@ using EcommerceAPI.Application.Validators;
 using EcommerceAPI.Application.Validators.Auth;
 using EcommerceAPI.Application.Validators.Cart;
 using EcommerceAPI.Application.Validators.Product;
+using EcommerceAPI.Application.Validators.Rag;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -42,11 +45,13 @@ public static class DependencyInjection
         services.AddScoped<ICartMapper, CartMapper>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IOrderMapper, OrderMapper>();
+        services.AddScoped<IRagService, RagService>();
         services.AddScoped<IServiceClientService, ServiceClientService>();
         services.AddScoped<IServiceClientMapper, ServiceClientMapper>();
 
         services.AddScoped<IProductReviewService, ProductReviewService>();
         services.AddScoped<IProductReviewMapper, ProductReviewMapper>();
+        services.AddScoped<IRecommendationService, RecommendationService>();
 
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
@@ -54,6 +59,7 @@ public static class DependencyInjection
         services.AddValidatorsFromAssemblyContaining<ProductQueryParamsRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<AddToCartRequestValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateCartRequestValidator>();
+        services.AddValidatorsFromAssemblyContaining<AskRequestValidator>();
 
         return services;
     }
