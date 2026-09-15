@@ -4,6 +4,7 @@ using EcommerceAPI.Application.Exceptions;
 using EcommerceAPI.Application.Interfaces.Search;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
+using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
 using System.Text;
 using SearchRequest = EcommerceAPI.Application.Interfaces.Search.SearchRequest;
@@ -14,10 +15,11 @@ namespace EcommerceAPI.Infrastructure.Services.Search
         where TDocument : class
     {
         private readonly ElasticsearchClient _client;
-
-        public ElasticSearchService(ElasticsearchClient client)
+        private readonly ILogger<ElasticSearchService<ElasticProductSearchService>> _logger;
+        public ElasticSearchService(ElasticsearchClient client,ILogger<ElasticSearchService<ElasticProductSearchService>> logger)
         {
             _client = client;
+            _logger = logger; 
         }
 
         ///<inheritdoc/>
@@ -68,38 +70,47 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                             b.Filter(filterActions.ToArray());
                         }
 
-                        if (hasSearchText && request.SearchFields is { Length: > 0 })
+                        if (hasSearchText)
                         {
-                            var fuzzyFields = request.SearchFields
-                                .Where(f => !f.StartsWith("description", StringComparison.OrdinalIgnoreCase))
-                                .ToArray();
-                            var exactFields = request.SearchFields
-                                .Where(f => f.StartsWith("description", StringComparison.OrdinalIgnoreCase))
-                                .ToArray();
+                            var hasPrefixFields = request.PrefixFields is { Length: > 0 };
+                            var hasSemanticFields = request.SemanticFields is { Length: > 0 };
+                            var hasExactFields = request.ExactFields is { Length: > 0 };
 
-                            b.Must(m => m.Bool(inner =>
+                            if (hasPrefixFields || hasSemanticFields || hasExactFields)
                             {
-                                inner.MinimumShouldMatch(1);
+                                var innerShoulds = new List<Action<QueryDescriptor<TDocument>>>();
 
-                                if (fuzzyFields.Length > 0)
+                                if (hasPrefixFields)
                                 {
-                                    inner.Should(sh => sh.MultiMatch(mm => mm
+                                    innerShoulds.Add(s2 => s2.MultiMatch(mm => mm
                                         .Query(searchText)
-                                        .Fields(fuzzyFields)
+                                        .Fields(request.PrefixFields)
+                                        .Type(TextQueryType.BestFields)));
+                                }
+
+                                if (hasSemanticFields)
+                                {
+                                    innerShoulds.Add(s2 => s2.MultiMatch(mm => mm
+                                        .Query(searchText)
+                                        .Fields(request.SemanticFields)
+                                        .Type(TextQueryType.BestFields)
+                                        .MinimumShouldMatch("75%")));
+                                }
+
+                                if (hasExactFields)
+                                {
+                                    innerShoulds.Add(s2 => s2.MultiMatch(mm => mm
+                                        .Query(searchText)
+                                        .Fields(request.ExactFields)
                                         .Type(TextQueryType.BestFields)
                                         .Fuzziness(new Fuzziness("AUTO"))
                                         .PrefixLength(2)
                                         .MinimumShouldMatch("75%")));
                                 }
 
-                                if (exactFields.Length > 0)
-                                {
-                                    inner.Should(sh => sh.MultiMatch(mm => mm
-                                        .Query(searchText)
-                                        .Fields(exactFields)
-                                        .Type(TextQueryType.BestFields)));
-                                }
-                            }));
+                                b.Should(innerShoulds.ToArray());
+                                b.MinimumShouldMatch(1);
+                            }
                         }
                     }))
                     .Sort(
@@ -122,7 +133,11 @@ namespace EcommerceAPI.Infrastructure.Services.Search
                     s.SearchAfter(cursor.Values.Select(v => FieldValue.String(v)).ToList());
                 }
             }, cancellationToken);
-
+            if (response.ApiCallDetails?.RequestBodyInBytes != null)
+            {
+                var requestJson = System.Text.Encoding.UTF8.GetString(response.ApiCallDetails.RequestBodyInBytes);
+                _logger.LogInformation("ES request body: {RequestJson}", requestJson);
+            }
             if (!response.IsValidResponse)
             {
                 throw new InvalidOperationException($"Search on '{indexName}' failed: {response.DebugInformation}");
@@ -164,22 +179,38 @@ namespace EcommerceAPI.Infrastructure.Services.Search
         ///<inheritdoc/>
         public async Task IndexOneAsync(string indexName, string id, TDocument document, CancellationToken cancellationToken = default)
         {
-            var response = await _client.IndexAsync(document, i => i.Index(indexName).Id(id), cancellationToken);
+            var response = await _client.IndexAsync(document, i => i
+                .Index(indexName)
+                .Id(id)
+                .Refresh(Elastic.Clients.Elasticsearch.Refresh.WaitFor), cancellationToken);
 
             if (!response.IsValidResponse)
             {
                 throw new InvalidOperationException($"Indexing document '{id}' in '{indexName}' failed: {response.DebugInformation}");
             }
         }
-        
+
         ///<inheritdoc/>
         public async Task DeleteOneAsync(string indexName, string id, CancellationToken cancellationToken = default)
         {
-            var response = await _client.DeleteAsync<TDocument>(id, d => d.Index(indexName), cancellationToken);
-
+            var response = await _client.DeleteAsync<TDocument>(id, d => d
+                                .Index(indexName)
+                                .Refresh(Elastic.Clients.Elasticsearch.Refresh.WaitFor), cancellationToken);
             if (!response.IsValidResponse && response.ApiCallDetails.HttpStatusCode != 404)
             {
                 throw new InvalidOperationException($"Deleting document '{id}' from '{indexName}' failed: {response.DebugInformation}");
+            }
+        }
+
+        ///<inheritdoc/>
+        public async Task DeleteAllAsync(string indexName, CancellationToken cancellationToken = default)
+        {
+            var response = await _client.DeleteByQueryAsync<TDocument>(indexName, d => d
+                .Query(q => q.MatchAll(m => { })), cancellationToken);
+                
+            if (!response.IsValidResponse)
+            {
+                throw new InvalidOperationException($"Clearing index '{indexName}' failed: {response.DebugInformation}");
             }
         }
 

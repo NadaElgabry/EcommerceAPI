@@ -63,6 +63,35 @@ namespace EcommerceAPI.Infrastructure.Services.Auth
             return (rawToken, entity);
         }
 
+        /// <inheritdoc />
+        /// <inheritdoc />
+        public AccessTokenResult GenerateServiceToken(string clientId, IEnumerable<string> scopes)
+        {
+            var claims = new List<Claim>
+                {
+                    new(JwtRegisteredClaimNames.Sub, clientId),
+                    new("client_id", clientId),
+                    new("token_type", "service")
+                };
+            claims.AddRange(scopes.Select(scope => new Claim("scope", scope)));
+
+            var expires = DateTime.UtcNow.AddMinutes(15);
+
+            var creds = new SigningCredentials(
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key)),
+                SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _jwtSettings.Issuer,
+                audience: _jwtSettings.Audience,
+                claims: claims,
+                expires: expires,
+                signingCredentials: creds);
+
+            return new AccessTokenResult(
+                new JwtSecurityTokenHandler().WriteToken(token),
+                expires);
+        }
 
         /// <summary>
         ///

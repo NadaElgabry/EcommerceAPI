@@ -39,4 +39,11 @@ public class CurrentUserService : ICurrentUserService
     ///<inheritdoc/>
     public bool IsAuthenticated => _httpContextAccessor.HttpContext?.User
         .Identity?.IsAuthenticated ?? false;
+
+    ///<inheritdoc/>
+    public bool HasClaim(string type, string value)
+    {
+        return _httpContextAccessor.HttpContext?.User?
+            .HasClaim(type, value) ?? false;
+    }
 }

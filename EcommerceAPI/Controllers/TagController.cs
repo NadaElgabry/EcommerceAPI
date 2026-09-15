@@ -21,6 +21,7 @@ namespace EcommerceAPI.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(ApiResponse<TagResponse>), StatusCodes.Status201Created)]
         public async Task<IActionResult> CreateTag([FromBody] CreateTagRequest request, CancellationToken cancellationToken)
         {
             var result = await _tagService.CreateTagAsync(request, cancellationToken);
@@ -30,6 +31,7 @@ namespace EcommerceAPI.Controllers
 
         [HttpGet]
         [AllowAnonymous]
+        [ProducesResponseType(typeof(ApiResponse<CursorPagedResult<TagResponse>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllTags([FromQuery] OffsetPageRequest request, CancellationToken cancellationToken)
         {
             var result = await _tagService.GetAllTagsAsync(request, cancellationToken);
@@ -38,6 +40,7 @@ namespace EcommerceAPI.Controllers
         }
         [HttpPut("{slug}")]
         [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(ApiResponse<TagResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateTag([FromRoute] string slug, [FromBody] UpdateTagRequest request, CancellationToken cancellationToken)
         {
             await _tagService.UpdateTagAsync(slug, request, cancellationToken);
@@ -47,6 +50,7 @@ namespace EcommerceAPI.Controllers
 
         [HttpDelete("{slug}")]
         [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(ApiResponse<TagResponse>), StatusCodes.Status204NoContent)]
         public async Task<IActionResult> DeleteTag([FromRoute] string slug, CancellationToken cancellationToken)
         {
             await _tagService.DeleteTagAsync(slug, cancellationToken);

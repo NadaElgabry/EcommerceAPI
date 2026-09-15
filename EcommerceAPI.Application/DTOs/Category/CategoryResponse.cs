@@ -10,5 +10,7 @@ namespace EcommerceAPI.Application.DTOs.Category
         public string ImageUrl { get; set; } = string.Empty;
         public string Slug { get; set; } = string.Empty ;
         public DateTime CreatedAt { get; set; }
+
+        public DateTime UpdatedAt { get; set; }
     }
 }

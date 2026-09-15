@@ -134,6 +134,9 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Slug")
@@ -148,7 +151,8 @@ namespace EcommerceAPI.Infrastructure.Migrations
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             ImageUrl = "https://www.flaticon.com/free-icon/electronics_1555401",
                             Name = "Electronics",
-                            Slug = "electronics"
+                            Slug = "electronics",
+                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
@@ -156,7 +160,8 @@ namespace EcommerceAPI.Infrastructure.Migrations
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             ImageUrl = "https://www.flaticon.com/free-icon/electronics_1555401",
                             Name = "Groceries",
-                            Slug = "groceries"
+                            Slug = "groceries",
+                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
                 });
 
@@ -311,8 +316,26 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ProductId")
+                    b.Property<string>("ProductAltText")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProductDescription")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ProductId")
                         .HasColumnType("int");
+
+                    b.Property<string>("ProductImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProductSlug")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
@@ -333,7 +356,12 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         {
                             Id = 1,
                             OrderId = 1,
+                            ProductAltText = "Wireless Headphones",
+                            ProductDescription = "High quality noise-canceling headphones.",
                             ProductId = 1,
+                            ProductImageUrl = "https://example.com/images/wireless-headphones.jpg",
+                            ProductName = "Wireless Headphones",
+                            ProductSlug = "wireless-headphones",
                             Quantity = 1,
                             UnitPrice = 199.99m
                         },
@@ -341,7 +369,12 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         {
                             Id = 2,
                             OrderId = 1,
+                            ProductAltText = "Moro Dark Chocolate",
+                            ProductDescription = "Has chocolate in it.",
                             ProductId = 2,
+                            ProductImageUrl = "https://example.com/images/moro-dark-chocolate.jpg",
+                            ProductName = "Moro Dark Chocolate",
+                            ProductSlug = "moro-dark-chocolate",
                             Quantity = 1,
                             UnitPrice = 5.12m
                         },
@@ -349,7 +382,12 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         {
                             Id = 3,
                             OrderId = 2,
+                            ProductAltText = "Moro Dark Chocolate",
+                            ProductDescription = "Has chocolate in it.",
                             ProductId = 2,
+                            ProductImageUrl = "https://example.com/images/moro-dark-chocolate.jpg",
+                            ProductName = "Moro Dark Chocolate",
+                            ProductSlug = "moro-dark-chocolate",
                             Quantity = 1,
                             UnitPrice = 5.12m
                         });
@@ -397,6 +435,9 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.Property<int>("StockQuantity")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
@@ -418,7 +459,8 @@ namespace EcommerceAPI.Infrastructure.Migrations
                             Price = 199.99m,
                             ProductImage = "https://example.com/images/wireless-headphones.jpg",
                             Slug = "wireless-headphones",
-                            StockQuantity = 50
+                            StockQuantity = 50,
+                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
@@ -431,7 +473,47 @@ namespace EcommerceAPI.Infrastructure.Migrations
                             Price = 5.12m,
                             ProductImage = "https://example.com/images/moro-dark-chocolate.jpg",
                             Slug = "moro-dark-chocolate",
-                            StockQuantity = 100
+                            StockQuantity = 100,
+                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        });
+                });
+
+            modelBuilder.Entity("EcommerceAPI.Domain.Entities.ProductReview", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("UserId", "ProductId")
+                        .IsUnique();
+
+                    b.ToTable("ProductReviews", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_ProductReviews_Rating", "[Rating] >= 1 AND [Rating] <= 5");
                         });
                 });
 
@@ -492,6 +574,53 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("EcommerceAPI.Domain.Entities.ServiceClient", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClientId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ClientSecretHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("Guid")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ScopesCsv")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientId")
+                        .IsUnique();
+
+                    b.ToTable("ServiceClients");
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.Tag", b =>
@@ -799,8 +928,7 @@ namespace EcommerceAPI.Infrastructure.Migrations
                     b.HasOne("EcommerceAPI.Domain.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Order");
 
@@ -816,6 +944,25 @@ namespace EcommerceAPI.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("EcommerceAPI.Domain.Entities.ProductReview", b =>
+                {
+                    b.HasOne("EcommerceAPI.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EcommerceAPI.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("EcommerceAPI.Domain.Entities.ProductTag", b =>

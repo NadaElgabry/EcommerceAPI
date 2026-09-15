@@ -4,9 +4,11 @@ using EcommerceAPI.Application.Interfaces.Auth;
 using EcommerceAPI.Application.Interfaces.Email;
 using EcommerceAPI.Application.Interfaces.ExternalServices.Rag;
 using EcommerceAPI.Application.Interfaces.Image;
+using EcommerceAPI.Application.Interfaces.Recommendations;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Interfaces.Search;
 using EcommerceAPI.Application.Interfaces.Slug;
+using EcommerceAPI.Application.Interfaces.VisualSearch;
 using EcommerceAPI.Infrastructure.Contexts;
 using EcommerceAPI.Infrastructure.ExternalServices.Rag;
 using EcommerceAPI.Infrastructure.Persistence;
@@ -14,9 +16,11 @@ using EcommerceAPI.Infrastructure.Persistence.Repositories;
 using EcommerceAPI.Infrastructure.Services.Auth;
 using EcommerceAPI.Infrastructure.Services.Email;
 using EcommerceAPI.Infrastructure.Services.Mail;
+using EcommerceAPI.Infrastructure.Services.Recommendation;
 using EcommerceAPI.Infrastructure.Services.Search;
 using EcommerceAPI.Infrastructure.Services.Search.Indexing;
 using EcommerceAPI.Infrastructure.Services.Slug;
+using EcommerceAPI.Infrastructure.Services.VisualSearch;
 using EcommerceAPI.Infrastructure.Settings;
 using Elastic.Clients.Elasticsearch;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -51,6 +55,25 @@ public static class DependencyInjection
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        services.Configure<RecommendationApiSettings>(
+            configuration.GetSection("RecommendationApi"));
+
+        services.AddHttpClient<IRecommendationApiClient, RecommendationApiClient>(
+            client =>
+            {
+                var baseUrl = configuration["RecommendationApi:BaseUrl"];
+
+                if (string.IsNullOrWhiteSpace(baseUrl))
+                {
+                    throw new InvalidOperationException(
+                        "Recommendation API BaseUrl is not configured.");
+                }
+
+                client.BaseAddress = new Uri(baseUrl);
+                client.Timeout = TimeSpan.FromSeconds(10);
+            });
+
         services.Configure<ElasticsearchSettings>(configuration.GetSection("Elasticsearch"));
 
         var esSettings = configuration.GetSection("Elasticsearch").Get<ElasticsearchSettings>()
@@ -60,6 +83,11 @@ public static class DependencyInjection
             .MaximumRetries(3)
             .RequestTimeout(TimeSpan.FromMinutes(2))
             .DefaultIndex(esSettings.ProductsIndex);
+
+        services.AddHttpClient<IVisualSearchService, VisualSearchService>(client =>
+        {
+            client.BaseAddress = new Uri(configuration["VisualSearch:BaseUrl"]!);
+        });
 
         services.AddSingleton(new ElasticsearchClient(esClientSettings));
 
@@ -74,6 +102,8 @@ public static class DependencyInjection
         services.AddDefaultAWSOptions(configuration.GetAWSOptions());
         services.AddAWSService<IAmazonS3>();
         services.AddHttpClient<IRagClient, RagClient>();
+
+        services.Configure<GrocerySeedSettings>(configuration.GetSection("GrocerySeed"));
 
         return services;
     }
@@ -90,6 +120,8 @@ public static class DependencyInjection
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
+                options.IncludeErrorDetails = true;
+
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,

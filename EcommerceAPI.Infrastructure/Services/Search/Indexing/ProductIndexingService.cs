@@ -30,6 +30,8 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
         ///<inheritdoc/>
         public async Task ReindexAllProductsAsync(CancellationToken cancellationToken = default)
         {
+            await _search.DeleteAllAsync(_settings.ProductsIndex, cancellationToken);
+
             int? lastId = null;
 
             while (true)
@@ -72,6 +74,13 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
         }
 
         ///<inheritdoc/>
+        public async Task IndexProductsAsync(IEnumerable<Product> products, CancellationToken cancellationToken = default)
+        {
+            var documents = products.Select(p => (p.Id.ToString(), MapToDocument(p)));
+            await _search.IndexManyAsync(_settings.ProductsIndex, documents, cancellationToken);
+        }
+
+        ///<inheritdoc/>
         public async Task DeleteProductAsync(int productId, CancellationToken cancellationToken = default)
         {
             await _search.DeleteOneAsync(_settings.ProductsIndex, productId.ToString(), cancellationToken);
@@ -91,6 +100,7 @@ namespace EcommerceAPI.Infrastructure.Services.Search.Indexing
                 ProductImage = product.ProductImage,
                 AltText = product.AltText,
                 CreationDate = product.CreationDate,
+                UpdatedAt = product.UpdatedAt,
                 CategorySlug = product.Category.Slug,
                 Tags = product.ProductTags.Select(pt => pt.Tag.Slug).ToList()
             };

@@ -7,6 +7,6 @@ namespace EcommerceAPI.Application.DTOs.Cart
     public class AddToCartRequest
     {
         public required string ProductSlug { get; set; }
-        public int Quantity { get; set; }
+        public decimal Quantity { get; set; }
     }
 }

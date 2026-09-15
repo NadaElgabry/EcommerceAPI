@@ -9,9 +9,11 @@ using EcommerceAPI.Application.Interfaces.IServices;
 using EcommerceAPI.Application.Interfaces.Repositories;
 using EcommerceAPI.Application.Interfaces.Search;
 using EcommerceAPI.Application.Interfaces.Slug;
+using EcommerceAPI.Application.Interfaces.VisualSearch;
 using EcommerceAPI.Application.Mappers.Interfaces;
 using EcommerceAPI.Domain.Entities;
 using EcommerceAPI.Domain.Enums;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
@@ -23,6 +25,8 @@ namespace EcommerceAPI.Application.Services.ProductService
         private readonly IRepository<Product> _productRepository;
         private readonly IRepository<Category> _categoryRepository;
         private readonly IRepository<User> _userRepository;
+        private readonly IRepository<FavoriteProduct> _favoriteProductRepository;
+        private readonly IRepository<ProductReview> _productReviewRepository;
         private readonly IRepository<Tag> _tagRepository;
         private readonly IProductMapper _productMapper;
         private readonly IImageService _imageService;
@@ -31,14 +35,24 @@ namespace EcommerceAPI.Application.Services.ProductService
         private readonly IUnitOfWork _unitOfWork;
         private readonly ISlugGenerator _slugGenerator;
 
+        private readonly IVisualSearchService _visualSearchService;
+
         private readonly IProductSearchService _searchService;
         private readonly IProductIndexingService _indexingService;
 
+        private readonly IRepository<UserActivity> _activityRepository;
+
         private readonly ILogger<ProductService> _logger;
+
+        private const int DefaultTopK = 5;
+        private const int MaxTopK = 10;
+
         public ProductService(
             IRepository<Product> productRepository,
             IRepository<Category> categoryRepository,
             IRepository<User> userRepository,
+            IRepository<FavoriteProduct> favoriteProductRepository,
+            IRepository<ProductReview> productReviewRepository,
             IRepository<Tag> tagRepository,
             IProductMapper productMapper,
             IImageService imageService,
@@ -46,13 +60,17 @@ namespace EcommerceAPI.Application.Services.ProductService
             ICurrentUserService currentUserService,
             IUnitOfWork unitOfWork,
             ISlugGenerator slugGenerator,
+            IVisualSearchService visualSearchService,
             IProductSearchService searchService,
             IProductIndexingService indexingService,
-            ILogger<ProductService> logger)
+            ILogger<ProductService> logger,
+            IRepository<UserActivity> activityRepository)
         {
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
             _userRepository = userRepository;
+            _favoriteProductRepository = favoriteProductRepository;
+            _productReviewRepository = productReviewRepository;
             _tagRepository = tagRepository;
             _productMapper = productMapper;
             _imageService = imageService;
@@ -60,9 +78,11 @@ namespace EcommerceAPI.Application.Services.ProductService
             _currentUserService = currentUserService;
             _unitOfWork = unitOfWork;
             _slugGenerator = slugGenerator;
+            _visualSearchService = visualSearchService;
             _searchService = searchService;
             _indexingService = indexingService;
-            _logger = logger ;
+            _logger = logger;
+            _activityRepository = activityRepository;
         }
 
         public async Task<ProductResponse> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken)
@@ -108,8 +128,8 @@ namespace EcommerceAPI.Application.Services.ProductService
             {
                 await _productRepository.AddAsync(newProduct, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
+                await _indexingService.IndexProductAsync(newProduct, cancellationToken);
             }, cancellationToken);
-            await _indexingService.IndexProductAsync(newProduct, cancellationToken);
 
             return _productMapper.ToProductResponse(newProduct);
 
@@ -138,7 +158,16 @@ namespace EcommerceAPI.Application.Services.ProductService
                 );
             }
 
-            return _productMapper.ToProductResponse(product);
+            var response = _productMapper.ToProductResponse(product);
+            var favoritedSlugs = await GetFavoritedProductSlugsAsync([product.Slug], cancellationToken);
+            response.IsFavorited = favoritedSlugs.Contains(product.Slug);
+
+            var reviews = await _productReviewRepository.GetAllAsync(
+                predicate: r => r.ProductId == product.Id,
+                cancellationToken: cancellationToken);
+            response.ReviewCount = reviews.Count;
+            response.AverageRating = reviews.Count > 0 ? reviews.Average(r => r.Rating) : 0;
+            return response;
         }
 
         public async Task<ProductResponse> UpdateProductAsync(
@@ -202,24 +231,17 @@ namespace EcommerceAPI.Application.Services.ProductService
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                var productForIndexing = await _productRepository.GetByAsync(
+                                               p => p.Id == product.Id,
+                                               include: query => query
+                                                   .Include(p => p.Category)
+                                                   .Include(p => p.ProductTags)
+                                                       .ThenInclude(pt => pt.Tag),
+                                               cancellationToken: cancellationToken);
+                await _indexingService.IndexProductAsync(productForIndexing!, cancellationToken);
             }, cancellationToken);
 
-            var productForIndexing = await _productRepository.GetByAsync(
-                                        p => p.Id == product.Id,
-                                        include: query => query
-                                            .Include(p => p.Category)
-                                            .Include(p => p.ProductTags)
-                                                .ThenInclude(pt => pt.Tag),
-                                        cancellationToken: cancellationToken);
-
-            try
-            {
-                await _indexingService.IndexProductAsync(productForIndexing!, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to index product {ProductId} after save. Product data is out of sync with search until next reindex.", product.Id);
-            }
 
             return _productMapper.ToProductResponse(product);
         }
@@ -228,7 +250,99 @@ namespace EcommerceAPI.Application.Services.ProductService
         public async Task<CursorPagedResult<ProductSummaryResponse>> SearchProductsAsync(
         ProductQueryParamsRequest queryParams, CancellationToken cancellationToken)
         {
-            return await _searchService.SearchProductsAsync(queryParams, cancellationToken);
+            var result = await _searchService.SearchProductsAsync(queryParams, cancellationToken);
+    
+            if (_currentUserService.IsAuthenticated)
+            {
+                var userId = _currentUserService.UserGuid;
+                await LogSearchActivitiesAsync(userId, result.Data, cancellationToken);
+            }
+
+            var favoritedSlugs = await GetFavoritedProductSlugsAsync(result.Data.Select(p => p.Slug), cancellationToken);
+            foreach (var item in result.Data)
+            {
+                item.IsFavorited = favoritedSlugs.Contains(item.Slug);
+            }
+
+            return result;
+        }
+
+        private async Task LogSearchActivitiesAsync(Guid userId, IEnumerable<ProductSummaryResponse> products, CancellationToken cancellationToken)
+        {
+            var user = await _userRepository.GetByAsync(predicate: u => u.Guid == userId, cancellationToken: cancellationToken);
+            if (user is null)
+            {
+                return;
+            }
+
+            var slugs = products.Select(p => p.Slug).ToList();
+
+            var productEntities = await _productRepository.GetAllAsync(
+                predicate: p => slugs.Contains(p.Slug),
+                cancellationToken: cancellationToken);
+
+            var idBySlug = productEntities.ToDictionary(p => p.Slug, p => p.Id);
+
+            var activities = products
+                .Where(p => idBySlug.ContainsKey(p.Slug))
+                .Select(p => _userActivityService.BuildActivity(user.Id, idBySlug[p.Slug], UserActionType.SearchProduct))
+                .ToList();
+
+            if (activities.Count > 0)
+            {
+                await _unitOfWork.ExecuteInTransactionAsync(async () =>
+                {
+                    await _activityRepository.AddRangeAsync(activities, cancellationToken);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+                }, cancellationToken);
+            }
+        }
+
+        public async Task<List<ProductSummaryResponse>> VisualSearchAsync(IFormFile image, int? topK, CancellationToken cancellationToken)
+        {
+            var clampedTopK = Math.Clamp(topK ?? DefaultTopK, 1, MaxTopK);
+
+            var names = await _visualSearchService.SearchByImageAsync(image, clampedTopK, cancellationToken);
+            var slugs = names.Select(_slugGenerator.GenerateSlug).ToList();
+
+            var products = await _productRepository.GetAllAsync(
+                predicate: p => slugs.Contains(p.Slug),
+                include: query => query.Include(p => p.Category),
+                cancellationToken: cancellationToken);
+
+            var bySlug = products.ToDictionary(p => p.Slug);
+            var ordered = slugs
+                .Select(s => bySlug.TryGetValue(s, out var p) ? p : null)
+                .Where(p => p != null);
+
+            return ordered.Select(_productMapper.ToProductSummaryResponse).ToList()!;
+        }
+
+        public async Task<List<AiProductResponse>> GetProductsForAiAsync(
+            CancellationToken cancellationToken)
+        {
+            var products = await _productRepository.GetAllAsync(
+                predicate: product => true,
+                include: query => query
+                    .Include(product => product.Category)
+                    .Include(product => product.ProductTags)
+                        .ThenInclude(productTag => productTag.Tag),
+                cancellationToken: cancellationToken);
+
+            return products.Select(product => new AiProductResponse
+            {
+                ProductId = product.Id,
+                Name = product.Name,
+                Slug = product.Slug,
+                Description = product.Description,
+                Price = product.Price,
+                StockQuantity = product.StockQuantity,
+                CategorySlug = product.Category.Slug,
+                UpdatedAt = product.UpdatedAt,
+                Tags = product.ProductTags
+                    .Select(productTag => productTag.Tag.Name)
+                    .ToList()
+            }).ToList();
         }
 
         public async Task DeleteProductAsync(string slug, CancellationToken cancellationToken)
@@ -241,16 +355,25 @@ namespace EcommerceAPI.Application.Services.ProductService
             {
                 _productRepository.Delete(product);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
-            }, cancellationToken);
-
-            try
-            {
                 await _indexingService.DeleteProductAsync(product.Id, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to remove product {ProductId} from search index after delete. Product data is out of sync with search until next reindex.", product.Id);
-            }
+            }, cancellationToken);
+        }
+
+        private async Task<HashSet<string>> GetFavoritedProductSlugsAsync(IEnumerable<string> slugs, CancellationToken cancellationToken)
+        {
+            if (!_currentUserService.IsAuthenticated) return [];
+
+            var user = await _userRepository.GetByAsync(u => u.Guid == _currentUserService.UserGuid, cancellationToken);
+            if (user == null) return [];
+
+            var slugSet = slugs.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var favorites = await _favoriteProductRepository.GetAllAsync(
+                f => f.UserId == user.Id && slugSet.Contains(f.Product.Slug),
+                include: q => q.Include(f => f.Product),
+                cancellationToken: cancellationToken);
+
+            return favorites.Select(f => f.Product.Slug).ToHashSet(StringComparer.OrdinalIgnoreCase);
         }
 
 

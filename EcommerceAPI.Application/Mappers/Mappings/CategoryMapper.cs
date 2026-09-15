@@ -17,7 +17,8 @@ namespace EcommerceAPI.Application.Mappers.Mappings
                 Name = category.Name,
                 ImageUrl = category.ImageUrl,
                 Slug = category.Slug,
-                CreatedAt = category.CreatedAt
+                CreatedAt = category.CreatedAt,
+                UpdatedAt = category.UpdatedAt,
             };
         }
     }
