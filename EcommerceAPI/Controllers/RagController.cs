@@ -1,20 +1,38 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using EcommerceAPI.Application.Common;
+using EcommerceAPI.Application.DTOs.Rag;
+using EcommerceAPI.Application.Interfaces.IServices;
 using Microsoft.AspNetCore.Authorization;
-using EcommerceAPI.Application.Common;
+using Microsoft.AspNetCore.Mvc;
+
 namespace EcommerceAPI.Controllers
 {
-    [Route("api/chatbot")]
+    [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class RagController : ControllerBase
     {
-        [HttpPost("send")]
-        [Authorize]
-        [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> send(
-            [FromBody] string message,
-            CancellationToken cancellationToken)
+        private readonly IRagService _ragService;
+
+        public RagController(IRagService ragService)
         {
-            return Ok(ApiResponse<string>.SuccessResponse(message: "message received successfully", statusCode: 200, data: message));
+            _ragService = ragService;
+        }
+
+        [HttpPost("chat")]
+        [Authorize]
+        public async Task<ActionResult<AnswerResponse>> Ask(
+            [FromBody] AskRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _ragService.AskAsync(request.Question,cancellationToken);
+            return Ok(ApiResponse<AnswerResponse>.SuccessResponse(data:result,statusCode:200));
+        }
+
+        [HttpPost("terminate")]
+        [Authorize]
+        public async Task<ActionResult<string>> Terminate(CancellationToken cancellationToken)
+        {
+            var result = await _ragService.TerminateAsync(cancellationToken);
+            return Ok(ApiResponse<string>.SuccessResponse(message: "Terminated successfully", statusCode: 200));
         }
     }
 }

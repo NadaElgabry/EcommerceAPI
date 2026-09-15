@@ -6,6 +6,8 @@ namespace EcommerceAPI.Application.DTOs.ProductReview
 
         public int UserId { get; set; }
 
+        public Guid UserGuid { get; set; }
+
         public int ProductId { get; set; }
 
         public int Rating { get; set; }

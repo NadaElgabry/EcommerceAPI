@@ -10,6 +10,7 @@
         AddedToFavorites = 6,
         RemovedFromFavorites =7,
         SearchProduct = 8,
+        Chatbot = 9
 
     }
 }
