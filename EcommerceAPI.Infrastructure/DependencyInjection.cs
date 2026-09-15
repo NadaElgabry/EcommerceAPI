@@ -110,25 +110,6 @@ public static class DependencyInjection
 
             var region = RegionEndpoint.GetBySystemName(settings.Region);
 
-            var hasAny = !string.IsNullOrEmpty(settings.AccessKey)
-                      || !string.IsNullOrEmpty(settings.SecretKey)
-                      || !string.IsNullOrEmpty(settings.SessionToken);
-            var hasAll = !string.IsNullOrEmpty(settings.AccessKey)
-                      && !string.IsNullOrEmpty(settings.SecretKey)
-                      && !string.IsNullOrEmpty(settings.SessionToken);
-
-            if (hasAny && !hasAll)
-            {
-                throw new InvalidOperationException(
-                    "AWS credentials partially configured — AccessKey, SecretKey and SessionToken must all be set or all be empty.");
-            }
-
-            if (hasAll)
-            {
-                var creds = new SessionAWSCredentials(settings.AccessKey, settings.SecretKey, settings.SessionToken);
-                return new AmazonS3Client(creds, region);
-            }
-
             return new AmazonS3Client(region);
         });
 
