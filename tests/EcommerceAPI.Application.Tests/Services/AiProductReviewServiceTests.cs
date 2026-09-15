@@ -36,14 +36,22 @@ namespace EcommerceAPI.Application.Tests.Services
         }
 
         [Fact]
-        public async Task GetReviewsForAiAsync_ReturnsInternalUserAndProductIds()
+        public async Task GetReviewsForAiAsync_ReturnsInternalIdsAndUserGuid()
         {
+            var firstUserGuid = Guid.NewGuid();
+            var secondUserGuid = Guid.NewGuid();
+
             var reviews = new List<ProductReview>
             {
                 new()
                 {
                     Id = 2,
                     UserId = 25,
+                    User = new User
+                    {
+                        Id = 25,
+                        Guid = secondUserGuid
+                    },
                     ProductId = 42,
                     Rating = 4,
                     Comment = "Good product",
@@ -53,6 +61,11 @@ namespace EcommerceAPI.Application.Tests.Services
                 {
                     Id = 1,
                     UserId = 10,
+                    User = new User
+                    {
+                        Id = 10,
+                        Guid = firstUserGuid
+                    },
                     ProductId = 20,
                     Rating = 5,
                     Comment = "Excellent",
@@ -76,12 +89,14 @@ namespace EcommerceAPI.Application.Tests.Services
 
             Assert.Equal(1, result[0].ReviewId);
             Assert.Equal(10, result[0].UserId);
+            Assert.Equal(firstUserGuid, result[0].UserGuid);
             Assert.Equal(20, result[0].ProductId);
             Assert.Equal(5, result[0].Rating);
             Assert.Equal("Excellent", result[0].Comment);
 
             Assert.Equal(2, result[1].ReviewId);
             Assert.Equal(25, result[1].UserId);
+            Assert.Equal(secondUserGuid, result[1].UserGuid);
             Assert.Equal(42, result[1].ProductId);
             Assert.Equal(4, result[1].Rating);
             Assert.Equal("Good product", result[1].Comment);
