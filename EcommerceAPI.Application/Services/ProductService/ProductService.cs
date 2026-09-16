@@ -305,19 +305,37 @@ namespace EcommerceAPI.Application.Services.ProductService
             var clampedTopK = Math.Clamp(topK ?? DefaultTopK, 1, MaxTopK);
 
             var names = await _visualSearchService.SearchByImageAsync(image, clampedTopK, cancellationToken);
+            if (names.Count == 0)
+            {
+                return [];
+            }
+
             var slugs = names.Select(_slugGenerator.GenerateSlug).ToList();
 
             var products = await _productRepository.GetAllAsync(
-                predicate: p => slugs.Contains(p.Slug),
+                predicate: BuildSlugContainsAnyPredicate(slugs),
                 include: query => query.Include(p => p.Category),
                 cancellationToken: cancellationToken);
 
-            var bySlug = products.ToDictionary(p => p.Slug);
             var ordered = slugs
-                .Select(s => bySlug.TryGetValue(s, out var p) ? p : null)
-                .Where(p => p != null);
+                .Select(slug => products.FirstOrDefault(p => p.Slug.Contains(slug, StringComparison.OrdinalIgnoreCase)))
+                .Where(p => p != null)
+                .DistinctBy(p => p!.Id);
 
             return ordered.Select(_productMapper.ToProductSummaryResponse).ToList()!;
+        }
+
+        private static Expression<Func<Product, bool>> BuildSlugContainsAnyPredicate(List<string> slugs)
+        {
+            var parameter = Expression.Parameter(typeof(Product), "p");
+            var slugProperty = Expression.Property(parameter, nameof(Product.Slug));
+            var containsMethod = typeof(string).GetMethod(nameof(string.Contains), [typeof(string)])!;
+
+            var body = slugs
+                .Select(slug => (Expression)Expression.Call(slugProperty, containsMethod, Expression.Constant(slug)))
+                .Aggregate(Expression.OrElse);
+
+            return Expression.Lambda<Func<Product, bool>>(body, parameter);
         }
 
         public async Task<List<AiProductResponse>> GetProductsForAiAsync(
