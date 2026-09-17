@@ -15,9 +15,9 @@ namespace EcommerceAPI.Infrastructure.Persistence.Configurations
                 .HasColumnType("decimal(18,2)");
 
             builder.HasOne(i => i.Product)
-                .WithMany()
-                .HasForeignKey(i => i.ProductId)
-                .OnDelete(DeleteBehavior.Restrict);
+                    .WithMany()
+                    .HasForeignKey(i => i.ProductId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasIndex(ci => new { ci.CartId, ci.ProductId })
                 .IsUnique();

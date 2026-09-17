@@ -322,13 +322,15 @@ namespace EcommerceAPI.Application.Services.CategoryService
                 cancellationToken)
                 ?? throw new NotFoundException(
                     $"Category '{slug}' not found.");
+            var hasProducts = await _productRepository.ExistByAsync(
+                                p => p.CategoryId == category.Id,
+                                cancellationToken);
 
-            var fileName = Path.GetFileName(
-                category.ImageUrl);
-
-            await _imageService.DeleteFileAsync(
-                fileName,
-                ImageOwnerType.Category,cancellationToken);
+            if (hasProducts)
+            {
+                throw new ConflictException(
+                    "Cannot delete category while it still has products assigned to it.");
+            }
 
             await _unitOfWork.ExecuteInTransactionAsync(
                 async () =>
@@ -339,6 +341,14 @@ namespace EcommerceAPI.Application.Services.CategoryService
                         cancellationToken);
                 },
                 cancellationToken);
+            try
+            {
+                var fileName = Path.GetFileName(category.ImageUrl);
+                await _imageService.DeleteFileAsync(fileName, ImageOwnerType.Category, cancellationToken);
+            }
+            catch (FileNotFoundException)
+            {
+            }
         }
     }
 }

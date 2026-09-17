@@ -118,19 +118,17 @@ public class ImageService(IAmazonS3 s3Client, IOptions<AwsSettings> awsSettings)
             throw new ArgumentNullException(nameof(fileNameWithExtension));
 
         var folder = ownerType == ImageOwnerType.Category ? "categories" : "products";
-        var safeName = Path.GetFileName(fileNameWithExtension); 
+        var safeName = Path.GetFileName(fileNameWithExtension);
         var key = $"{folder}/{safeName}";
 
         try
         {
-            await s3Client.GetObjectMetadataAsync(_bucketName, key, cancellationToken);
+            await s3Client.DeleteObjectAsync(_bucketName, key, cancellationToken);
         }
         catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            throw new FileNotFoundException("Invalid file path");
+            // already gone — treat as success
         }
-
-        await s3Client.DeleteObjectAsync(_bucketName, key, cancellationToken);
     }
 
     private static bool HasValidSignature(Stream stream, List<byte[]> validSignatures)
