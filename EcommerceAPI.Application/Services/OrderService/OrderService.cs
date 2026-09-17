@@ -133,9 +133,9 @@ namespace EcommerceAPI.Application.Services.OrderService
             var user = await _userRepository.GetByAsync(predicate: u => u.Guid == userGuid
             , cancellationToken) ?? throw new NotFoundException("User not found");
 
-            var lastOrderId = string.IsNullOrEmpty(request.Cursor) ? 0 : CursorHelper.Decode<int>(request.Cursor);
+            var lastOrderId = string.IsNullOrEmpty(request.Cursor) ? int.MaxValue : CursorHelper.Decode<int>(request.Cursor);
             var take = Math.Clamp(request.Limit, 1, 50);
-            var orders = await _orderRepository.GetPagedAsync(predicate: o => o.UserId == user.Id && o.Id > lastOrderId,
+            var orders = await _orderRepository.GetPagedDescendingAsync(predicate: o => o.UserId == user.Id && o.Id < lastOrderId,
                 include: query => query.Include(o => o.Items).Include(o => o.User),
                 orderBy: o => o.CreationDate, take: take + 1,
                 cancellationToken: cancellationToken
@@ -153,7 +153,7 @@ namespace EcommerceAPI.Application.Services.OrderService
             if (hasNext && orders.Count > 0)
             {
                 nextCursor = CursorHelper.Encode(
-                    orders[^1].CreationDate);
+                    orders[^1].Id);
             }
 
             var ordersummaries = orders.Select(o => _orderMapper.ToOrderSummary(o)).ToList();
