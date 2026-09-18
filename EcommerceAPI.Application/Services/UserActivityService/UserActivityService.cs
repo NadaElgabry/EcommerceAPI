@@ -90,6 +90,7 @@ namespace EcommerceAPI.Application.Services.UserService
                 Data = activities.Select(a => new AiUserActivityResponse
                 {
                     UserId = user?.Guid ?? a.User?.Guid ?? Guid.Empty,
+                    CanonicalUserId = a.UserId,
                     ProductId = a.ProductId,
                     ActionType = a.ActionType.ToString(),
                     Timestamp = a.Timestamp

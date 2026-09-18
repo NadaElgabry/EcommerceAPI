@@ -21,5 +21,8 @@ namespace EcommerceAPI.Application.Interfaces.IServices
         public Task<OffsetPagedResult<UserResponse>> GetAllUsersAsync(
             OffsetPageRequest request, CancellationToken cancellationToken = default);
 
+        public Task<List<AiUserResponse>> GetUsersForAiAsync(
+            CancellationToken cancellationToken);
+
     }
 }
