@@ -16,6 +16,17 @@ namespace EcommerceAPI.Infrastructure
                             "scope",
                             "users:read")));
 
+                options.AddPolicy("AiUsersRead", policy =>
+                {
+                    policy.RequireClaim(
+                        "token_type",
+                        "service");
+
+                    policy.RequireClaim(
+                        "scope",
+                        "users:read");
+                });
+
                 options.AddPolicy("ReviewsRead", policy =>
                 {
                     policy.RequireClaim(
