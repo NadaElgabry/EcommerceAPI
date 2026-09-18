@@ -117,21 +117,5 @@ namespace EcommerceAPI.Application.Services.UserService
                 }
             };
         }
-        public async Task<List<AiUserResponse>> GetUsersForAiAsync(
-            CancellationToken cancellationToken)
-        {
-            var users = await _userRepository.GetAllAsync(
-                cancellationToken: cancellationToken);
-
-            return users
-                .OrderBy(user => user.Id)
-                .Select(user => new AiUserResponse
-                {
-                    UserId = user.Id,
-                    UserGuid = user.Guid
-                })
-                .ToList();
-        }
-
     }
 }
